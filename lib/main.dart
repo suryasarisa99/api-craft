@@ -1,4 +1,4 @@
-import 'package:api_craft/widgets/custom_input.dart';
+import 'package:api_craft/widgets/ui/variable_text_field.dart';
 import 'package:flutter/material.dart';
 
 void main() {
