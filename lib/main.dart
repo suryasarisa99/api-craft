@@ -1,3 +1,4 @@
+import 'package:api_craft/widgets/custom_input.dart';
 import 'package:flutter/material.dart';
 
 void main() {
@@ -9,12 +10,10 @@ class MainApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
-      home: Scaffold(
-        body: Center(
-          child: Text('Hello World!'),
-        ),
-      ),
+    return MaterialApp(
+      darkTheme: ThemeData.dark(),
+      debugShowCheckedModeBanner: false,
+      home: Scaffold(body: Center(child: VariableTextField())),
     );
   }
 }

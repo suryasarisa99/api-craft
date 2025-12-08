@@ -9,6 +9,9 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  extended_text_field: ^16.0.2
+  go_router: ^17.0.0
+  flutter_riverpod: ^3.0.3
 
 dev_dependencies:
   flutter_test:
