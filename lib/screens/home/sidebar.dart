@@ -1,45 +1,12 @@
-import 'package:api_craft/dialog/input_dialog.dart';
 import 'package:api_craft/models/models.dart';
 import 'package:api_craft/providers/providers.dart';
+import 'package:api_craft/screens/home/context_menu.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:super_context_menu/super_context_menu.dart';
 
 class FileExplorerView extends ConsumerWidget {
   const FileExplorerView({super.key});
-
-  void createFolder(BuildContext context, WidgetRef ref) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return InputDialog(
-          title: "New Folder",
-          placeholder: "Folder Name",
-          onConfirmed: (folderName) {
-            final folder = ref.read(activeReqProvider.notifier);
-            final path = folder.getDirectory();
-            ref.read(fileTreeProvider.notifier).createFolder(path, folderName);
-            // ref.read(fileTreeProvider.notifier).createFolder(folderName);
-          },
-        );
-      },
-    );
-  }
-
-  void createFile(BuildContext context, WidgetRef ref) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return InputDialog(
-          title: "New Request File",
-          placeholder: "File Name",
-          onConfirmed: (fileName) {
-            final folder = ref.read(activeReqProvider.notifier).getDirectory();
-            ref.read(fileTreeProvider.notifier).createRequest(folder, fileName);
-          },
-        );
-      },
-    );
-  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -47,32 +14,19 @@ class FileExplorerView extends ConsumerWidget {
 
     return Scaffold(
       body: treeAsync.when(
-        data: (nodes) => ListView(
-          children: nodes
-              .map((node) => FileNodeTile(node: node, isRoot: true))
-              .toList(),
+        data: (nodes) => ContextMenuWidget(
+          menuProvider: (_) async {
+            return getMenuProvider(ref: ref, context: context, isRoot: true);
+          },
+          child: ListView(
+            children: nodes
+                .map((node) => FileNodeTile(node: node, isRoot: true))
+                .toList(),
+          ),
         ),
         // Fallback to your custom list for recursion support
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, stack) => Center(child: Text('Error: $err')),
-      ),
-      floatingActionButton: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          FloatingActionButton(
-            heroTag: 'create_folder',
-            onPressed: () => createFolder(context, ref),
-            tooltip: 'Create Folder',
-            child: const Icon(Icons.create_new_folder),
-          ),
-          const SizedBox(height: 10),
-          FloatingActionButton(
-            heroTag: 'create_file',
-            onPressed: () => createFile(context, ref),
-            tooltip: 'Create Request File',
-            child: const Icon(Icons.note_add),
-          ),
-        ],
       ),
     );
   }
@@ -100,8 +54,7 @@ class _FileNodeTileState extends ConsumerState<FileNodeTile> {
 
   bool _isExpanded = false; // Track expansion for folder icon
 
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildContent() {
     final activeNode = ref.watch(activeReqProvider);
     final isActive = activeNode?.path == widget.node.path;
     final theme = Theme.of(context);
@@ -116,112 +69,114 @@ class _FileNodeTileState extends ConsumerState<FileNodeTile> {
     // The line should start exactly at the center of the arrow.
     // Formula: Padding + (ArrowSize / 2) - (LineWidth / 2)
     final double lineMargin = tileLeftPadding + (arrowSize / 2) - 0.5;
-    Widget header;
     if (widget.node.isDirectory) {
-      header = Theme(
-        // Remove default borders
-        data: theme.copyWith(dividerColor: Colors.transparent),
-        child: SizedBox(
-          child: ExpansionTile(
-            key: PageStorageKey(widget.node.path),
-            maintainState: true,
-            initiallyExpanded: ref
-                .read(activeReqProvider.notifier)
-                .isDirectoryOpen(widget.node.path),
+      return _contextMenuWrapper(
+        isDirectory: true,
+        child: Theme(
+          // Remove default borders
+          data: theme.copyWith(dividerColor: Colors.transparent),
+          child: SizedBox(
+            child: ExpansionTile(
+              key: PageStorageKey(widget.node.path),
+              maintainState: true,
+              initiallyExpanded: ref
+                  .read(activeReqProvider.notifier)
+                  .isDirectoryOpen(widget.node.path),
 
-            // 1. CONTROL PADDING & SIZING
-            tilePadding: EdgeInsets.only(left: tileLeftPadding, right: 8),
-            childrenPadding: EdgeInsets.zero,
-            dense: true,
-            minTileHeight: 30,
+              // 1. CONTROL PADDING & SIZING
+              tilePadding: EdgeInsets.only(left: tileLeftPadding, right: 8),
+              childrenPadding: EdgeInsets.zero,
+              dense: true,
+              minTileHeight: 30,
 
-            visualDensity: const VisualDensity(vertical: -4, horizontal: -4),
+              visualDensity: const VisualDensity(vertical: -4, horizontal: -4),
 
-            // 2. DISABLE DEFAULT EXPANSION ICON
-            trailing: const SizedBox.shrink(),
+              // 2. DISABLE DEFAULT EXPANSION ICON
+              trailing: const SizedBox.shrink(),
 
-            // 3. CUSTOM ANIMATED ARROW (LEADING)
-            leading: SizedBox(
-              width: arrowSize,
-              height: arrowSize,
-              child: AnimatedRotation(
-                // 0.0 = Right (0 deg), 0.25 = Bottom (90 deg)
-                turns: _isExpanded ? 0.25 : 0.0,
-                duration: const Duration(milliseconds: 200),
-                curve: Curves.easeInOut,
-                child: Icon(
-                  Icons.keyboard_arrow_right, // Standard tree arrow
-                  size: arrowSize,
-                  color: isActive
-                      ? theme.colorScheme.primary
-                      : const Color(0xA49E9E9E),
-                ),
-              ),
-            ),
-
-            // 4. TITLE: FOLDER ICON + TEXT
-            title: Transform.translate(
-              offset: Offset(-12, 0), // Adjust this value as needed
-              child: Row(
-                children: [
-                  Icon(
-                    _isExpanded ? Icons.folder_open : Icons.folder,
+              // 3. CUSTOM ANIMATED ARROW (LEADING)
+              leading: SizedBox(
+                width: arrowSize,
+                height: arrowSize,
+                child: AnimatedRotation(
+                  // 0.0 = Right (0 deg), 0.25 = Bottom (90 deg)
+                  turns: _isExpanded ? 0.25 : 0.0,
+                  duration: const Duration(milliseconds: 200),
+                  curve: Curves.easeInOut,
+                  child: Icon(
+                    Icons.keyboard_arrow_right, // Standard tree arrow
+                    size: arrowSize,
                     color: isActive
                         ? theme.colorScheme.primary
-                        : Colors.amber[700],
-                    size: folderIconSize,
+                        : const Color(0xA49E9E9E),
                   ),
-                  const SizedBox(width: 8),
-                  Flexible(
-                    child: Text(
-                      widget.node.name,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: isActive
-                            ? theme.colorScheme.primary
-                            : theme.textTheme.bodyMedium?.color,
-                        fontWeight: isActive
-                            ? FontWeight.w600
-                            : FontWeight.normal,
-                        fontSize: 13,
+                ),
+              ),
+
+              // 4. TITLE: FOLDER ICON + TEXT
+              title: Transform.translate(
+                offset: Offset(-12, 0), // Adjust this value as needed
+                child: Row(
+                  children: [
+                    Icon(
+                      _isExpanded ? Icons.folder_open : Icons.folder,
+                      color: isActive
+                          ? theme.colorScheme.primary
+                          : Colors.amber[700],
+                      size: folderIconSize,
+                    ),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        widget.node.name,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: isActive
+                              ? theme.colorScheme.primary
+                              : theme.textTheme.bodyMedium?.color,
+                          fontWeight: isActive
+                              ? FontWeight.w600
+                              : FontWeight.normal,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              onExpansionChanged: (expanded) =>
+                  setState(() => _isExpanded = expanded),
+
+              // 5. CHILDREN WITH ALIGNED BORDER
+              children: [
+                Container(
+                  decoration: const BoxDecoration(
+                    border: Border(
+                      left: BorderSide(
+                        color: Color(0xCB5C5C5C),
+                        width: 0.5, // Line width
                       ),
                     ),
                   ),
-                ],
-              ),
-            ),
-
-            onExpansionChanged: (expanded) =>
-                setState(() => _isExpanded = expanded),
-
-            // 5. CHILDREN WITH ALIGNED BORDER
-            children: [
-              Container(
-                decoration: const BoxDecoration(
-                  border: Border(
-                    left: BorderSide(
-                      color: Color(0xCB5C5C5C),
-                      width: 0.5, // Line width
-                    ),
+                  // Apply the calculated margin to align line with arrow center
+                  margin: EdgeInsets.only(left: lineMargin),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children:
+                        widget.node.children?.map((child) {
+                          return FileNodeTile(
+                            node: child,
+                            isRoot:
+                                false, // Ensure children calculate padding correctly
+                            indentLevel: widget.indentLevel + 1,
+                          );
+                        }).toList() ??
+                        [],
                   ),
                 ),
-                // Apply the calculated margin to align line with arrow center
-                margin: EdgeInsets.only(left: lineMargin),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children:
-                      widget.node.children?.map((child) {
-                        return FileNodeTile(
-                          node: child,
-                          isRoot:
-                              false, // Ensure children calculate padding correctly
-                          indentLevel: widget.indentLevel + 1,
-                        );
-                      }).toList() ??
-                      [],
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       );
@@ -233,49 +188,99 @@ class _FileNodeTileState extends ConsumerState<FileNodeTile> {
           arrowSize +
           0; // Adjust '0' to match gap in Row above
 
-      header = Padding(
-        padding: .only(left: fileIndent - 16),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(4),
-          onTap: () =>
-              ref.read(activeReqProvider.notifier).setActiveNode(widget.node),
-          child: Ink(
-            padding: .symmetric(horizontal: 16, vertical: 4),
-            decoration: BoxDecoration(
-              color: isActive
-                  ? theme.colorScheme.secondary.withValues(alpha: 0.1)
-                  : null,
-              borderRadius: BorderRadius.circular(4),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.data_object,
-                  size: folderIconSize, // Match folder icon size
-                  color: isActive
-                      ? theme.colorScheme.primary
-                      : Colors.blueGrey[300],
-                ),
-                const SizedBox(width: 8),
-                Flexible(
-                  child: Text(
-                    widget.node.name,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: isActive
-                          ? theme.colorScheme.primary
-                          : theme.textTheme.bodyMedium?.color,
-                      fontSize: 13,
+      return _contextMenuWrapper(
+        isDirectory: false,
+        child: Padding(
+          padding: .only(left: fileIndent - 16),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(4),
+            onTap: () =>
+                ref.read(activeReqProvider.notifier).setActiveNode(widget.node),
+            child: Ink(
+              padding: .symmetric(horizontal: 16, vertical: 4),
+              decoration: BoxDecoration(
+                color: isActive
+                    ? theme.colorScheme.secondary.withValues(alpha: 0.1)
+                    : null,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.data_object,
+                    size: folderIconSize, // Match folder icon size
+                    color: isActive
+                        ? theme.colorScheme.primary
+                        : Colors.blueGrey[300],
+                  ),
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: Text(
+                      widget.node.name,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: isActive
+                            ? theme.colorScheme.primary
+                            : theme.textTheme.bodyMedium?.color,
+                        fontSize: 13,
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
       );
     }
+  }
 
+  @override
+  Widget build(BuildContext context) {
+    final content = _buildContent();
+    return _buildDragWrapper(content);
+  }
+
+  Widget _contextMenuWrapper({required Widget child, bool isDirectory = true}) {
+    return ContextMenuWidget(
+      menuProvider: (_) {
+        return getMenuProvider(
+          ref: ref,
+          context: context,
+          node: widget.node,
+          isDirectory: isDirectory,
+        );
+      },
+      child: child,
+    );
+  }
+
+  // Widget _fileContextMenuWrapper(Widget child) {
+  //   return ContextMenuWidget(
+  //     menuProvider: (_) {
+  //       return Menu(
+  //         children: [
+  //           MenuAction(
+  //             title: 'Delete',
+  //             callback: () {
+  //               ref.read(fileTreeProvider.notifier).deleteNode(widget.node);
+  //             },
+  //           ),
+  //           MenuAction(
+  //             title: 'Duplicate',
+  //             callback: () {
+  //               ref.read(fileTreeProvider.notifier).duplicateNode(widget.node);
+  //             },
+  //           ),
+  //         ],
+  //       );
+  //     },
+  //     child: child,
+  //   );
+  // }
+
+  Widget _buildDragWrapper(Widget child) {
+    final theme = Theme.of(context);
     // --- 2. DRAGGABLE WRAPPER ---
     // We wrap the header in Draggable.
     // Using LongPressDraggable prevents accidental drags when clicking to expand.
@@ -312,7 +317,7 @@ class _FileNodeTileState extends ConsumerState<FileNodeTile> {
       ),
       onDragStarted: () => setState(() => _isDragging = true),
       onDragEnd: (_) => setState(() => _isDragging = false),
-      child: Opacity(opacity: _isDragging ? 0.4 : 1.0, child: header),
+      child: Opacity(opacity: _isDragging ? 0.4 : 1.0, child: child),
     );
 
     // --- 3. DROP TARGET WITH IMPROVED LOGIC ---

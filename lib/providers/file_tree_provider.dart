@@ -14,7 +14,7 @@ final fileTreeProvider =
 class FileTreeNotifier extends AsyncNotifier<List<FileNode>> {
   String? _loadedCollectionPath;
 
-  String get _collectionPath => _loadedCollectionPath ?? '';
+  String get collectionPath => _loadedCollectionPath ?? '';
 
   static const _ignoredFiles = {
     'folder.json',
@@ -120,7 +120,7 @@ class FileTreeNotifier extends AsyncNotifier<List<FileNode>> {
 
     // 2. DETERMINE CONFIG FILE:
     // If we are at the root, use 'collection.json'. If inside a folder, use 'folder.json'.
-    final isRoot = parentPath == _collectionPath;
+    final isRoot = parentPath == collectionPath;
     final configFileName = isRoot ? 'collection.json' : 'folder.json';
     final configFile = File(p.join(parentPath, configFileName));
 
@@ -238,7 +238,7 @@ class FileTreeNotifier extends AsyncNotifier<List<FileNode>> {
     required DropSlot slot,
   }) async {
     // A. Read existing config
-    final isRoot = dirPath == _collectionPath;
+    final isRoot = dirPath == collectionPath;
     final configFile = File(
       p.join(dirPath, isRoot ? 'collection.json' : 'folder.json'),
     );
@@ -303,13 +303,13 @@ class FileTreeNotifier extends AsyncNotifier<List<FileNode>> {
 
   // --- Actions ---
   Future<void> createCollection(String name) async {
-    if (_collectionPath.isEmpty) return;
-    await createFolder(_collectionPath, name);
+    if (collectionPath.isEmpty) return;
+    await createFolder(collectionPath, name);
   }
 
   // ... (Your existing createFolder, createRequest, moveNode methods go here)
   Future<void> createFolder(String? parentPath, String folderName) async {
-    final newPath = p.join(parentPath ?? _collectionPath, folderName);
+    final newPath = p.join(parentPath ?? collectionPath, folderName);
     await Directory(newPath).create();
     // Create the "Shadow Config" file
     await File(
@@ -320,13 +320,22 @@ class FileTreeNotifier extends AsyncNotifier<List<FileNode>> {
 
   Future<void> createRequest(String? parentPath, String fileName) async {
     final safeName = fileName.endsWith('.json') ? fileName : '$fileName.json';
-    final newPath = p.join(parentPath ?? _collectionPath, safeName);
+    final newPath = p.join(parentPath ?? collectionPath, safeName);
     await File(newPath).writeAsString('{"method": "GET", "url": ""}');
     ref
         .read(activeReqProvider.notifier)
         .setActiveNode(
           FileNode(path: newPath, name: safeName, type: NodeType.request),
         );
+    ref.invalidateSelf();
+  }
+
+  Future<void> deleteNode(FileNode node) async {
+    if (node.isDirectory) {
+      await Directory(node.path).delete(recursive: true);
+    } else {
+      await File(node.path).delete();
+    }
     ref.invalidateSelf();
   }
 
@@ -347,7 +356,11 @@ class FileTreeNotifier extends AsyncNotifier<List<FileNode>> {
     ref.invalidateSelf();
   }
 
-  Future<void> copyNode(String sourcePath, String targetParentPath) async {
+  Future<void> duplicateNode(FileNode node) async {
+    await copyTo(node.path, p.dirname(node.path));
+  }
+
+  Future<void> copyTo(String sourcePath, String targetParentPath) async {
     var fileName = p.basename(sourcePath);
     // Handle duplicate names (e.g., "login_copy.json")
     final nameWithoutExt = p.basenameWithoutExtension(sourcePath);
@@ -357,10 +370,20 @@ class FileTreeNotifier extends AsyncNotifier<List<FileNode>> {
     final destination = p.join(targetParentPath, fileName);
 
     if (await FileSystemEntity.isDirectory(sourcePath)) {
-      // Copying folders recursively is complex,
-      // simple approach: create new folder and copy contents manually (omitted for brevity)
-      // For this demo, let's just create the folder
       await Directory(destination).create();
+
+      /// Recursively copy contents
+      final sourceDir = Directory(sourcePath);
+      await for (var entity in sourceDir.list(recursive: true)) {
+        final relativePath = p.relative(entity.path, from: sourcePath);
+        final newPath = p.join(destination, relativePath);
+        if (entity is Directory) {
+          await Directory(newPath).create(recursive: true);
+        } else if (entity is File) {
+          await File(newPath).create(recursive: true);
+          await entity.copy(newPath);
+        }
+      }
     } else {
       await File(sourcePath).copy(destination);
     }
