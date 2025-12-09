@@ -52,7 +52,13 @@ class FileExplorerView extends ConsumerWidget {
               // 2. The List of Files
               SliverList(
                 delegate: SliverChildBuilderDelegate(
-                  (context, index) => FileNodeTile(node: nodes[index]),
+                  (context, index) => FocusTraversalGroup(
+                    policy: ReadingOrderTraversalPolicy(),
+                    child: FileNodeTile(
+                      node: nodes[index],
+                      isFirstNode: index == 0,
+                    ),
+                  ),
                   childCount: nodes.length,
                 ),
               ),
@@ -141,6 +147,7 @@ class _FileNodeTileState extends ConsumerState<FileNodeDragWrapper> {
 
   @override
   Widget build(BuildContext context) {
+    // return widget.child;
     return _buildDragWrapper(widget.child);
   }
 

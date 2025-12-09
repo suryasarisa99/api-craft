@@ -11,19 +11,17 @@ import 'package:super_context_menu/super_context_menu.dart';
 import 'package:suryaicons/bulk_rounded.dart';
 import 'package:suryaicons/suryaicons.dart';
 
-// Assuming you have a node class, defining a dummy one for context
-// import 'package:your_project/file_node.dart';
-
 class FileNodeTile extends ConsumerStatefulWidget {
   final FileNode node; // Your Node class
   final int depth; // Current indentation level (0 for root)
   final VoidCallback? onRefresh; // Optional callback
-
+  final bool isFirstNode;
   const FileNodeTile({
     super.key,
     required this.node,
     this.depth = 0,
     this.onRefresh,
+    this.isFirstNode = false,
   });
 
   @override
@@ -56,6 +54,7 @@ class _FileTreeTileState extends ConsumerState<FileNodeTile>
   late Animation<double> _heightFactor;
   // expand is about for active and all its parent directories
   late bool _isExpanded = false;
+  late final FocusNode _focusNode = FocusNode();
   // selected for to select multiple files
 
   // Configuration Constants
@@ -97,6 +96,7 @@ class _FileTreeTileState extends ConsumerState<FileNodeTile>
   @override
   void dispose() {
     _controller.dispose();
+    _focusNode.dispose();
     super.dispose();
   }
 
@@ -134,10 +134,81 @@ class _FileTreeTileState extends ConsumerState<FileNodeTile>
     }
   }
 
+  void handleToggleExpand() {
+    if (widget.node.isDirectory) {
+      setState(() {
+        _isExpanded = !_isExpanded;
+        if (_isExpanded) {
+          _controller.forward();
+        } else {
+          _controller.reverse().then((_) {
+            if (!mounted) return;
+            setState(() {});
+          });
+        }
+      });
+    }
+  }
+
+  Widget focusWrapper({required Widget child, required bool hasFocus}) {
+    debugPrint(
+      "is descendats focusable: $_isExpanded for widget: ${widget.node.name}",
+    );
+    return Focus(
+      focusNode: _focusNode,
+      autofocus: hasFocus,
+      descendantsAreFocusable: _isExpanded,
+      descendantsAreTraversable: _isExpanded,
+      canRequestFocus: true,
+      onKeyEvent: (FocusNode node, KeyEvent keyEvent) {
+        if (keyEvent is KeyUpEvent) return KeyEventResult.ignored;
+        // only allows keyDown and keyRepeat events.
+        final k = keyEvent.logicalKey;
+
+        debugPrint('onKey: ${k.debugName} for ${widget.node.name}');
+
+        if (k == LogicalKeyboardKey.arrowDown) {
+          FocusScope.of(context).nextFocus();
+          return KeyEventResult.handled;
+        }
+        if (k == LogicalKeyboardKey.arrowUp) {
+          FocusScope.of(context).previousFocus();
+          return KeyEventResult.handled;
+        }
+        if (k == LogicalKeyboardKey.arrowRight) {
+          if (widget.node.isDirectory && !_isExpanded) {
+            handleToggleExpand();
+          } else {
+            FocusScope.of(context).nextFocus();
+          }
+          return KeyEventResult.handled;
+        }
+        if (k == LogicalKeyboardKey.arrowLeft) {
+          if (widget.node.isDirectory && _isExpanded) {
+            handleToggleExpand();
+            // when folder closes rebuild happens it causes focus to next child
+            // here the next child is folder children at that time the animation is not yet completed
+            // so focus goes to children and folder colapses.
+            // so to get back the focus to folder after a small delay
+            Future.delayed(const Duration(milliseconds: 10), () {
+              _focusNode.requestFocus();
+            });
+          } else {
+            FocusScope.of(context).previousFocus();
+          }
+          return KeyEventResult.handled;
+        }
+
+        return KeyEventResult.ignored;
+      },
+      child: child,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-
+    final cs = theme.colorScheme;
     // --- SELECTION LOGIC ---
     // Change this to check against a Set/List for multi-selection
     // bool isSelected = ref.watch(selectedNodesProvider).contains(widget.node.path);
@@ -146,15 +217,16 @@ class _FileTreeTileState extends ConsumerState<FileNodeTile>
     final selected = ref.watch(selectedNodesProvider);
     final isSelected = selected.contains(widget.node.path);
     final isActive = activeNode?.path == widget.node.path;
+    final hasFocus = (activeNode == null && widget.isFirstNode) || isActive;
 
     final Color textColor = isActive
-        ? theme.colorScheme.primary
+        ? cs.primary
         : theme.textTheme.bodyMedium?.color ?? Colors.grey;
 
     final Color? backgroundColor = isActive
-        ? theme.colorScheme.secondary.withValues(alpha: 0.15)
+        ? cs.secondary.withValues(alpha: 0.15)
         : isSelected
-        ? theme.colorScheme.secondary.withValues(alpha: 0.10)
+        ? cs.secondary.withValues(alpha: 0.10)
         : null; // Add Hover logic here using InkWell's hoverColor
     return FileNodeDragWrapper(
       node: widget.node,
@@ -172,64 +244,85 @@ class _FileTreeTileState extends ConsumerState<FileNodeTile>
                   Colors.transparent, // Background spans full width
               child: _contextMenuWrapper(
                 isDirectory: widget.node.isDirectory,
-                child: InkWell(
-                  onTap: _handleTap,
-                  // Add onLongPress for Context Menu
-                  // Add keyboard listener for Ctrl/Shift clicks
-                  hoverColor: theme.colorScheme.onSurface.withValues(
-                    alpha: 0.05,
-                  ),
-                  child: Row(
-                    children: [
-                      SizedBox(width: _kIndentation),
-                      // A. ARROW (Only for directories)
-                      if (widget.node.isDirectory)
-                        RotationTransition(
-                          turns: _iconTurns,
-                          child: SizedBox(
-                            width: _kIconSize + 2,
-                            child: Icon(
-                              Icons.keyboard_arrow_right,
-                              size: _kIconSize + 2,
-                              color: textColor.withValues(alpha: 0.3),
-                            ),
+                child: focusWrapper(
+                  hasFocus: hasFocus,
+                  child: Builder(
+                    builder: (context) {
+                      final isFocused = Focus.of(context).hasFocus;
+                      return Ink(
+                        color: isFocused
+                            ? cs.primary.withValues(alpha: 0.08)
+                            : null,
+                        child: InkWell(
+                          // autofocus: hasFocus,
+                          // focusNode: _focusNode,
+                          canRequestFocus: false,
+                          autofocus: false,
+                          onTap: _handleTap,
+                          onFocusChange: (f) {
+                            debugPrint(
+                              "InkWell Focus changed: $f,node: ${widget.node.name}",
+                            );
+                          },
+                          hoverColor: theme.colorScheme.onSurface.withValues(
+                            alpha: 0.05,
                           ),
-                        )
-                      else
-                        const SizedBox(
-                          width: _kIconSize + 2,
-                        ), // Spacing for files
-                      const SizedBox(width: _kSpacingBetweenArrowAndIcon),
+                          child: Row(
+                            children: [
+                              SizedBox(width: _kIndentation),
+                              // A. ARROW (Only for directories)
+                              if (widget.node.isDirectory)
+                                RotationTransition(
+                                  turns: _iconTurns,
+                                  child: SizedBox(
+                                    width: _kIconSize + 2,
+                                    child: Icon(
+                                      Icons.keyboard_arrow_right,
+                                      size: _kIconSize + 2,
+                                      color: textColor.withValues(alpha: 0.3),
+                                    ),
+                                  ),
+                                )
+                              else
+                                const SizedBox(
+                                  width: _kIconSize + 2,
+                                ), // Spacing for files
+                              const SizedBox(
+                                width: _kSpacingBetweenArrowAndIcon,
+                              ),
 
-                      // B. FOLDER/FILE ICON
-                      if (widget.node.isDirectory)
-                        _isExpanded ? folderOpenIcon : folderIcon
-                      else
-                        Icon(
-                          Icons.data_object,
-                          size: _kFolderIconSize,
-                          color: widget.node.isDirectory
-                              ? Colors.amber[700]
-                              : Colors.blueGrey,
-                        ),
+                              // B. FOLDER/FILE ICON
+                              if (widget.node.isDirectory)
+                                _isExpanded ? folderOpenIcon : folderIcon
+                              else
+                                Icon(
+                                  Icons.data_object,
+                                  size: _kFolderIconSize,
+                                  color: widget.node.isDirectory
+                                      ? Colors.amber[700]
+                                      : Colors.blueGrey,
+                                ),
+                              const SizedBox(width: 8),
 
-                      const SizedBox(width: 8),
-
-                      // C. LABEL
-                      Expanded(
-                        child: Text(
-                          widget.node.name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: textColor,
-                            fontWeight: FontWeight.normal,
-                            height: 1.0, // Tight text height
+                              // C. LABEL
+                              Expanded(
+                                child: Text(
+                                  widget.node.name,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: textColor,
+                                    fontWeight: FontWeight.normal,
+                                    height: 1.0, // Tight text height
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                      ),
-                    ],
+                      );
+                    },
                   ),
                 ),
               ),
@@ -239,41 +332,40 @@ class _FileTreeTileState extends ConsumerState<FileNodeTile>
           // --- 2. THE CHILDREN (Animated Expansion) ---
           // Only build children tree if expanded to save resources (optional optimization)
           if (widget.node.isDirectory)
-            Stack(
-              children: [
-                SizeTransition(
-                  sizeFactor: _heightFactor,
-                  axisAlignment: -1.0, // Expands from top down
-                  child: Container(
-                    // The Vertical Guide Line Logic
-                    decoration: BoxDecoration(
-                      // color: Colors.red,
-                      border: Border(
-                        left: BorderSide(
-                          color: theme.dividerColor.withValues(alpha: 0.2),
-                          width: 1.0,
-                        ),
+            ExcludeFocus(
+              excluding: !_isExpanded,
+              child: SizeTransition(
+                sizeFactor: _heightFactor,
+                axisAlignment: -1.0, // Expands from top down
+                child: Container(
+                  // The Vertical Guide Line Logic
+                  decoration: BoxDecoration(
+                    // color: Colors.red,
+                    border: Border(
+                      left: BorderSide(
+                        color: theme.dividerColor.withValues(alpha: 0.2),
+                        width: 1.0,
                       ),
                     ),
-                    margin: EdgeInsets.only(
-                      left: (_kIndentation) + (_kIconSize / 2),
-                    ),
-                    child: Column(
-                      mainAxisSize: .min,
-                      children:
-                          widget.node.children?.map((child) {
-                            return FileNodeTile(
-                              node: child,
-                              depth:
-                                  widget.depth +
-                                  1, // Don't rely on 'indent' padding, pass depth
-                            );
-                          }).toList() ??
-                          [],
-                    ),
+                  ),
+                  margin: EdgeInsets.only(
+                    left: (_kIndentation) + (_kIconSize / 2),
+                  ),
+                  child: Column(
+                    mainAxisSize: .min,
+                    children:
+                        widget.node.children?.map((child) {
+                          return FileNodeTile(
+                            node: child,
+                            depth:
+                                widget.depth +
+                                1, // Don't rely on 'indent' padding, pass depth
+                          );
+                        }).toList() ??
+                        [],
                   ),
                 ),
-              ],
+              ),
             ),
         ],
       ),
