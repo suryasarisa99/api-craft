@@ -1,5 +1,5 @@
 import 'package:api_craft/providers/providers.dart';
-import 'package:api_craft/screens/home/sidebar.dart';
+import 'package:api_craft/screens/home/sidebar/sidebar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
 
