@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:api_craft/models/models.dart';
 import 'package:api_craft/providers/providers.dart';
 import 'package:api_craft/screens/home/sidebar/context_menu.dart';
+import 'package:api_craft/screens/home/sidebar/sidebar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -58,7 +59,7 @@ class _FileTreeTileState extends ConsumerState<FileNodeTile>
   // selected for to select multiple files
 
   // Configuration Constants
-  static const double _kTileHeight = 26.0;
+  late final double _kTileHeight = widget.node.isDirectory ? 32.0 : 28.0;
   static const double _kIndentation = 6.0;
   static const double _kIconSize = 14.0;
   static const double _kFolderIconSize = 17.0;
@@ -155,121 +156,127 @@ class _FileTreeTileState extends ConsumerState<FileNodeTile>
         : isSelected
         ? theme.colorScheme.secondary.withValues(alpha: 0.10)
         : null; // Add Hover logic here using InkWell's hoverColor
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // --- 1. THE HEADER (Full Width Background) ---
-        SizedBox(
-          height: _kTileHeight,
-          child: Material(
-            color:
-                backgroundColor ??
-                Colors.transparent, // Background spans full width
-            child: _contextMenuWrapper(
-              isDirectory: widget.node.isDirectory,
-              child: InkWell(
-                onTap: _handleTap,
-                // Add onLongPress for Context Menu
-                // Add keyboard listener for Ctrl/Shift clicks
-                hoverColor: theme.colorScheme.onSurface.withValues(alpha: 0.05),
-                child: Row(
-                  children: [
-                    SizedBox(width: _kIndentation),
-                    // A. ARROW (Only for directories)
-                    if (widget.node.isDirectory)
-                      RotationTransition(
-                        turns: _iconTurns,
-                        child: SizedBox(
+    return FileNodeDragWrapper(
+      node: widget.node,
+      isOpen: _isExpanded,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // --- 1. THE HEADER (Full Width Background) ---
+          SizedBox(
+            height: _kTileHeight,
+            child: Material(
+              color:
+                  backgroundColor ??
+                  Colors.transparent, // Background spans full width
+              child: _contextMenuWrapper(
+                isDirectory: widget.node.isDirectory,
+                child: InkWell(
+                  onTap: _handleTap,
+                  // Add onLongPress for Context Menu
+                  // Add keyboard listener for Ctrl/Shift clicks
+                  hoverColor: theme.colorScheme.onSurface.withValues(
+                    alpha: 0.05,
+                  ),
+                  child: Row(
+                    children: [
+                      SizedBox(width: _kIndentation),
+                      // A. ARROW (Only for directories)
+                      if (widget.node.isDirectory)
+                        RotationTransition(
+                          turns: _iconTurns,
+                          child: SizedBox(
+                            width: _kIconSize + 2,
+                            child: Icon(
+                              Icons.keyboard_arrow_right,
+                              size: _kIconSize + 2,
+                              color: textColor.withValues(alpha: 0.3),
+                            ),
+                          ),
+                        )
+                      else
+                        const SizedBox(
                           width: _kIconSize + 2,
-                          child: Icon(
-                            Icons.keyboard_arrow_right,
-                            size: _kIconSize + 2,
-                            color: textColor.withValues(alpha: 0.3),
+                        ), // Spacing for files
+                      const SizedBox(width: _kSpacingBetweenArrowAndIcon),
+
+                      // B. FOLDER/FILE ICON
+                      if (widget.node.isDirectory)
+                        _isExpanded ? folderOpenIcon : folderIcon
+                      else
+                        Icon(
+                          Icons.data_object,
+                          size: _kFolderIconSize,
+                          color: widget.node.isDirectory
+                              ? Colors.amber[700]
+                              : Colors.blueGrey,
+                        ),
+
+                      const SizedBox(width: 8),
+
+                      // C. LABEL
+                      Expanded(
+                        child: Text(
+                          widget.node.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: textColor,
+                            fontWeight: FontWeight.normal,
+                            height: 1.0, // Tight text height
                           ),
                         ),
-                      )
-                    else
-                      const SizedBox(
-                        width: _kIconSize + 2,
-                      ), // Spacing for files
-                    const SizedBox(width: _kSpacingBetweenArrowAndIcon),
-
-                    // B. FOLDER/FILE ICON
-                    if (widget.node.isDirectory)
-                      _isExpanded ? folderOpenIcon : folderIcon
-                    else
-                      Icon(
-                        Icons.data_object,
-                        size: _kFolderIconSize,
-                        color: widget.node.isDirectory
-                            ? Colors.amber[700]
-                            : Colors.blueGrey,
                       ),
-
-                    const SizedBox(width: 8),
-
-                    // C. LABEL
-                    Expanded(
-                      child: Text(
-                        widget.node.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: textColor,
-                          fontWeight: FontWeight.normal,
-                          height: 1.0, // Tight text height
-                        ),
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
-        ),
 
-        // --- 2. THE CHILDREN (Animated Expansion) ---
-        // Only build children tree if expanded to save resources (optional optimization)
-        if (widget.node.isDirectory)
-          Stack(
-            children: [
-              SizeTransition(
-                sizeFactor: _heightFactor,
-                axisAlignment: -1.0, // Expands from top down
-                child: Container(
-                  // The Vertical Guide Line Logic
-                  decoration: BoxDecoration(
-                    // color: Colors.red,
-                    border: Border(
-                      left: BorderSide(
-                        color: theme.dividerColor.withValues(alpha: 0.2),
-                        width: 1.0,
+          // --- 2. THE CHILDREN (Animated Expansion) ---
+          // Only build children tree if expanded to save resources (optional optimization)
+          if (widget.node.isDirectory)
+            Stack(
+              children: [
+                SizeTransition(
+                  sizeFactor: _heightFactor,
+                  axisAlignment: -1.0, // Expands from top down
+                  child: Container(
+                    // The Vertical Guide Line Logic
+                    decoration: BoxDecoration(
+                      // color: Colors.red,
+                      border: Border(
+                        left: BorderSide(
+                          color: theme.dividerColor.withValues(alpha: 0.2),
+                          width: 1.0,
+                        ),
                       ),
                     ),
-                  ),
-                  margin: EdgeInsets.only(
-                    left: (_kIndentation) + (_kIconSize / 2),
-                  ),
-                  child: Column(
-                    mainAxisSize: .min,
-                    children:
-                        widget.node.children?.map((child) {
-                          return FileNodeTile(
-                            node: child,
-                            depth:
-                                widget.depth +
-                                1, // Don't rely on 'indent' padding, pass depth
-                          );
-                        }).toList() ??
-                        [],
+                    margin: EdgeInsets.only(
+                      left: (_kIndentation) + (_kIconSize / 2),
+                    ),
+                    child: Column(
+                      mainAxisSize: .min,
+                      children:
+                          widget.node.children?.map((child) {
+                            return FileNodeTile(
+                              node: child,
+                              depth:
+                                  widget.depth +
+                                  1, // Don't rely on 'indent' padding, pass depth
+                            );
+                          }).toList() ??
+                          [],
+                    ),
                   ),
                 ),
-              ),
-            ],
-          ),
-      ],
+              ],
+            ),
+        ],
+      ),
     );
   }
 
