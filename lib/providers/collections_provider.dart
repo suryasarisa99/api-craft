@@ -2,11 +2,8 @@ import 'package:api_craft/models/models.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:api_craft/providers/providers.dart';
-// providers/collection_provider.dart
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
-// 1. List of ALL Collections
 final collectionsProvider =
     AsyncNotifierProvider<CollectionsNotifier, List<CollectionModel>>(
       CollectionsNotifier.new,
@@ -15,7 +12,7 @@ final collectionsProvider =
 class CollectionsNotifier extends AsyncNotifier<List<CollectionModel>> {
   @override
   Future<List<CollectionModel>> build() async {
-    final db = await ref.watch(databaseProvider.future);
+    final db = await ref.watch(databaseProvider);
 
     // Fetch existing
     final maps = await db.query('collections');
@@ -41,7 +38,7 @@ class CollectionsNotifier extends AsyncNotifier<List<CollectionModel>> {
     CollectionType type = CollectionType.database,
     String? path,
   }) async {
-    final db = await ref.read(databaseProvider.future);
+    final db = await ref.read(databaseProvider);
     final newId = const Uuid().v4();
 
     final newCollection = CollectionModel(
@@ -61,4 +58,33 @@ class CollectionsNotifier extends AsyncNotifier<List<CollectionModel>> {
   }
 }
 
-// 2. The Selected Collection Logic
+/// use shared preferences to store collections instead of database
+
+// class CollectionsProvider extends Notifier<List<CollectionModel>> {
+//   static const _collectionsKey = 'collections';
+
+//   @override
+//   List<CollectionModel> build() {
+//     final prefs = loadCollections();
+//     if (prefs.isEmpty) {
+//       return [];
+//     }
+//     return prefs;
+//   }
+
+//   Future<void> addCollection(CollectionModel collection) async {
+//     final prefs = await SharedPreferences.getInstance();
+//     final collectionsData = prefs.getStringList(_collectionsKey) ?? [];
+//     collectionsData.add(jsonEncode(collection.toMap()));
+//     await prefs.setStringList(_collectionsKey, collectionsData);
+//     state = [...state, collection];
+//   }
+
+//   List<CollectionModel> loadCollections() {
+//     return prefs.getStringList(_collectionsKey)?.map((data) {
+//           final map = jsonDecode(data);
+//           return CollectionModel.fromMap(map);
+//         }).toList() ??
+//         [];
+//   }
+// }

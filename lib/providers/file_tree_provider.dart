@@ -16,7 +16,7 @@ final fileTreeProvider = AsyncNotifierProvider<FileTreeNotifier, List<Node>>(
 );
 
 class FileTreeNotifier extends AsyncNotifier<List<Node>> {
-  Future<StorageRepository> get _repo => ref.read(repositoryProvider.future);
+  StorageRepository get _repo => ref.read(repositoryProvider);
   ActiveReqNotifier get _activeReqNotifier =>
       ref.read(activeReqProvider.notifier);
 
@@ -24,7 +24,7 @@ class FileTreeNotifier extends AsyncNotifier<List<Node>> {
   Future<List<Node>> build() async {
     // 1. Await the Repository (This links the loading states)
     // If repo is loading, this provider will also be in loading state.
-    final repo = await ref.watch(repositoryProvider.future);
+    final repo = ref.watch(repositoryProvider);
 
     // return _loadRecursive(repo, null);
     final nodes = await _loadRecursiveLinking(repo, null, null);

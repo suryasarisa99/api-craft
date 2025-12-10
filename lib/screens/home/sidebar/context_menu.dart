@@ -52,18 +52,18 @@ List<MenuElement> _getCommonMenuActions(WidgetRef ref, Node node) {
 }
 
 // requires parent node
-Future<List<MenuElement>> _getFolderSpecificMenuActions({
+List<MenuElement> _getFolderSpecificMenuActions({
   required WidgetRef ref,
   required BuildContext context,
   required Node? node,
   bool isRoot = false,
-}) async {
+}) {
   // final String? parentId = isRoot
   //     ? (await ref.read(selectedCollectionProvider.future))?.id
   //     : node?.id;
   final String? parentId = isRoot ? null : node?.id;
   debugPrint('Parent ID for context menu: $parentId, isRoot: $isRoot');
-  final collectionId = (await ref.read(selectedCollectionProvider.future))?.id;
+  final collectionId = (ref.read(selectedCollectionProvider))?.id;
   debugPrint('Collection ID for context menu: $collectionId');
   return [
     MenuSeparator(),
@@ -103,8 +103,8 @@ void showFolderConfigDialog({
   required BuildContext context,
   required WidgetRef ref,
   required FolderNode node,
-}) async {
-  final repo = await ref.read(repositoryProvider.future);
+}) {
+  final repo = ref.read(repositoryProvider);
   if (!context.mounted) return;
 
   showDialog(

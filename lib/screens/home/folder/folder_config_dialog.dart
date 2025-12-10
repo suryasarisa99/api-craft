@@ -24,13 +24,20 @@ class _FolderConfigDialogState extends ConsumerState<FolderConfigDialog>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   late FolderEditorController _controller;
-  late Future<StorageRepository> _repoFuture;
+  late StorageRepository _repo;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
-    _repoFuture = ref.read(repositoryProvider.future);
+    _repo = ref.read(repositoryProvider);
+    _controller = FolderEditorController(
+      node: widget.node,
+      repo: _repo,
+      onSaveToRepo: (updatedNode) {
+        widget.onSave(updatedNode);
+      },
+    );
   }
 
   @override
@@ -44,29 +51,7 @@ class _FolderConfigDialogState extends ConsumerState<FolderConfigDialog>
     return Dialog(
       insetPadding: const EdgeInsets.all(24),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      child: SizedBox(
-        width: 900,
-        height: 700,
-        child: FutureBuilder(
-          future: _repoFuture,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            if (snapshot.hasError) {
-              return Center(child: Text('Error: ${snapshot.error}'));
-            }
-            _controller = FolderEditorController(
-              node: widget.node,
-              repo: snapshot.data!,
-              onSaveToRepo: (updatedNode) {
-                widget.onSave(updatedNode);
-              },
-            );
-            return _buildDialog();
-          },
-        ),
-      ),
+      child: SizedBox(width: 900, height: 700, child: _buildDialog()),
     );
   }
 

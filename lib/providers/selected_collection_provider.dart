@@ -1,40 +1,41 @@
+import 'dart:convert';
+
 import 'package:api_craft/globals.dart';
 import 'package:api_craft/models/models.dart';
-import 'package:api_craft/providers/providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final selectedCollectionProvider =
-    AsyncNotifierProvider<SelectedCollectionNotifier, CollectionModel?>(
+    NotifierProvider<SelectedCollectionNotifier, CollectionModel?>(
       SelectedCollectionNotifier.new,
     );
 
-class SelectedCollectionNotifier extends AsyncNotifier<CollectionModel?> {
-  static const _prefKey = 'selected_collection_id';
+class SelectedCollectionNotifier extends Notifier<CollectionModel?> {
+  static const _prefKey = 'selected_collection';
 
   @override
-  Future<CollectionModel?> build() async {
-    final collections = await ref.watch(collectionsProvider.future);
-    if (collections.isEmpty) return null;
-
-    final savedId = prefs.getString(_prefKey);
-
-    // Try to find the saved ID in the list
-    if (savedId != null) {
-      try {
-        return collections.firstWhere((c) => c.id == savedId);
-      } catch (e) {
-        // Saved ID not found (maybe deleted), fall through to default
-      }
-    }
-
-    // Default: Pick the first one
-    final first = collections.first;
-    await prefs.setString(_prefKey, first.id);
-    return first;
+  CollectionModel? build() {
+    final collection = prefs.getString(_prefKey);
+    if (collection == null) return null;
+    final decoded = CollectionModel.fromMap(
+      Map<String, dynamic>.from(jsonDecode(collection)),
+    );
+    return decoded;
   }
 
   Future<void> select(CollectionModel collection) async {
-    await prefs.setString(_prefKey, collection.id);
-    state = AsyncData(collection);
+    await prefs.setString(_prefKey, jsonEncode(collection.toMap()));
+    state = collection;
   }
 }
+
+/*
+- get collections (async)
+- get saved collection from prefs
+- 
+*/
+/*
+- get saved collection from prefs
+  - it is empty return null
+- check first time app launched
+  - if yes, db automatically creates default collection.
+  */

@@ -1,5 +1,4 @@
-import 'dart:convert';
-
+import 'package:api_craft/globals.dart';
 import 'package:api_craft/models/models.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:sqflite/sqflite.dart';
@@ -7,14 +6,26 @@ import 'package:uuid/uuid.dart';
 import 'storage_repository.dart';
 
 class DbStorageRepository implements StorageRepository {
-  final Database db;
+  final Future<Database> _db;
   final String collectionId; // <--- The Filter
   final Uuid _uuid = const Uuid();
 
-  DbStorageRepository(this.db, this.collectionId);
+  DbStorageRepository(this._db, String? _collectionId)
+    : collectionId = _collectionId ?? kDefaultCollection.id {
+    if (_collectionId == null) {
+      // Ensure default collection exists
+      createDefaultCollection();
+    }
+  }
+
+  Future<void> createDefaultCollection() async {
+    final db = await _db;
+    await db.insert('collections', kDefaultCollection.toMap());
+  }
 
   @override
   Future<List<Node>> getContents(String? parentId) async {
+    final db = await _db;
     // If parentId is null, we look for root items (parent_id IS NULL)
     // AND strictly filter by collection_id
     final whereClause = parentId == null
@@ -38,6 +49,7 @@ class DbStorageRepository implements StorageRepository {
 
   @override
   Future<Map<String, dynamic>> getNodeDetails(String id) async {
+    final db = await _db;
     final res = await db.query(
       'nodes',
       columns: [
@@ -56,6 +68,7 @@ class DbStorageRepository implements StorageRepository {
 
   @override
   Future<void> updateNode(Node node) async {
+    final db = await _db;
     await db.update(
       'nodes',
       node.toMap(),
@@ -70,6 +83,7 @@ class DbStorageRepository implements StorageRepository {
     required String name,
     required NodeType type,
   }) async {
+    final db = await _db;
     final newId = _uuid.v4();
     debugPrint('Creating item in collection $collectionId with ID $newId');
 
@@ -95,6 +109,7 @@ class DbStorageRepository implements StorageRepository {
 
   @override
   Future<void> deleteItem(String id) async {
+    final db = await _db;
     // Recursive delete logic needs to happen here or via Cascade in DB schema
     // Since we used ON DELETE CASCADE in creation, deleting the item is enough!
     await db.delete(
@@ -106,6 +121,7 @@ class DbStorageRepository implements StorageRepository {
 
   @override
   Future<String?> renameItem(String id, String newName) async {
+    final db = await _db;
     await db.update(
       'nodes',
       {'name': newName},
@@ -117,6 +133,7 @@ class DbStorageRepository implements StorageRepository {
 
   @override
   Future<String?> moveItem(String id, String? newParentId) async {
+    final db = await _db;
     await db.update(
       'nodes',
       {'parent_id': newParentId},
@@ -129,6 +146,7 @@ class DbStorageRepository implements StorageRepository {
   // Other methods...
   @override
   Future<void> saveSortOrder(String? parentId, List<String> orderedIds) async {
+    final db = await _db;
     // In DB mode, we receive IDs. We update the integer column.
     final batch = db.batch();
     for (int i = 0; i < orderedIds.length; i++) {
@@ -144,6 +162,7 @@ class DbStorageRepository implements StorageRepository {
 
   @override
   Future<void> duplicateItem(String id) async {
+    final db = await _db;
     // 1. Fetch the original item to start the process
     final maps = await db.query(
       'nodes',
@@ -169,6 +188,7 @@ class DbStorageRepository implements StorageRepository {
     required String? targetParentId,
     String? nameOverride,
   }) async {
+    final db = await _db;
     // A. Fetch Source Data
     final maps = await db.query(
       'nodes',

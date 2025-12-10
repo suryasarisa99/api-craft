@@ -61,15 +61,11 @@ class _HomeTopBarState extends ConsumerState<HomeTopBar> {
     final selectedCollection = ref.watch(selectedCollectionProvider);
     return Row(
       children: [
-        selectedCollection.when(
-          data: (collection) => Text(
-            collection != null
-                ? 'Selected Collection: ${collection.name}'
-                : 'No Collection Selected',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          loading: () => const CircularProgressIndicator(),
-          error: (err, stack) => Text('Error: $err'),
+        Text(
+          selectedCollection != null
+              ? 'Selected Collection: ${selectedCollection.name}'
+              : 'No Collection Selected',
+          style: Theme.of(context).textTheme.titleMedium,
         ),
       ],
     );

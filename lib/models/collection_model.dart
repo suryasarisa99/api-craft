@@ -7,7 +7,7 @@ class CollectionModel {
   final CollectionType type;
   final String? path; // Only used if type == filesystem
 
-  CollectionModel({
+  const CollectionModel({
     required this.id,
     required this.name,
     required this.type,
