@@ -81,9 +81,9 @@ class _FileTreeTileState extends ConsumerState<FileNodeTile>
     _heightFactor = _controller.view;
 
     // Check if initially expanded via your Provider
-    final initiallyExpanded = ref
-        .read(activeReqProvider.notifier)
-        .isDirectoryOpen(widget.node.path);
+    final initiallyExpanded = widget.node.isDirectory
+        ? ref.read(activeReqProvider.notifier).isAncestor(widget.node)
+        : false;
     // final _isSelected = ref
     //     .read(selectedNodesProvider.notifier)
     //     .isSelected(widget.node.path);
@@ -108,7 +108,7 @@ class _FileTreeTileState extends ConsumerState<FileNodeTile>
       // setState(() {
       //   _isSelected = !_isSelected;
       // });
-      ref.read(selectedNodesProvider.notifier).toggle(widget.node.path);
+      ref.read(selectedNodesProvider.notifier).toggle(widget.node.id);
       return;
     }
 
@@ -151,9 +151,6 @@ class _FileTreeTileState extends ConsumerState<FileNodeTile>
   }
 
   Widget focusWrapper({required Widget child, required bool hasFocus}) {
-    debugPrint(
-      "is descendats focusable: $_isExpanded for widget: ${widget.node.name}",
-    );
     return Focus(
       focusNode: _focusNode,
       autofocus: hasFocus,
@@ -164,8 +161,6 @@ class _FileTreeTileState extends ConsumerState<FileNodeTile>
         if (keyEvent is KeyUpEvent) return KeyEventResult.ignored;
         // only allows keyDown and keyRepeat events.
         final k = keyEvent.logicalKey;
-
-        debugPrint('onKey: ${k.debugName} for ${widget.node.name}');
 
         if (k == LogicalKeyboardKey.arrowDown) {
           FocusScope.of(context).nextFocus();
@@ -215,8 +210,8 @@ class _FileTreeTileState extends ConsumerState<FileNodeTile>
     // For now, using your existing logic pattern:
     final activeNode = ref.watch(activeReqProvider);
     final selected = ref.watch(selectedNodesProvider);
-    final isSelected = selected.contains(widget.node.path);
-    final isActive = activeNode?.path == widget.node.path;
+    final isSelected = selected.contains(widget.node.id);
+    final isActive = activeNode?.id == widget.node.id;
     final hasFocus = (activeNode == null && widget.isFirstNode) || isActive;
 
     final Color textColor = isActive

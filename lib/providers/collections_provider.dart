@@ -1,50 +1,64 @@
-import 'dart:io';
 import 'package:api_craft/models/models.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:path/path.dart' as p;
 import 'package:api_craft/providers/providers.dart';
+// providers/collection_provider.dart
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:uuid/uuid.dart';
 
+// 1. List of ALL Collections
 final collectionsProvider =
-    AsyncNotifierProvider<CollectionsNotifier, List<FileNode>>(
+    AsyncNotifierProvider<CollectionsNotifier, List<CollectionModel>>(
       CollectionsNotifier.new,
     );
 
-class CollectionsNotifier extends AsyncNotifier<List<FileNode>> {
-  String? _loadedRootPath;
-
-  String get _root => _loadedRootPath ?? '';
+class CollectionsNotifier extends AsyncNotifier<List<CollectionModel>> {
   @override
-  Future<List<FileNode>> build() async {
-    _loadedRootPath = await ref.watch(rootPathProvider.future);
-    return _loadCollections();
+  Future<List<CollectionModel>> build() async {
+    final db = await ref.watch(databaseProvider.future);
+
+    // Fetch existing
+    final maps = await db.query('collections');
+    debugPrint('Collections found: ${maps.length}');
+
+    if (maps.isNotEmpty) {
+      return maps.map((e) => CollectionModel.fromMap(e)).toList();
+    } else {
+      // DEFAULT LOGIC: If empty, create default 'api_craft' DB collection
+      final defaultCollection = CollectionModel(
+        id: 'default_api_craft',
+        name: 'API Craft',
+        type: CollectionType.database,
+      );
+
+      await db.insert('collections', defaultCollection.toMap());
+      return [defaultCollection];
+    }
   }
 
-  Future<List<FileNode>> _loadCollections() async {
-    final dir = Directory(_root);
-    if (!await dir.exists()) {
-      return [];
-    }
+  Future<void> createCollection(
+    String name, {
+    CollectionType type = CollectionType.database,
+    String? path,
+  }) async {
+    final db = await ref.read(databaseProvider.future);
+    final newId = const Uuid().v4();
 
-    final List<FileSystemEntity> entities = await dir.list().toList();
-    final List<FileNode> collectionNodes = [];
+    final newCollection = CollectionModel(
+      id: newId,
+      name: name,
+      type: type,
+      path: path,
+    );
 
-    for (var entity in entities) {
-      final name = p.basename(entity.path);
+    await db.insert('collections', newCollection.toMap());
 
-      // Skip hidden files or specific configs if needed
-      if (name.startsWith('.')) continue;
+    // Refresh list
+    ref.invalidateSelf();
 
-      if (entity is Directory) {
-        collectionNodes.add(
-          FileNode(path: entity.path, name: name, type: NodeType.folder),
-        );
-      } else {
-        collectionNodes.add(
-          FileNode(path: entity.path, name: name, type: NodeType.request),
-        );
-      }
-    }
-
-    return collectionNodes;
+    // Auto-select the new collection?
+    ref.read(selectedCollectionProvider.notifier).select(newCollection);
   }
 }
+
+// 2. The Selected Collection Logic

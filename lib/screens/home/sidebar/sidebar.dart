@@ -195,10 +195,10 @@ class _FileNodeTileState extends ConsumerState<FileNodeDragWrapper> {
     // --- DROP TARGET ---
     return DragTarget<FileNode>(
       onWillAcceptWithDetails: (details) {
-        if (details.data.path == widget.node.path) return false;
+        if (details.data.id == widget.node.id) return false;
         // Prevent recursive drops (Parent into Child)
         if (widget.node.isDirectory &&
-            widget.node.path.startsWith(details.data.path)) {
+            widget.node.id.startsWith(details.data.id)) {
           return false;
         }
         return true;

@@ -22,6 +22,7 @@ FutureOr<Menu?> getMenuProvider({
           ref: ref,
           context: context,
           node: node,
+          isRoot: isRoot,
         )
       else
         ..._getFileSpecificMenuActions(ref: ref, context: context, node: node!),
@@ -56,7 +57,13 @@ Future<List<MenuElement>> _getFolderSpecificMenuActions({
   required FileNode? node,
   bool isRoot = false,
 }) async {
-  final FileNode? parentNode = isRoot ? null : node;
+  // final String? parentId = isRoot
+  //     ? (await ref.read(selectedCollectionProvider.future))?.id
+  //     : node?.id;
+  final String? parentId = isRoot ? null : node?.id;
+  debugPrint('Parent ID for context menu: $parentId, isRoot: $isRoot');
+  final collectionId = (await ref.read(selectedCollectionProvider.future))?.id;
+  debugPrint('Collection ID for context menu: $collectionId');
   return [
     MenuSeparator(),
     MenuAction(
@@ -66,7 +73,7 @@ Future<List<MenuElement>> _getFolderSpecificMenuActions({
           context: context,
           ref: ref,
           isRoot: isRoot,
-          parentNode: parentNode,
+          parentId: parentId,
         );
       },
     ),
@@ -77,7 +84,7 @@ Future<List<MenuElement>> _getFolderSpecificMenuActions({
           context: context,
           ref: ref,
           isRoot: isRoot,
-          parentNode: parentNode,
+          parentId: parentId,
         );
       },
     ),
@@ -97,7 +104,7 @@ void createFolder({
   required BuildContext context,
   required WidgetRef ref,
   bool useSelectedNode = false,
-  FileNode? parentNode,
+  String? parentId,
   required bool isRoot,
 }) {
   showDialog(
@@ -109,8 +116,10 @@ void createFolder({
         onConfirmed: (folderName) {
           final folder = useSelectedNode
               ? ref.read(activeReqProvider.notifier).getDirectory()
-              : parentNode?.path;
-          ref.read(fileTreeProvider.notifier).createFolder(folder, folderName);
+              : parentId;
+          ref
+              .read(fileTreeProvider.notifier)
+              .createItem(folder, folderName, NodeType.folder);
         },
       );
     },
@@ -122,7 +131,7 @@ void createFile({
   required WidgetRef ref,
   required bool isRoot,
   bool useSelectedNode = false,
-  FileNode? parentNode,
+  String? parentId,
 }) {
   showDialog(
     context: context,
@@ -133,8 +142,10 @@ void createFile({
         onConfirmed: (fileName) {
           final folder = useSelectedNode
               ? ref.read(activeReqProvider.notifier).getDirectory()
-              : parentNode?.path;
-          ref.read(fileTreeProvider.notifier).createRequest(folder, fileName);
+              : parentId;
+          ref
+              .read(fileTreeProvider.notifier)
+              .createItem(folder, fileName, NodeType.request);
         },
       );
     },
