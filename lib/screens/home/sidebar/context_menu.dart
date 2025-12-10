@@ -1,7 +1,8 @@
 import 'dart:async';
 
 import 'package:api_craft/dialog/input_dialog.dart';
-import 'package:api_craft/models/file_system_node.dart';
+import 'package:api_craft/models/node_model.dart';
+import 'package:api_craft/screens/home/folder/folder_config_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:super_context_menu/super_context_menu.dart';
@@ -11,7 +12,7 @@ import 'package:api_craft/providers/providers.dart';
 FutureOr<Menu?> getMenuProvider({
   required WidgetRef ref,
   required BuildContext context,
-  FileNode? node,
+  Node? node,
   bool isDirectory = false,
   bool isRoot = false,
 }) async {
@@ -32,7 +33,7 @@ FutureOr<Menu?> getMenuProvider({
 }
 
 // requires current node
-List<MenuElement> _getCommonMenuActions(WidgetRef ref, FileNode node) {
+List<MenuElement> _getCommonMenuActions(WidgetRef ref, Node node) {
   return [
     MenuSeparator(),
     MenuAction(
@@ -54,7 +55,7 @@ List<MenuElement> _getCommonMenuActions(WidgetRef ref, FileNode node) {
 Future<List<MenuElement>> _getFolderSpecificMenuActions({
   required WidgetRef ref,
   required BuildContext context,
-  required FileNode? node,
+  required Node? node,
   bool isRoot = false,
 }) async {
   // final String? parentId = isRoot
@@ -88,14 +89,43 @@ Future<List<MenuElement>> _getFolderSpecificMenuActions({
         );
       },
     ),
+    if (node != null && node is FolderNode)
+      MenuAction(
+        title: 'Configure Folder',
+        callback: () async {
+          showFolderConfigDialog(context: context, ref: ref, node: node);
+        },
+      ),
   ];
+}
+
+void showFolderConfigDialog({
+  required BuildContext context,
+  required WidgetRef ref,
+  required FolderNode node,
+}) async {
+  final repo = await ref.read(repositoryProvider.future);
+  if (!context.mounted) return;
+
+  showDialog(
+    context: context,
+    builder: (context) {
+      return FolderConfigDialog(
+        node: node,
+        onSave: (s) {
+          debugPrint("saving folder config for node ${node.id}");
+          repo.updateNode(node);
+        },
+      );
+    },
+  );
 }
 
 // requires current node
 List<MenuElement> _getFileSpecificMenuActions({
   required WidgetRef ref,
   required BuildContext context,
-  required FileNode node,
+  required Node node,
 }) {
   return [];
 }

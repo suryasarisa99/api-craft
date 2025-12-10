@@ -11,18 +11,17 @@ final storageModeProvider = StateProvider<StorageMode>(
   (ref) => StorageMode.filesystem,
 );
 
-final fileTreeProvider =
-    AsyncNotifierProvider<FileTreeNotifier, List<FileNode>>(
-      FileTreeNotifier.new,
-    );
+final fileTreeProvider = AsyncNotifierProvider<FileTreeNotifier, List<Node>>(
+  FileTreeNotifier.new,
+);
 
-class FileTreeNotifier extends AsyncNotifier<List<FileNode>> {
+class FileTreeNotifier extends AsyncNotifier<List<Node>> {
   Future<StorageRepository> get _repo => ref.read(repositoryProvider.future);
   ActiveReqNotifier get _activeReqNotifier =>
       ref.read(activeReqProvider.notifier);
 
   @override
-  Future<List<FileNode>> build() async {
+  Future<List<Node>> build() async {
     // 1. Await the Repository (This links the loading states)
     // If repo is loading, this provider will also be in loading state.
     final repo = await ref.watch(repositoryProvider.future);
@@ -33,21 +32,21 @@ class FileTreeNotifier extends AsyncNotifier<List<FileNode>> {
     return nodes;
   }
 
-  Future<List<FileNode>> _loadRecursive(
+  Future<List<Node>> _loadRecursive(
     StorageRepository repo,
     String? parentId,
   ) async {
     final nodes = await repo.getContents(parentId);
-    List<FileNode> populatedNodes = [];
+    List<Node> populatedNodes = [];
     for (var node in nodes) {
-      if (node.isDirectory) {
+      if (node is FolderNode) {
         populatedNodes.add(
-          FileNode(
+          FolderNode(
             id: node.id,
             parentId: node.parentId,
             name: node.name,
-            type: node.type,
             children: await _loadRecursive(repo, node.id),
+            config: node.folderConfig,
           ),
         );
       } else {
@@ -57,20 +56,20 @@ class FileTreeNotifier extends AsyncNotifier<List<FileNode>> {
     return populatedNodes;
   }
 
-  Future<List<FileNode>> _loadRecursiveLinking(
+  Future<List<Node>> _loadRecursiveLinking(
     StorageRepository repo,
     String? parentId,
-    FileNode? parentObject,
+    Node? parentObject,
   ) async {
     final nodes = await repo.getContents(parentId);
 
-    List<FileNode> populatedNodes = [];
+    List<Node> populatedNodes = [];
 
     for (var node in nodes) {
       node.parent = parentObject;
-      if (node.isDirectory) {
+      if (node is FolderNode) {
         final children = await _loadRecursiveLinking(repo, node.id, node);
-        populatedNodes.add(node..children = children);
+        populatedNodes.add(node..children.addAll(children));
       } else {
         populatedNodes.add(node);
       }
@@ -86,13 +85,13 @@ class FileTreeNotifier extends AsyncNotifier<List<FileNode>> {
     ref.invalidateSelf();
   }
 
-  Future<void> duplicateNode(FileNode node) async {
+  Future<void> duplicateNode(Node node) async {
     final repo = await _repo;
     await repo.duplicateItem(node.id);
     ref.invalidateSelf();
   }
 
-  Future<void> deleteNode(FileNode node) async {
+  Future<void> deleteNode(Node node) async {
     final repo = await _repo;
     await repo.deleteItem(node.id);
     // If active request was deleted, clear it
@@ -103,7 +102,7 @@ class FileTreeNotifier extends AsyncNotifier<List<FileNode>> {
     ref.invalidateSelf();
   }
 
-  Future<void> renameNode(FileNode node, String newName) async {
+  Future<void> renameNode(Node node, String newName) async {
     // 1. Execute Rename in Repo
     final repo = await _repo;
     final newId = await repo.renameItem(node.id, newName);
@@ -122,15 +121,15 @@ class FileTreeNotifier extends AsyncNotifier<List<FileNode>> {
   // file_tree_notifier.dart
 
   Future<void> handleDrop({
-    required FileNode movedNode,
-    required FileNode targetNode,
+    required Node movedNode,
+    required Node targetNode,
     required DropSlot slot,
   }) async {
     final repo = await _repo;
 
     // 1. Determine Target Parent
     String? newParentId;
-    if (slot == DropSlot.center && targetNode.isDirectory) {
+    if (slot == DropSlot.center && targetNode is FolderNode) {
       newParentId = targetNode.id;
     } else {
       newParentId = targetNode.parentId;

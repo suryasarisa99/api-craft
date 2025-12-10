@@ -10,13 +10,24 @@ void main() async {
   runApp(ProviderScope(child: const MainApp()));
 }
 
+final colorSchema = ColorScheme.fromSeed(
+  seedColor: const Color.fromARGB(255, 13, 138, 255),
+  brightness: Brightness.dark,
+);
+
 class MainApp extends StatelessWidget {
   const MainApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      darkTheme: ThemeData.dark(),
+      darkTheme: ThemeData(
+        colorScheme: colorSchema,
+        useMaterial3: true,
+        dialogTheme: DialogThemeData(
+          backgroundColor: const Color.fromARGB(255, 19, 19, 19),
+        ),
+      ),
       debugShowCheckedModeBanner: false,
       home: Scaffold(body: HomeScreen()),
     );

@@ -10,7 +10,7 @@ class FolderStorageRepository implements StorageRepository {
   FolderStorageRepository({required this.rootPath});
 
   @override
-  Future<List<FileNode>> getContents(String? parentId) async {
+  Future<List<Node>> getContents(String? parentId) async {
     // If parentId is null/empty, we are at Root
     final dirPath = (parentId == null || parentId.isEmpty)
         ? rootPath
@@ -20,7 +20,7 @@ class FolderStorageRepository implements StorageRepository {
     if (!await dir.exists()) return [];
 
     final entities = await dir.list().toList();
-    final List<FileNode> nodes = [];
+    final List<Node> nodes = [];
 
     // 1. Load Nodes
     for (var entity in entities) {
@@ -30,17 +30,23 @@ class FolderStorageRepository implements StorageRepository {
           name == 'collection.json') {
         continue;
       }
-
-      nodes.add(
-        FileNode(
-          id: entity.path, // ID is the Full Path
-          parentId: dirPath,
-          name: name,
-          type: await FileSystemEntity.isDirectory(entity.path)
-              ? NodeType.folder
-              : NodeType.request,
-        ),
-      );
+      final type = await FileSystemEntity.isDirectory(entity.path)
+          ? NodeType.folder
+          : NodeType.request;
+      final newNode = type == NodeType.folder
+          ? FolderNode(
+              id: entity.path,
+              parentId: parentId,
+              name: name,
+              config: FolderNodeConfig.empty(),
+            )
+          : RequestNode(
+              id: entity.path,
+              parentId: parentId,
+              name: name,
+              config: RequestNodeConfig.empty(),
+            );
+      nodes.add(newNode);
     }
 
     // 2. Load Sort Order
@@ -70,6 +76,11 @@ class FolderStorageRepository implements StorageRepository {
     });
 
     return nodes;
+  }
+
+  @override
+  Future<Map<String, dynamic>> getNodeDetails(String id) async {
+    throw UnimplementedError();
   }
 
   @override
@@ -208,5 +219,66 @@ class FolderStorageRepository implements StorageRepository {
     } else {
       await File(sourcePath).copy(destination);
     }
+  }
+
+  // @override
+  // Future<NodeConfig> getNodeConfig(String id) async {
+  //   // id is the full path in FS mode
+  //   final isDir = await FileSystemEntity.isDirectory(id);
+  //   final configFile = File(isDir ? p.join(id, 'folder.json') : id);
+
+  //   if (!await configFile.exists()) return const NodeConfig();
+
+  //   try {
+  //     final content = await configFile.readAsString();
+  //     final map = jsonDecode(content);
+
+  //     return NodeConfig(
+  //       description: map['description'] ?? '',
+  //       headers: map['headers'] != null
+  //           ? Map<String, String>.from(map['headers'])
+  //           : const {},
+  //       variables: map['variables'] != null
+  //           ? Map<String, String>.from(map['variables'])
+  //           : const {},
+  //       auth: map['auth'],
+  //     );
+  //   } catch (_) {
+  //     return const NodeConfig();
+  //   }
+  // }
+
+  // @override
+  // Future<void> saveNodeConfig(String id, NodeConfig config) async {
+  //   final isDir = await FileSystemEntity.isDirectory(id);
+  //   final configFile = File(isDir ? p.join(id, 'folder.json') : id);
+
+  //   Map<String, dynamic> currentData = {};
+  //   if (await configFile.exists()) {
+  //     try {
+  //       currentData = jsonDecode(await configFile.readAsString());
+  //     } catch (_) {}
+  //   }
+
+  //   // Update fields
+  //   currentData['description'] = config.description;
+  //   currentData['headers'] = config.headers;
+  //   currentData['variables'] = config.variables;
+  //   currentData['auth'] = config.auth;
+
+  //   // Remove empty fields to keep JSON clean (Optional)
+  //   if (config.description.isEmpty) currentData.remove('description');
+  //   if (config.headers.isEmpty) currentData.remove('headers');
+  //   if (config.variables.isEmpty) currentData.remove('variables');
+  //   if (config.auth == null) currentData.remove('auth');
+
+  //   await configFile.writeAsString(
+  //     const JsonEncoder.withIndent('  ').convert(currentData),
+  //   );
+  // }
+
+  @override
+  Future<void> updateNode(Node node) async {
+    throw UnimplementedError();
   }
 }

@@ -12,7 +12,7 @@ import 'package:suryaicons/bulk_rounded.dart';
 import 'package:suryaicons/suryaicons.dart';
 
 class FileNodeTile extends ConsumerStatefulWidget {
-  final FileNode node; // Your Node class
+  final Node node; // Your Node class
   final int depth; // Current indentation level (0 for root)
   final VoidCallback? onRefresh; // Optional callback
   final bool isFirstNode;
@@ -58,7 +58,7 @@ class _FileTreeTileState extends ConsumerState<FileNodeTile>
   // selected for to select multiple files
 
   // Configuration Constants
-  late final double _kTileHeight = widget.node.isDirectory ? 32.0 : 28.0;
+  late final double _kTileHeight = widget.node is FolderNode ? 32.0 : 28.0;
   static const double _kIndentation = 6.0;
   static const double _kIconSize = 14.0;
   static const double _kFolderIconSize = 17.0;
@@ -81,7 +81,7 @@ class _FileTreeTileState extends ConsumerState<FileNodeTile>
     _heightFactor = _controller.view;
 
     // Check if initially expanded via your Provider
-    final initiallyExpanded = widget.node.isDirectory
+    final initiallyExpanded = widget.node is FolderNode
         ? ref.read(activeReqProvider.notifier).isAncestor(widget.node)
         : false;
     // final _isSelected = ref
@@ -113,7 +113,7 @@ class _FileTreeTileState extends ConsumerState<FileNodeTile>
     }
 
     // 2. Handle Expansion if directory
-    if (widget.node.isDirectory) {
+    if (widget.node is FolderNode) {
       setState(() {
         _isExpanded = !_isExpanded;
         if (_isExpanded) {
@@ -135,7 +135,7 @@ class _FileTreeTileState extends ConsumerState<FileNodeTile>
   }
 
   void handleToggleExpand() {
-    if (widget.node.isDirectory) {
+    if (widget.node is FolderNode) {
       setState(() {
         _isExpanded = !_isExpanded;
         if (_isExpanded) {
@@ -171,7 +171,7 @@ class _FileTreeTileState extends ConsumerState<FileNodeTile>
           return KeyEventResult.handled;
         }
         if (k == LogicalKeyboardKey.arrowRight) {
-          if (widget.node.isDirectory && !_isExpanded) {
+          if (widget.node is FolderNode && !_isExpanded) {
             handleToggleExpand();
           } else {
             FocusScope.of(context).nextFocus();
@@ -179,7 +179,7 @@ class _FileTreeTileState extends ConsumerState<FileNodeTile>
           return KeyEventResult.handled;
         }
         if (k == LogicalKeyboardKey.arrowLeft) {
-          if (widget.node.isDirectory && _isExpanded) {
+          if (widget.node is FolderNode && _isExpanded) {
             handleToggleExpand();
             // when folder closes rebuild happens it causes focus to next child
             // here the next child is folder children at that time the animation is not yet completed
@@ -238,7 +238,7 @@ class _FileTreeTileState extends ConsumerState<FileNodeTile>
                   backgroundColor ??
                   Colors.transparent, // Background spans full width
               child: _contextMenuWrapper(
-                isDirectory: widget.node.isDirectory,
+                isDirectory: widget.node is FolderNode,
                 child: focusWrapper(
                   hasFocus: hasFocus,
                   child: Builder(
@@ -266,7 +266,7 @@ class _FileTreeTileState extends ConsumerState<FileNodeTile>
                             children: [
                               SizedBox(width: _kIndentation),
                               // A. ARROW (Only for directories)
-                              if (widget.node.isDirectory)
+                              if (widget.node is FolderNode)
                                 RotationTransition(
                                   turns: _iconTurns,
                                   child: SizedBox(
@@ -287,13 +287,13 @@ class _FileTreeTileState extends ConsumerState<FileNodeTile>
                               ),
 
                               // B. FOLDER/FILE ICON
-                              if (widget.node.isDirectory)
+                              if (widget.node is FolderNode)
                                 _isExpanded ? folderOpenIcon : folderIcon
                               else
                                 Icon(
                                   Icons.data_object,
                                   size: _kFolderIconSize,
-                                  color: widget.node.isDirectory
+                                  color: widget.node is FolderNode
                                       ? Colors.amber[700]
                                       : Colors.blueGrey,
                                 ),
@@ -326,7 +326,7 @@ class _FileTreeTileState extends ConsumerState<FileNodeTile>
 
           // --- 2. THE CHILDREN (Animated Expansion) ---
           // Only build children tree if expanded to save resources (optional optimization)
-          if (widget.node.isDirectory)
+          if (widget.node is FolderNode)
             ExcludeFocus(
               excluding: !_isExpanded,
               child: SizeTransition(
@@ -348,16 +348,14 @@ class _FileTreeTileState extends ConsumerState<FileNodeTile>
                   ),
                   child: Column(
                     mainAxisSize: .min,
-                    children:
-                        widget.node.children?.map((child) {
-                          return FileNodeTile(
-                            node: child,
-                            depth:
-                                widget.depth +
-                                1, // Don't rely on 'indent' padding, pass depth
-                          );
-                        }).toList() ??
-                        [],
+                    children: (widget.node as FolderNode).children.map((child) {
+                      return FileNodeTile(
+                        node: child,
+                        depth:
+                            widget.depth +
+                            1, // Don't rely on 'indent' padding, pass depth
+                      );
+                    }).toList(),
                   ),
                 ),
               ),

@@ -1,2 +1,3 @@
-export 'file_system_node.dart';
+export 'node_model.dart';
+export 'node_config_model.dart';
 export 'collection_model.dart';

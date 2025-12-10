@@ -2,18 +2,17 @@ import 'dart:convert';
 
 import 'package:api_craft/globals.dart';
 import 'package:api_craft/models/models.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 
-final activeReqProvider = NotifierProvider<ActiveReqNotifier, FileNode?>(
+final activeReqProvider = NotifierProvider<ActiveReqNotifier, Node?>(
   ActiveReqNotifier.new,
 );
 
-class ActiveReqNotifier extends Notifier<FileNode?> {
+class ActiveReqNotifier extends Notifier<Node?> {
   static const _prefKey = 'active_request_id';
   @override
-  FileNode? build() {
+  Node? build() {
     return getFromPrefs();
   }
 
@@ -33,8 +32,8 @@ class ActiveReqNotifier extends Notifier<FileNode?> {
   //   return p.isWithin(normalizedDir, normalizedNode) ||
   //       normalizedDir == normalizedNode;
   // }
-  bool isAncestor(FileNode ancestorNode) {
-    FileNode? current = state;
+  bool isAncestor(Node ancestorNode) {
+    Node? current = state;
     while (current != null) {
       if (current.id == ancestorNode.id) {
         return true;
@@ -44,7 +43,7 @@ class ActiveReqNotifier extends Notifier<FileNode?> {
     return false;
   }
 
-  void setActiveNode(FileNode? node) {
+  void setActiveNode(Node? node) {
     state = node;
     if (node != null) {
       prefs.setString(_prefKey, jsonEncode(node.toMap()));
@@ -53,18 +52,18 @@ class ActiveReqNotifier extends Notifier<FileNode?> {
     }
   }
 
-  FileNode? getFromPrefs() {
+  Node? getFromPrefs() {
     final json = prefs.getString(_prefKey);
     if (json == null) return null;
-    return FileNode.fromMap(jsonDecode(json));
+    return Node.fromMap(jsonDecode(json));
     // return FileNode(id: id, name: p.basename(id), type: NodeType.request);
   }
 
-  FileNode? _findNodeById(List<FileNode> nodes, String id) {
+  Node? _findNodeById(List<Node> nodes, String id) {
     for (var node in nodes) {
       if (node.id == id) return node;
-      if (node.isDirectory && node.children != null) {
-        final found = _findNodeById(node.children!, id);
+      if (node is FolderNode && node.children.isNotEmpty) {
+        final found = _findNodeById(node.children, id);
         if (found != null) return found;
       }
     }
@@ -73,7 +72,7 @@ class ActiveReqNotifier extends Notifier<FileNode?> {
 
   /// the stored node does not have references(reference to parent node)
   /// so when tree loads, we need to find the actual node in the tree
-  void hydrateWithTree(List<FileNode> rootNodes) {
+  void hydrateWithTree(List<Node> rootNodes) {
     final savedNode = getFromPrefs();
     if (savedNode == null) return;
 

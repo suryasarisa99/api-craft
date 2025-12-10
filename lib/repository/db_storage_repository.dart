@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:api_craft/models/models.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:sqflite/sqflite.dart';
@@ -12,7 +14,7 @@ class DbStorageRepository implements StorageRepository {
   DbStorageRepository(this.db, this.collectionId);
 
   @override
-  Future<List<FileNode>> getContents(String? parentId) async {
+  Future<List<Node>> getContents(String? parentId) async {
     // If parentId is null, we look for root items (parent_id IS NULL)
     // AND strictly filter by collection_id
     final whereClause = parentId == null
@@ -25,12 +27,41 @@ class DbStorageRepository implements StorageRepository {
 
     final maps = await db.query(
       'nodes',
+      columns: ['id', 'parent_id', 'name', 'type', 'method', 'sort_order'],
       where: whereClause,
       whereArgs: whereArgs,
       orderBy: 'sort_order ASC',
     );
 
-    return maps.map((m) => FileNode.fromMap(m)).toList();
+    return maps.map((m) => Node.fromMap(m)).toList();
+  }
+
+  @override
+  Future<Map<String, dynamic>> getNodeDetails(String id) async {
+    final res = await db.query(
+      'nodes',
+      columns: [
+        'headers',
+        'auth',
+        'variables',
+        'description',
+      ], // Fetch only config cols
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+
+    if (res.isEmpty) return {};
+    return res.first;
+  }
+
+  @override
+  Future<void> updateNode(Node node) async {
+    await db.update(
+      'nodes',
+      node.toMap(),
+      where: 'id = ?',
+      whereArgs: [node.id],
+    );
   }
 
   @override
@@ -203,4 +234,45 @@ class DbStorageRepository implements StorageRepository {
       }
     }
   }
+
+  // @override
+  // Future<NodeConfig> getNodeConfig(String id) async {
+  //   final res = await db.query(
+  //     'nodes',
+  //     // Fetch specific config columns
+  //     columns: ['description', 'headers', 'auth', 'variables'],
+  //     where: 'id = ? AND collection_id = ?',
+  //     whereArgs: [id, collectionId],
+  //   );
+
+  //   if (res.isEmpty) return const NodeConfig();
+
+  //   final row = res.first;
+
+  //   return NodeConfig(
+  //     description: row['description'] as String? ?? '',
+  //     headers: row['headers'] != null
+  //         ? Map<String, String>.from(jsonDecode(row['headers'] as String))
+  //         : const {},
+  //     variables: row['variables'] != null
+  //         ? Map<String, String>.from(jsonDecode(row['variables'] as String))
+  //         : const {},
+  //     auth: row['auth'] != null ? jsonDecode(row['auth'] as String) : null,
+  //   );
+  // }
+
+  // @override
+  // Future<void> saveNodeConfig(String id, NodeConfig config) async {
+  //   await db.update(
+  //     'nodes',
+  //     {
+  //       'description': config.description,
+  //       'headers': jsonEncode(config.headers),
+  //       'variables': jsonEncode(config.variables),
+  //       'auth': config.auth != null ? jsonEncode(config.auth) : null,
+  //     },
+  //     where: 'id = ? AND collection_id = ?',
+  //     whereArgs: [id, collectionId],
+  //   );
+  // }
 }

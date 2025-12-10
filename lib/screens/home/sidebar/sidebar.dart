@@ -66,7 +66,7 @@ class FileExplorerView extends ConsumerWidget {
               // 3. The Empty Space Drop Zone
               SliverFillRemaining(
                 hasScrollBody: false,
-                child: DragTarget<FileNode>(
+                child: DragTarget<Node>(
                   onWillAcceptWithDetails: (details) {
                     // Don't accept if dragging the very last item onto the whitespace
                     // if (nodes.isNotEmpty && details.data.id == nodes.last.id) {
@@ -121,7 +121,7 @@ class FileExplorerView extends ConsumerWidget {
 }
 
 class FileNodeDragWrapper extends ConsumerStatefulWidget {
-  final FileNode node;
+  final Node node;
   final Widget child;
   final bool isOpen;
 
@@ -155,7 +155,7 @@ class _FileNodeTileState extends ConsumerState<FileNodeDragWrapper> {
     final theme = Theme.of(context);
 
     // --- DRAGGABLE ---
-    Widget draggable = LongPressDraggable<FileNode>(
+    Widget draggable = LongPressDraggable<Node>(
       data: widget.node,
       delay: const Duration(milliseconds: 150),
       feedback: Material(
@@ -178,7 +178,7 @@ class _FileNodeTileState extends ConsumerState<FileNodeDragWrapper> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
-                widget.node.isDirectory ? Icons.folder : Icons.description,
+                widget.node is FolderNode ? Icons.folder : Icons.description,
                 size: 16,
               ),
               const SizedBox(width: 8),
@@ -193,11 +193,11 @@ class _FileNodeTileState extends ConsumerState<FileNodeDragWrapper> {
     );
 
     // --- DROP TARGET ---
-    return DragTarget<FileNode>(
+    return DragTarget<Node>(
       onWillAcceptWithDetails: (details) {
         if (details.data.id == widget.node.id) return false;
         // Prevent recursive drops (Parent into Child)
-        if (widget.node.isDirectory &&
+        if (widget.node is FolderNode &&
             widget.node.id.startsWith(details.data.id)) {
           return false;
         }
@@ -212,7 +212,7 @@ class _FileNodeTileState extends ConsumerState<FileNodeDragWrapper> {
         // If folder is OPEN, we only interact with the Header (30px).
         // If the cursor is below 30px (over the children), we cancel the
         // parent's drop slot so the children can handle the event.
-        if (widget.node.isDirectory && widget.isOpen) {
+        if (widget.node is FolderNode && widget.isOpen) {
           if (dy > kTileHeight) {
             debugPrint("Dropping over children, cancel parent drop slot");
             if (_currentDropSlot != null) {
@@ -223,14 +223,14 @@ class _FileNodeTileState extends ConsumerState<FileNodeDragWrapper> {
         }
 
         // Determine height to use for percentage calculation
-        final activeHeight = (widget.node.isDirectory && widget.isOpen)
+        final activeHeight = (widget.node is FolderNode && widget.isOpen)
             ? kTileHeight
             : box.size.height;
 
         final percent = dy / activeHeight;
         DropSlot newSlot;
 
-        if (widget.node.isDirectory) {
+        if (widget.node is FolderNode) {
           // Folder Logic
           if (percent < 0.05) {
             newSlot = DropSlot.top;
@@ -298,7 +298,7 @@ class _FileNodeTileState extends ConsumerState<FileNodeDragWrapper> {
     if (_currentDropSlot == DropSlot.bottom) {
       // Logic: If open, the "bottom" of the header is at kTileHeight.
       // If closed, "bottom" is at bottom: 0.
-      if (widget.node.isDirectory && widget.isOpen) {
+      if (widget.node is FolderNode && widget.isOpen) {
         return Positioned(
           top: kTileHeight - borderThick,
           left: 0,
@@ -319,7 +319,7 @@ class _FileNodeTileState extends ConsumerState<FileNodeDragWrapper> {
 
     // DropSlot.center (Inside Folder)
     // Only highlight the HEADER (30px) if open, otherwise highlight full box
-    if (widget.node.isDirectory && widget.isOpen) {
+    if (widget.node is FolderNode && widget.isOpen) {
       return Positioned(
         top: 0,
         height: kTileHeight,
