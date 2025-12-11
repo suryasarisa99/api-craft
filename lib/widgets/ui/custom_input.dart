@@ -58,6 +58,10 @@ class _CustomInputState extends State<CustomInput> {
     // if (oldWidget.flowId != widget.flowId) {
     //   _controller.text = widget.value;
     // }
+    if (widget.isExtra) {
+      //reset text
+      _controller.text = "";
+    }
   }
 
   @override

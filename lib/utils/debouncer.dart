@@ -23,3 +23,38 @@ class Debouncer {
 
   void dispose() => cancel();
 }
+
+class DebouncerFlush {
+  final Duration duration;
+  Timer? _timer;
+  VoidCallback? _action;
+
+  DebouncerFlush([this.duration = const Duration(milliseconds: 300)]);
+
+  void run(VoidCallback action) {
+    _action = action;
+    _timer?.cancel();
+    _timer = Timer(duration, () {
+      _action?.call();
+      _action = null;
+    });
+  }
+
+  /// Runs pending action immediately
+  void flush() {
+    if (_timer != null) {
+      _timer!.cancel();
+      _timer = null;
+      _action?.call();
+      _action = null;
+    }
+  }
+
+  void cancel() {
+    _timer?.cancel();
+    _timer = null;
+    _action = null;
+  }
+
+  void dispose() => cancel();
+}

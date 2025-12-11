@@ -1,101 +1,216 @@
 import 'package:api_craft/repository/storage_repository.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:api_craft/models/models.dart';
 import 'package:api_craft/providers/providers.dart';
-import 'dart:convert';
-
 import 'repository_provider.dart';
 
-// final configResolverProvider = Provider((ref) => ConfigResolver(ref));
+class ResolveConfig {
+  final Node node;
+  final List<KeyValueItem>? inheritedHeaders;
+  final AuthData? effectiveAuth;
+  final Node? effectiveAuthSource;
 
-// class ConfigResolver {
-//   final Ref ref;
-//   ConfigResolver(this.ref);
+  ResolveConfig({
+    required this.node,
+    required this.inheritedHeaders,
+    this.effectiveAuth,
+    this.effectiveAuthSource,
+  });
 
-//   Future<ResolvedConfig> resolveConfig(FileNode targetNode) async {
-//     final repo = await ref.read(repositoryProvider.future);
+  ResolveConfig.empty(this.node)
+    : inheritedHeaders = null,
+      effectiveAuth = null,
+      effectiveAuthSource = null;
 
-//     // 1. Identify Ancestors (In Memory)
-//     List<FileNode> ancestors = [];
-//     FileNode? current = targetNode is FolderNode
-//         ? targetNode
-//         : targetNode.parent;
+  ResolveConfig copyWith({
+    Node? node,
+    List<KeyValueItem>? inheritedHeaders,
+    AuthData? effectiveAuth,
+    Node? effectiveAuthSource,
+  }) {
+    return ResolveConfig(
+      node: node ?? this.node,
+      inheritedHeaders: inheritedHeaders ?? this.inheritedHeaders,
+      effectiveAuth: effectiveAuth ?? this.effectiveAuth,
+      effectiveAuthSource: effectiveAuthSource ?? this.effectiveAuthSource,
+    );
+  }
+}
 
-//     while (current != null) {
-//       if (current is FolderNode) ancestors.add(current);
-//       current = current.parent;
-//     }
+final resolveConfigProvider = NotifierProvider.autoDispose
+    .family<ResolveConfigNotifier, ResolveConfig, EditorParams>(
+      ResolveConfigNotifier.new,
+    );
 
-//     // 2. Walk Ancestors (Root -> Parent)
-//     //    AND Lazy Load missing data on the fly
-//     FolderConfig inheritedConfig = const FolderConfig();
+// this wrapper to ensure we only rebuild if the Node ID changes,
+// not if the Node object reference changes (since we are editing it).
+class EditorParams {
+  final Node node;
+  const EditorParams(this.node);
 
-//     for (var node in ancestors.reversed) {
-//       // [THE FIX] Check if we need to load data?
-//       if (!node.isDetailLoaded && node is FolderNode) {
-//         await _hydrateNode(repo, node); // <--- Fetch from DB & Update RAM
-//       }
+  @override
+  bool operator ==(Object other) =>
+      other is EditorParams && other.node.id == node.id;
 
-//       // Now we are safe to read the properties
-//       inheritedConfig = inheritedConfig.mergeWith(
-//         FolderConfig(
-//           headers: node.headers,
-//           variables: (node as FolderNode).variables,
-//           authData: node.auth,
-//         ),
-//       );
-//     }
+  @override
+  int get hashCode => node.id.hashCode;
+}
 
-//     // 3. Prepare Local Config
-//     FolderConfig localConfig = const FolderConfig();
-//     if (targetNode is FolderNode) {
-//       // If target is folder, ensure it's loaded too
-//       if (!targetNode.isDetailLoaded) {
-//         await _hydrateNode(repo, targetNode);
-//       }
-//       localConfig = FolderConfig(
-//         headers: targetNode.headers,
-//         variables: targetNode.variables,
-//         authData: targetNode.auth,
-//       );
-//     }
+class ResolveConfigNotifier extends Notifier<ResolveConfig> {
+  final Node node;
+  ResolveConfigNotifier(EditorParams init) : node = init.node;
 
-//     return ResolvedConfig(inherited: inheritedConfig, local: localConfig);
+  late final StorageRepository _repo = ref.read(repositoryProvider);
+
+  @override
+  ResolveConfig build() {
+    debugPrint("Building ResolveConfigNotifier for node ${node.name}");
+    load();
+    return ResolveConfig.empty(node);
+  }
+
+  void load() async {
+    debugPrint("is hydrated: ${node.config.isDetailLoaded}");
+    if (!node.config.isDetailLoaded) {
+      await hydrateNode(node);
+      //notify
+      debugPrint("hydrated node: ${node.name}");
+      state = state.copyWith(node: node);
+    }
+
+    await hydrateAncestors();
+
+    _calculateInheritance();
+
+    _resolveAuth();
+  }
+
+  Future<void> hydrateNode(Node node) async {
+    if (node.config.isDetailLoaded) return;
+    final details = await _repo.getNodeDetails(node.id);
+    if (details.isNotEmpty) {
+      node.hydrate(details);
+    }
+  }
+
+  Future<void> hydrateAncestors() async {
+    Node? ptr = node.parent;
+    while (ptr != null) {
+      if (!ptr.config.isDetailLoaded) {
+        await hydrateNode(ptr);
+      }
+      ptr = ptr.parent;
+    }
+  }
+
+  void _calculateInheritance() {
+    List<KeyValueItem> inheritedHeaders = [];
+    Node? ptr = node.parent;
+    while (ptr != null) {
+      final headers = ptr.config.headers;
+      inheritedHeaders.insertAll(0, headers.where((h) => h.isEnabled));
+      ptr = ptr.parent;
+    }
+    // stop notifying here,because it is synchronous calculation,next notify will be in resolve auth
+    // state = state.copyWith(inheritedHeaders: inheritedHeaders);
+    state.inheritedHeaders?.addAll(inheritedHeaders);
+  }
+
+  void _resolveAuth() {
+    final currentAuth = node.config.auth;
+
+    // Case 1: Explicit Auth
+    if (currentAuth.type != AuthType.inherit) {
+      state = state.copyWith(
+        effectiveAuth: currentAuth,
+        effectiveAuthSource: node,
+      );
+      return;
+    }
+
+    // Case 2: Walk the chain
+    Node? ptr = state.node.parent;
+    while (ptr != null) {
+      final pAuth = ptr.config.auth;
+
+      if (pAuth.type == AuthType.noAuth) {
+        state = state.copyWith(
+          effectiveAuth: const AuthData(type: AuthType.noAuth),
+          effectiveAuthSource: null,
+        );
+        return;
+      }
+
+      if (pAuth.type != AuthType.inherit) {
+        state = state.copyWith(effectiveAuth: pAuth, effectiveAuthSource: ptr);
+        return;
+      }
+      ptr = ptr.parent;
+    }
+
+    // Case 3: Root reached
+    state = state.copyWith(
+      effectiveAuth: const AuthData(type: AuthType.noAuth),
+      effectiveAuthSource: null,
+    );
+  }
+
+  /// Updates
+  void updateName(String name) {
+    final newNode = node.copyWith(name: name);
+    updateNode(newNode);
+  }
+
+  void updateDescription(String description) {
+    state = state.copyWith(node: state.node..config.description = description);
+  }
+
+  void updateHeaders(List<KeyValueItem> headers) {
+    state = state.copyWith(node: state.node..config.headers = headers);
+  }
+
+  void updateAuth(AuthData auth) {
+    state = state.copyWith(node: state.node..config.auth = auth);
+  }
+
+  void updateVariables(List<KeyValueItem> variables) {
+    state = state.copyWith(
+      node: (state.node as FolderNode)..config.variables = variables,
+    );
+  }
+
+  void updateNode(Node node) {
+    // notify
+    state = state.copyWith(node: node);
+    reLinkToParent(node);
+  }
+
+  /// parent children has node references, so copywith breaks that link
+  /// so we need to re-link the updated node to its parent
+  void reLinkToParent(Node node) {
+    final FolderNode? parent = node.parent as FolderNode?;
+    if (parent == null) return;
+    final index = parent.children.indexWhere((n) => n.id == node.id);
+    if (index != -1) {
+      parent.children[index] = node;
+    }
+  }
+}
+
+// class ResolverConfigInitializer {
+//   final Node node;
+//   void Function(Node) onUpdate;
+//   ResolverConfigInitializer(this.node, this.onUpdate);
+
+//   // overide equality, if two resolveConfigInitializer with same node id are treated as equal.
+//   // so helpful in riverpod family argument based caching.
+//   @override
+//   bool operator ==(Object other) {
+//     if (identical(this, other)) return true;
+//     return other is ResolverConfigInitializer && other.node.id == node.id;
 //   }
 
-//   /// Helper: Fetches DB data and mutates the Node in memory
-//   Future<void> _hydrateNode(StorageRepository repo, FileNode node) async {
-//     print("Lazy Loading Config for: ${node.name}"); // Debugging
-
-//     // 1. Fetch from DB
-//     // We cast to DbStorageRepository to access specific methods,
-//     // or add 'getNodeDetails' to your abstract interface.
-//     final details = await (repo as DbStorageRepository).getNodeDetails(node.id);
-
-//     if (details.isEmpty) return;
-
-//     // 2. Update the Node in Place (Mutation)
-//     // Since 'headers' field is final, we unfortunately have to
-//     // rely on your model structure.
-//     // IDEALLY: The Map inside the node should be mutable.
-
-//     if (details['headers'] != null) {
-//       node.headers.addAll(
-//         Map<String, String>.from(jsonDecode(details['headers'])),
-//       );
-//     }
-//     if (details['auth'] != null) {
-//       // node.auth is tricky if it's final.
-//       // Better design: Make config container mutable or replaceable.
-//       // For this example, let's assume auth is a Mutable Map or you have a setter.
-//     }
-//     if (node is FolderNode && details['variables'] != null) {
-//       node.variables.addAll(
-//         Map<String, String>.from(jsonDecode(details['variables'])),
-//       );
-//     }
-
-//     // 3. Mark as Loaded so we never fetch again
-//     node.isDetailLoaded = true;
-//   }
+//   @override
+//   int get hashCode => node.id.hashCode;
 // }

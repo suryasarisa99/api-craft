@@ -5,7 +5,7 @@ enum NodeType { folder, request }
 
 enum DropSlot { top, center, bottom }
 
-abstract class Node {
+abstract class Node<T extends NodeConfig> {
   // Identity (Immutable)
   final String id;
   final String? parentId;
@@ -13,7 +13,7 @@ abstract class Node {
   final NodeType type;
 
   // The Configuration (Reference is final, contents are mutable)
-  final NodeConfig config;
+  final T config;
 
   // Runtime Links (Mutable for tree traversal)
   Node? parent;
@@ -39,7 +39,7 @@ abstract class Node {
   }
 
   // --- Factory ---
-  factory Node.fromMap(Map<String, dynamic> map) {
+  static Node<NodeConfig> fromMap(Map<String, dynamic> map) {
     if (map['type'] == NodeType.folder.toString()) {
       return FolderNode.fromMap(map);
     } else {
@@ -57,21 +57,21 @@ abstract class Node {
 }
 
 // --- FOLDER NODE ---
-class FolderNode extends Node {
+class FolderNode extends Node<FolderNodeConfig> {
   final List<Node> children;
 
   FolderNode({
     required super.id,
     required super.parentId,
     required super.name,
-    required FolderNodeConfig config, // Specific Type
+    required super.config, // Specific Type
     super.parent,
     List<Node>? children,
   }) : children = children ?? [],
-       super(type: NodeType.folder, config: config);
+       super(type: NodeType.folder);
 
   // Getter helper to avoid casting 'config' manually
-  FolderNodeConfig get folderConfig => config as FolderNodeConfig;
+  FolderNodeConfig get folderConfig => config;
 
   @override
   void hydrate(Map<String, dynamic> details) {
@@ -142,28 +142,28 @@ class FolderNode extends Node {
 }
 
 // --- REQUEST NODE ---
-class RequestNode extends Node {
+class RequestNode extends Node<RequestNodeConfig> {
   RequestNode({
     required super.id,
     required super.parentId,
     required super.name,
-    required RequestNodeConfig config,
+    required super.config,
     super.parent,
-  }) : super(type: NodeType.request, config: config);
+  }) : super(type: NodeType.request);
 
-  RequestNodeConfig get reqConfig => config as RequestNodeConfig;
+  RequestNodeConfig get reqConfig => config;
 
   @override
   void hydrate(Map<String, dynamic> details) {
-    reqConfig.description = details['description'] ?? '';
-    reqConfig.headers = Node.parseHeaders(details['headers']);
-    reqConfig.auth = details['auth'] != null
+    config.description = details['description'] ?? '';
+    config.headers = Node.parseHeaders(details['headers']);
+    config.auth = details['auth'] != null
         ? AuthData.fromMap(jsonDecode(details['auth']))
         : const AuthData();
-    reqConfig.method = details['method'] ?? 'GET';
-    reqConfig.url = details['url'] ?? '';
-    reqConfig.body = details['body'] ?? '';
-    reqConfig.isDetailLoaded = true;
+    config.method = details['method'] ?? 'GET';
+    config.url = details['url'] ?? '';
+    config.body = details['body'] ?? '';
+    config.isDetailLoaded = true;
   }
 
   factory RequestNode.fromMap(Map<String, dynamic> map) {

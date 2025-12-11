@@ -6,3 +6,4 @@ export 'root_path_provider.dart';
 export 'selected_provider.dart';
 export 'database_provider.dart';
 export 'repository_provider.dart';
+export 'config_resolver_provider.dart';

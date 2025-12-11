@@ -1,4 +1,5 @@
 import 'package:api_craft/providers/providers.dart';
+import 'package:api_craft/screens/home/request/request.dart';
 import 'package:api_craft/screens/home/sidebar/sidebar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
@@ -22,23 +23,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               children: [
                 SizedBox(width: 280, child: FileExplorerView()),
                 const VerticalDivider(width: 1),
-                Expanded(
-                  child: Center(
-                    child: Consumer(
-                      builder: (context, ref, _) {
-                        final selectedFile = ref.watch(activeReqProvider);
-                        if (selectedFile == null) {
-                          return const Text('No file selected');
-                        }
-                        return Text(
-                          selectedFile.name.isEmpty
-                              ? 'No file selected'
-                              : 'Selected File: ${selectedFile.name}',
-                        );
-                      },
-                    ),
-                  ),
-                ),
+                Expanded(child: RequestTab()),
               ],
             ),
           ),

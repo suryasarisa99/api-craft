@@ -33,7 +33,7 @@ class FolderStorageRepository implements StorageRepository {
       final type = await FileSystemEntity.isDirectory(entity.path)
           ? NodeType.folder
           : NodeType.request;
-      final newNode = type == NodeType.folder
+      final Node newNode = type == NodeType.folder
           ? FolderNode(
               id: entity.path,
               parentId: parentId,

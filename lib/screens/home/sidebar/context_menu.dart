@@ -113,7 +113,6 @@ void showFolderConfigDialog({
       return FolderConfigDialog(
         node: node,
         onSave: (s) {
-          debugPrint("saving folder config for node ${node.id}");
           repo.updateNode(node);
         },
       );

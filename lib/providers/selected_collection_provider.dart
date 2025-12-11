@@ -27,15 +27,3 @@ class SelectedCollectionNotifier extends Notifier<CollectionModel?> {
     state = collection;
   }
 }
-
-/*
-- get collections (async)
-- get saved collection from prefs
-- 
-*/
-/*
-- get saved collection from prefs
-  - it is empty return null
-- check first time app launched
-  - if yes, db automatically creates default collection.
-  */
