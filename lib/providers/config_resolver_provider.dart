@@ -5,39 +5,6 @@ import 'package:api_craft/models/models.dart';
 import 'package:api_craft/providers/providers.dart';
 import 'repository_provider.dart';
 
-class ResolveConfig {
-  final Node node;
-  final List<KeyValueItem>? inheritedHeaders;
-  final AuthData? effectiveAuth;
-  final Node? effectiveAuthSource;
-
-  ResolveConfig({
-    required this.node,
-    required this.inheritedHeaders,
-    this.effectiveAuth,
-    this.effectiveAuthSource,
-  });
-
-  ResolveConfig.empty(this.node)
-    : inheritedHeaders = null,
-      effectiveAuth = null,
-      effectiveAuthSource = null;
-
-  ResolveConfig copyWith({
-    Node? node,
-    List<KeyValueItem>? inheritedHeaders,
-    AuthData? effectiveAuth,
-    Node? effectiveAuthSource,
-  }) {
-    return ResolveConfig(
-      node: node ?? this.node,
-      inheritedHeaders: inheritedHeaders ?? this.inheritedHeaders,
-      effectiveAuth: effectiveAuth ?? this.effectiveAuth,
-      effectiveAuthSource: effectiveAuthSource ?? this.effectiveAuthSource,
-    );
-  }
-}
-
 final resolveConfigProvider = NotifierProvider.autoDispose
     .family<ResolveConfigNotifier, ResolveConfig, EditorParams>(
       ResolveConfigNotifier.new,
@@ -65,9 +32,33 @@ class ResolveConfigNotifier extends Notifier<ResolveConfig> {
 
   @override
   ResolveConfig build() {
-    debugPrint("Building ResolveConfigNotifier for node ${node.name}");
+    debugPrint(
+      "Building ResolveConfigNotifier for node ${node.name},: ${node.config.isDetailLoaded}",
+    );
+    // if (node is RequestNode) {
+    //   ref.listen(nodeUpdateTriggerProvider, (_, event) {
+    //     if (event != null && _isAncestor(event.node)) {
+    //       debugPrint(
+    //         "Ancestor ${event.node.name} updated. Refreshing ${node.name}...",
+    //       );
+    //       _calculateInheritance();
+    //       _resolveAuth();
+    //     }
+    //   });
+    // }
     load();
     return ResolveConfig.empty(node);
+  }
+
+  bool _isAncestor(Node ancestor) {
+    Node? ptr = node.parent;
+    while (ptr != null) {
+      if (ptr.id == ancestor.id) {
+        return true;
+      }
+      ptr = ptr.parent;
+    }
+    return false;
   }
 
   void load() async {
@@ -113,8 +104,11 @@ class ResolveConfigNotifier extends Notifier<ResolveConfig> {
       ptr = ptr.parent;
     }
     // stop notifying here,because it is synchronous calculation,next notify will be in resolve auth
-    // state = state.copyWith(inheritedHeaders: inheritedHeaders);
-    state.inheritedHeaders?.addAll(inheritedHeaders);
+    state = state.copyWith(inheritedHeaders: inheritedHeaders);
+    // state.inheritedHeaders?.addAll(inheritedHeaders);
+    debugPrint(
+      "Inherited Headers for node ${node.name}: ${inheritedHeaders.length}",
+    );
   }
 
   void _resolveAuth() {
@@ -158,31 +152,44 @@ class ResolveConfigNotifier extends Notifier<ResolveConfig> {
 
   /// Updates
   void updateName(String name) {
-    final newNode = node.copyWith(name: name);
-    updateNode(newNode);
+    updateNode(node.copyWith(name: name));
   }
 
   void updateDescription(String description) {
-    state = state.copyWith(node: state.node..config.description = description);
+    // state = state.copyWith(node: state.node..config.description = description);
+    updateNode(
+      node.copyWith(config: node.config.copyWith(description: description)),
+    );
   }
 
   void updateHeaders(List<KeyValueItem> headers) {
-    state = state.copyWith(node: state.node..config.headers = headers);
+    // state = state.copyWith(node: state.node..config.headers = headers);
+    updateNode(node.copyWith(config: node.config.copyWith(headers: headers)));
+    debugPrint("headers len: ${state.node.config.headers.length}");
   }
 
   void updateAuth(AuthData auth) {
-    state = state.copyWith(node: state.node..config.auth = auth);
+    // state = state.copyWith(node: state.node..config.auth = auth);
+    updateNode(node.copyWith(config: node.config.copyWith(auth: auth)));
   }
 
   void updateVariables(List<KeyValueItem> variables) {
-    state = state.copyWith(
-      node: (state.node as FolderNode)..config.variables = variables,
+    // state = state.copyWith(
+    //   node: (state.node as FolderNode)..config.variables = variables,
+    // );
+    updateNode(
+      node.copyWith(
+        config: (node.config as FolderNodeConfig).copyWith(
+          variables: variables,
+        ),
+      ),
     );
   }
 
   void updateNode(Node node) {
     // notify
     state = state.copyWith(node: node);
+    debugPrint("updated node: $node");
     reLinkToParent(node);
   }
 

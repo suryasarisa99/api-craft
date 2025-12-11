@@ -40,6 +40,7 @@ class _CustomInputState extends State<CustomInput> {
   late final TextEditingController _controller;
   late final Debouncer debouncer = Debouncer(const Duration(milliseconds: 350));
   VoidCallback? _initialFocusListener;
+  static const newRowByFocus = false;
   @override
   void initState() {
     super.initState();
@@ -79,7 +80,9 @@ class _CustomInputState extends State<CustomInput> {
       onFocusChange: (hasFocus) {
         if (hasFocus) {
           if (widget.isExtra) {
-            // widget.onExtraInputChange?.call();
+            if (newRowByFocus) {
+              widget.onExtraInputChange?.call("");
+            }
           } else {
             // widget.onUpdate?.call(_controller.text);
           }
@@ -129,7 +132,7 @@ class _CustomInputState extends State<CustomInput> {
           ),
         ),
         onChanged: (v) {
-          if (widget.isExtra) {
+          if (widget.isExtra && !newRowByFocus) {
             widget.onExtraInputChange?.call(v);
           } else {
             debouncer.run(() {

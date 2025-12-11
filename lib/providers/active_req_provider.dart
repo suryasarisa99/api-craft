@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:api_craft/globals.dart';
 import 'package:api_craft/models/models.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 
@@ -46,7 +47,11 @@ class ActiveReqNotifier extends Notifier<Node?> {
   void setActiveNode(Node? node) {
     state = node;
     if (node != null) {
-      prefs.setString(_prefKey, jsonEncode(node.toMap()));
+      final nodeMap = node.toMap();
+      nodeMap.remove('headers');
+      nodeMap.remove('body');
+      debugPrint("Saving active request: ${node.name}: $nodeMap");
+      prefs.setString(_prefKey, jsonEncode(nodeMap));
     } else {
       prefs.remove(_prefKey);
     }

@@ -7,3 +7,4 @@ export 'selected_provider.dart';
 export 'database_provider.dart';
 export 'repository_provider.dart';
 export 'config_resolver_provider.dart';
+export 'node_update_trigger_provider.dart';

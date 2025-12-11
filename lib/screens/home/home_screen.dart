@@ -23,7 +23,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               children: [
                 SizedBox(width: 280, child: FileExplorerView()),
                 const VerticalDivider(width: 1),
-                Expanded(child: RequestTab()),
+                Expanded(child: ReqTabWrapper()),
               ],
             ),
           ),

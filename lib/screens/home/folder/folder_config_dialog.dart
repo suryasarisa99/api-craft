@@ -1,7 +1,7 @@
 import 'package:api_craft/providers/providers.dart';
-import 'package:api_craft/screens/home/sidebar/context_menu.dart';
 import 'package:api_craft/utils/debouncer.dart';
-import 'package:api_craft/widgets/tabs/evironment_tab.dart';
+import 'package:api_craft/widgets/tabs/auth_tab.dart';
+import 'package:api_craft/widgets/tabs/environment_tab.dart';
 import 'package:api_craft/widgets/tabs/headers_tab.dart';
 import 'package:flutter/material.dart';
 import 'package:api_craft/models/models.dart';
@@ -9,13 +9,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class FolderConfigDialog extends ConsumerStatefulWidget {
   final FolderNode node;
-  final Function(Node) onSave;
 
-  const FolderConfigDialog({
-    super.key,
-    required this.node,
-    required this.onSave,
-  });
+  const FolderConfigDialog({super.key, required this.node});
 
   @override
   ConsumerState<FolderConfigDialog> createState() => _FolderConfigDialogState();
@@ -27,25 +22,29 @@ class _FolderConfigDialogState extends ConsumerState<FolderConfigDialog>
   late final ResolveConfigNotifier resolveConfigProviderNotifier;
   late final EditorParams _editorParams = EditorParams(widget.node);
   late final notifier = ref.read(resolveConfigProvider(_editorParams).notifier);
-  final debouncer = DebouncerFlush(Duration(milliseconds: 1000));
+  final debouncer = Debouncer(Duration(milliseconds: 1000));
   static const useLazyMode = true;
-  bool hasChanges = false;
-  late final ProviderSubscription<ResolveConfig> subscription;
+  bool hasChanges = true;
+  late final ProviderSubscription<Node> subscription;
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
 
     subscription = ref.listenManual(
-      resolveConfigProvider(_editorParams).select((data) => data),
+      resolveConfigProvider(_editorParams).select((d) => d.node),
       (_, n) {
+        debugPrint(
+          "folder-dialog:: detected node change: ${n.name}, headers len: ${n.config.headers.length}",
+        );
+        debugPrint("headers are: ${n.config.headers}");
         if (useLazyMode) {
           /// note: hasChanges is always becomes true, when folder config dialog is opened
           hasChanges = true;
           subscription.close();
         } else {
           debouncer.run(() {
-            widget.onSave(n.node);
+            ref.read(repositoryProvider).updateNode(n);
           });
         }
       },
@@ -55,10 +54,6 @@ class _FolderConfigDialogState extends ConsumerState<FolderConfigDialog>
   @override
   void dispose() {
     debugPrint("Disposing FolderConfigDialog for node ${widget.node.name}");
-    // if (useLazyMode && hasChanges) {
-    //   final currentState = ref.read(resolveConfigProvider(_editorParams));
-    //   widget.onSave(currentState.node);
-    // }
     _tabController.dispose();
     super.dispose();
   }
@@ -68,10 +63,14 @@ class _FolderConfigDialogState extends ConsumerState<FolderConfigDialog>
     return PopScope(
       canPop: true,
       onPopInvokedWithResult: (pop, result) async {
+        debugPrint("set last updated folder for node ${widget.node.name}");
+        ref
+            .read(nodeUpdateTriggerProvider.notifier)
+            .setLastUpdatedFolder(widget.node);
         debugPrint("Popping FolderConfigDialog for node ${widget.node.name}");
         if (useLazyMode && hasChanges) {
           final currentState = ref.read(resolveConfigProvider(_editorParams));
-          widget.onSave(currentState.node);
+          ref.read(repositoryProvider).updateNode(currentState.node);
         }
       },
       child: Dialog(
@@ -130,7 +129,7 @@ class _FolderConfigDialogState extends ConsumerState<FolderConfigDialog>
               // 2. Headers Tab
               HeadersTab(params: _editorParams),
               // 3. Auth Tab
-              _AuthTab(params: _editorParams),
+              AuthTab(params: _editorParams),
               EnvironmentTab(params: _editorParams),
               // 4. Variables Tab
               // _VariablesTab(controller: _controller),
@@ -154,6 +153,8 @@ class _GeneralTab extends ConsumerStatefulWidget {
 
 class __GeneralTabState extends ConsumerState<_GeneralTab> {
   late final provider = resolveConfigProvider(widget.params);
+  // for description  this value is null sometimes, due to lazyload of config
+  // thats we we use listener to update text controller
   late final descriptionController = TextEditingController(
     text: ref.read(provider.select((value) => value.node.config.description)),
   );
@@ -164,15 +165,6 @@ class __GeneralTabState extends ConsumerState<_GeneralTab> {
   late final ResolveConfigNotifier notifier = ref.read(
     resolveConfigProvider(widget.params).notifier,
   );
-  late final debounce1 = DebouncerFlush(Duration(milliseconds: 1000));
-  late final debounce2 = DebouncerFlush(Duration(milliseconds: 1000));
-
-  @override
-  void deactivate() {
-    debounce1.flush();
-    debounce2.flush();
-    super.deactivate();
-  }
 
   @override
   void dispose() {
@@ -204,9 +196,6 @@ class __GeneralTabState extends ConsumerState<_GeneralTab> {
               labelText: "Folder Name",
               border: OutlineInputBorder(),
             ),
-            // onChanged: (name) => debounce1.run(() {
-            //   notifier.updateName(name);
-            // }),
             onChanged: notifier.updateName,
           ),
           const SizedBox(height: 24),
@@ -218,102 +207,10 @@ class __GeneralTabState extends ConsumerState<_GeneralTab> {
               labelText: "Description",
               border: OutlineInputBorder(),
             ),
-            // onChanged: (description) => debounce2.run(() {
-            //   notifier.updateDescription(description);
-            // }),
             onChanged: notifier.updateDescription,
           ),
         ],
       ),
-    );
-  }
-}
-
-// --- AUTH TAB ---
-class _AuthTab extends ConsumerWidget {
-  final EditorParams params;
-  const _AuthTab({required this.params});
-
-  ResolveConfigNotifier notifier(WidgetRef ref) =>
-      ref.read(resolveConfigProvider(params).notifier);
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final auth = ref.watch(
-      resolveConfigProvider(params).select((value) => value.node.config.auth),
-    );
-    final authSource = ref.watch(
-      resolveConfigProvider(
-        params,
-      ).select((value) => value.effectiveAuthSource),
-    );
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: DropdownButtonFormField<AuthType>(
-            decoration: const InputDecoration(
-              labelText: "Auth Type",
-              border: OutlineInputBorder(),
-            ),
-            initialValue: auth.type,
-            items: AuthType.values
-                .map((e) => DropdownMenuItem(value: e, child: Text(e.name)))
-                .toList(),
-            onChanged: (type) {
-              if (type != null) {
-                notifier(ref).updateAuth(auth.copyWith(type: type));
-              }
-            },
-          ),
-        ),
-        if (auth.type == AuthType.inherit)
-          Expanded(
-            child: Center(
-              child: Row(
-                children: [
-                  Text("auth type:  ${auth.type.name} from $authSource"),
-                  const SizedBox(width: 8),
-                  if (authSource != null)
-                    TextButton(
-                      onPressed: () {
-                        if (params.node is FolderNode) {
-                          // aldready we opened folder dialog
-                          // so close it first
-                          Navigator.of(context).pop();
-                        }
-                        showFolderConfigDialog(
-                          context: context,
-                          ref: ref,
-                          node: authSource as FolderNode,
-                        );
-                      },
-                      child: Text(authSource.name),
-                    ),
-                ],
-              ),
-            ),
-          )
-        else if (auth.type == AuthType.noAuth)
-          const Expanded(child: Center(child: Text("No Authentication")))
-        else
-          // Show fields for Basic/Bearer
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              children: [
-                if (auth.type == AuthType.bearer)
-                  TextFormField(
-                    initialValue: auth.token,
-                    decoration: const InputDecoration(labelText: "Token"),
-                    onChanged: (v) =>
-                        notifier(ref).updateAuth(auth.copyWith(token: v)),
-                  ),
-                // Add Basic Auth fields...
-              ],
-            ),
-          ),
-      ],
     );
   }
 }

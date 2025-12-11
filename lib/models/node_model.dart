@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'package:flutter/widgets.dart';
+
 import 'models.dart';
 
 enum NodeType { folder, request }
@@ -53,7 +55,12 @@ abstract class Node<T extends NodeConfig> {
   Map<String, dynamic> toMap();
 
   // Basic copyWith for renaming/moving (creates new Node shell, shares Config)
-  Node copyWith({String? name, String? parentId});
+  Node<T> copyWith({String? name, String? parentId, T? config});
+
+  @override
+  String toString() {
+    return ':::Node:::\n  id: $id\n  name: $name\n  type: $type\n  parentId: $parentId\n  config: $config\n';
+  }
 }
 
 // --- FOLDER NODE ---
@@ -110,12 +117,16 @@ class FolderNode extends Node<FolderNodeConfig> {
   }
 
   @override
-  FolderNode copyWith({String? name, String? parentId}) {
+  FolderNode copyWith({
+    String? name,
+    String? parentId,
+    FolderNodeConfig? config,
+  }) {
     return FolderNode(
       id: id,
       parentId: parentId ?? this.parentId,
       name: name ?? this.name,
-      config: folderConfig, // Share the same config object
+      config: config ?? folderConfig, // Share the same config object
       parent: parent,
       children: children,
     );
@@ -168,7 +179,11 @@ class RequestNode extends Node<RequestNodeConfig> {
 
   factory RequestNode.fromMap(Map<String, dynamic> map) {
     final bool hasDetails = map.containsKey('headers');
-
+    debugPrint(
+      "FromMap RequestNode hasDetails: $hasDetails for id: ${map['id']}",
+    );
+    // print call stack
+    // debugPrint(StackTrace.current.toString());
     return RequestNode(
       id: map['id'],
       parentId: map['parent_id'],
@@ -188,12 +203,16 @@ class RequestNode extends Node<RequestNodeConfig> {
   }
 
   @override
-  RequestNode copyWith({String? name, String? parentId}) {
+  RequestNode copyWith({
+    String? name,
+    String? parentId,
+    RequestNodeConfig? config,
+  }) {
     return RequestNode(
       id: id,
       parentId: parentId ?? this.parentId,
       name: name ?? this.name,
-      config: reqConfig,
+      config: config ?? reqConfig,
       parent: parent,
     );
   }

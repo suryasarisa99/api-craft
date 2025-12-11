@@ -104,18 +104,12 @@ void showFolderConfigDialog({
   required WidgetRef ref,
   required FolderNode node,
 }) {
-  final repo = ref.read(repositoryProvider);
   if (!context.mounted) return;
 
   showDialog(
     context: context,
     builder: (context) {
-      return FolderConfigDialog(
-        node: node,
-        onSave: (s) {
-          repo.updateNode(node);
-        },
-      );
+      return FolderConfigDialog(node: node);
     },
   );
 }

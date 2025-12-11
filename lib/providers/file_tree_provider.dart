@@ -1,6 +1,7 @@
 import 'package:api_craft/models/models.dart';
 import 'package:api_craft/providers/providers.dart';
 import 'package:api_craft/repository/storage_repository.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 
@@ -62,6 +63,9 @@ class FileTreeNotifier extends AsyncNotifier<List<Node>> {
     Node? parentObject,
   ) async {
     final nodes = await repo.getContents(parentId);
+    debugPrint(
+      "Loading nodes for parentId: $parentId: ${nodes.map((e) => e.name)}, headers: ${nodes.map((e) => e.config.isDetailLoaded)}",
+    );
 
     List<Node> populatedNodes = [];
 

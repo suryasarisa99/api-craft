@@ -43,6 +43,7 @@ class DbStorageRepository implements StorageRepository {
       whereArgs: whereArgs,
       orderBy: 'sort_order ASC',
     );
+    debugPrint("db::get-contents ${maps}");
 
     return maps.map((m) => Node.fromMap(m)).toList();
   }
@@ -61,7 +62,7 @@ class DbStorageRepository implements StorageRepository {
       where: 'id = ?',
       whereArgs: [id],
     );
-
+    debugPrint("db::get-node-details $id: $res");
     if (res.isEmpty) return {};
     return res.first;
   }
@@ -69,6 +70,7 @@ class DbStorageRepository implements StorageRepository {
   @override
   Future<void> updateNode(Node node) async {
     final db = await _db;
+    debugPrint("db::update-node ${node.id}: ${node.toMap()}");
     await db.update(
       'nodes',
       node.toMap(),

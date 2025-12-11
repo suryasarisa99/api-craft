@@ -12,9 +12,19 @@ abstract class NodeConfig {
     this.description = '',
     this.isDetailLoaded = false,
   }) : headers = headers ?? [];
+
+  NodeConfig copyWith({
+    List<KeyValueItem>? headers,
+    AuthData? auth,
+    String? description,
+    bool? isDetailLoaded,
+  });
+  @override
+  String toString() {
+    return ':::NodeConfig:::\n  description: $description\n  headers: ${headers.length}\n isDetailLoaded: $isDetailLoaded\n';
+  }
 }
 
-// Folder Specific Config
 class FolderNodeConfig extends NodeConfig {
   List<KeyValueItem> variables;
 
@@ -27,9 +37,25 @@ class FolderNodeConfig extends NodeConfig {
   }) : variables = variables ?? [];
 
   FolderNodeConfig.empty() : variables = [], super();
+
+  @override
+  FolderNodeConfig copyWith({
+    List<KeyValueItem>? headers,
+    AuthData? auth,
+    String? description,
+    bool? isDetailLoaded,
+    List<KeyValueItem>? variables,
+  }) {
+    return FolderNodeConfig(
+      headers: headers ?? this.headers,
+      auth: auth ?? this.auth,
+      description: description ?? this.description,
+      isDetailLoaded: isDetailLoaded ?? this.isDetailLoaded,
+      variables: variables ?? this.variables,
+    );
+  }
 }
 
-// Request Specific Config
 class RequestNodeConfig extends NodeConfig {
   String method;
   String url;
@@ -44,7 +70,29 @@ class RequestNodeConfig extends NodeConfig {
     this.url = '',
     this.body = '',
   });
+
   RequestNodeConfig.empty() : method = 'GET', url = '', body = '', super();
+
+  @override
+  RequestNodeConfig copyWith({
+    List<KeyValueItem>? headers,
+    AuthData? auth,
+    String? description,
+    bool? isDetailLoaded,
+    String? method,
+    String? url,
+    String? body,
+  }) {
+    return RequestNodeConfig(
+      headers: headers ?? this.headers,
+      auth: auth ?? this.auth,
+      description: description ?? this.description,
+      isDetailLoaded: isDetailLoaded ?? this.isDetailLoaded,
+      method: method ?? this.method,
+      url: url ?? this.url,
+      body: body ?? this.body,
+    );
+  }
 }
 
 final uuid = Uuid();
