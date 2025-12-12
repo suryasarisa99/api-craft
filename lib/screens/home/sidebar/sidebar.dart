@@ -182,12 +182,26 @@ class _FileNodeTileState extends ConsumerState<FileNodeDragWrapper> {
     // --- DROP TARGET ---
     return DragTarget<Node>(
       onWillAcceptWithDetails: (details) {
-        if (details.data.id == widget.node.id) return false;
-        // Prevent recursive drops (Parent into Child)
-        if (widget.node is FolderNode &&
-            widget.node.id.startsWith(details.data.id)) {
-          return false;
+        final movedNode = details.data;
+        final targetNode = widget.node;
+
+        // 1. Cannot drop onto self
+        if (movedNode.id == targetNode.id) return false;
+
+        // 2. CRITICAL FIX: Cycle Detection (Parent into Child Subfolder)
+        final treeMap = ref.read(fileTreeProvider).nodeMap;
+
+        Node? ptr = targetNode;
+        while (ptr != null) {
+          // If we find the movedNode while walking up from target,
+          // it means target is a descendant of movedNode.
+          if (ptr.id == movedNode.id) return false;
+
+          // Move up
+          if (ptr.parentId == null) break;
+          ptr = treeMap[ptr.parentId];
         }
+
         return true;
       },
       onMove: (details) {
