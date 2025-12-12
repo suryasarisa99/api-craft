@@ -9,6 +9,7 @@ class CustomInput extends StatefulWidget {
   final Function(String)? onChanged;
   final Function(String)? onTapOutside;
   final Function(String?)? onExtraInputChange;
+  final TextEditingController? controller;
   final String value;
   final bool isEnabled;
   final bool isExtra;
@@ -20,6 +21,7 @@ class CustomInput extends StatefulWidget {
     // required this.flowId,
     this.autofocus = false,
     this.onFieldSubmitted,
+    this.controller,
     this.onChanged,
     this.onTap,
     required this.value,
@@ -37,28 +39,19 @@ class CustomInput extends StatefulWidget {
 }
 
 class _CustomInputState extends State<CustomInput> {
-  late final TextEditingController _controller;
+  late final TextEditingController _controller =
+      widget.controller ?? TextEditingController(text: widget.value);
   late final Debouncer debouncer = Debouncer(const Duration(milliseconds: 350));
-  VoidCallback? _initialFocusListener;
   static const newRowByFocus = false;
+
   @override
   void initState() {
     super.initState();
-
-    _controller = TextEditingController.fromValue(
-      TextEditingValue(
-        text: widget.value,
-        selection: TextSelection.collapsed(offset: widget.value.length),
-      ),
-    );
   }
 
   @override
   void didUpdateWidget(covariant CustomInput oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // if (oldWidget.flowId != widget.flowId) {
-    //   _controller.text = widget.value;
-    // }
     if (widget.isExtra) {
       //reset text
       _controller.text = "";

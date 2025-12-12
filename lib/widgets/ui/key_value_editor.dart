@@ -158,7 +158,13 @@ class _KeyValueEditorState extends State<KeyValueEditor> {
                                       fillColor: WidgetStateColor.resolveWith((
                                         states,
                                       ) {
-                                        return widget.items[i].key.isNotEmpty
+                                        debugPrint(
+                                          "check box text: ${widget.items[i].key}, states: $states",
+                                        );
+                                        return widget.items[i].key.isNotEmpty &&
+                                                states.contains(
+                                                  WidgetState.selected,
+                                                )
                                             ? Colors.greenAccent.shade700
                                             : Colors.grey.shade600;
                                       }),
@@ -278,22 +284,26 @@ class _KeyValueEditorState extends State<KeyValueEditor> {
         isExtra: extra,
         isEnabled: false,
         onExtraInputChange: (v) {
+          _focusKeyField = isKey;
           _addNew(v, isKey);
         },
       );
     }
 
-    final item = extra ? null : widget.items[i];
+    final item = widget.items[i];
     final bool shouldForceFocus =
-        (item!.id == _focusTargetId) && (isKey == _focusKeyField);
+        (item.id == _focusTargetId) && (isKey == _focusKeyField);
 
-    CustomInput buildFn(focusNode) => CustomInput(
+    CustomInput buildFn(
+      FocusNode? focusNode, [
+      TextEditingController? controller,
+    ]) => CustomInput(
       focusNode: focusNode,
+      controller: controller,
       value: isKey ? item.key : item.value,
       isExtra: extra,
       isEnabled: item.isEnabled,
       onUpdate: (value) {
-        if (isKey && value.trim().isEmpty) return;
         _updateItem(
           i,
           isKey ? item.copyWith(key: value) : item.copyWith(value: value),
@@ -302,16 +312,21 @@ class _KeyValueEditorState extends State<KeyValueEditor> {
     );
 
     if (shouldForceFocus) {
-      return EnsureFocus(builder: (focusNode) => buildFn(focusNode));
+      return EnsureFocus(
+        value: isKey ? item.key : item.value,
+        builder: (focusNode, controller) => buildFn(focusNode, controller),
+      );
     }
     return buildFn(null);
   }
 }
 
 class EnsureFocus extends StatefulWidget {
-  final Widget Function(FocusNode focusNode) builder;
+  final Widget Function(FocusNode focusNode, TextEditingController controller)
+  builder;
+  final String value;
 
-  const EnsureFocus({super.key, required this.builder});
+  const EnsureFocus({super.key, required this.builder, required this.value});
 
   @override
   State<EnsureFocus> createState() => _EnsureFocusState();
@@ -319,6 +334,9 @@ class EnsureFocus extends StatefulWidget {
 
 class _EnsureFocusState extends State<EnsureFocus> {
   late FocusNode _focusNode;
+  late final TextEditingController controller = TextEditingController(
+    text: widget.value,
+  );
 
   @override
   void initState() {
@@ -328,6 +346,12 @@ class _EnsureFocusState extends State<EnsureFocus> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         _focusNode.requestFocus();
+        // focusing input which already has text causes text is selected issue
+        Future.microtask(() {
+          controller.selection = TextSelection.fromPosition(
+            TextPosition(offset: controller.text.length),
+          );
+        });
       }
     });
   }
@@ -340,6 +364,6 @@ class _EnsureFocusState extends State<EnsureFocus> {
 
   @override
   Widget build(BuildContext context) {
-    return widget.builder(_focusNode);
+    return widget.builder(_focusNode, controller);
   }
 }
