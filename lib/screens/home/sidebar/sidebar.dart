@@ -20,6 +20,15 @@ class FileExplorerView extends ConsumerWidget {
     final rootNodes = treeState.nodeMap.values
         .where((n) => n.parentId == null)
         .toList();
+    debugPrint("roots: (${rootNodes.length}): ${rootNodes.map((e) => e.name)}");
+    rootNodes.sort((a, b) {
+      // Primary sort: Sort Order index
+      final orderCompare = a.sortOrder.compareTo(b.sortOrder);
+      if (orderCompare != 0) return orderCompare;
+
+      // Fallback sort: Name (if sort orders happen to be equal/zero)
+      return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+    });
     // debugPrint(
     //   "build:::file-explorer:::Rendering FileExplorerView with ${rootNodes.length} root nodes",
     // );

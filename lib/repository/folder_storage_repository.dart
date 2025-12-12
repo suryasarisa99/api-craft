@@ -125,6 +125,16 @@ class FolderStorageRepository implements StorageRepository {
   }
 
   @override
+  Future<void> createMany(List<Node> nodes) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> createOne(Node node) {
+    throw UnimplementedError();
+  }
+
+  @override
   Future<String?> renameItem(String id, String newName) async {
     final parent = p.dirname(id);
     final isDir = await FileSystemEntity.isDirectory(id);

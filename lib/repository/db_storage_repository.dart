@@ -190,140 +190,26 @@ class DbStorageRepository implements StorageRepository {
     await batch.commit(noResult: true);
   }
 
+  // repository/storage_repository.dart
   @override
-  Future<String?> duplicateItem(String id) async {
+  Future<void> createMany(List<Node> nodes) async {
     final db = await _db;
-    // 1. Fetch the original item to start the process
-    final maps = await db.query(
-      'nodes',
-      where: 'id = ? AND collection_id = ?',
-      whereArgs: [id, collectionId],
-    );
-    if (maps.isEmpty) return null;
+    final batch = db.batch();
 
-    final original = maps.first;
-    final parentId = original['parent_id'] as String?;
-
-    // 2. Start Recursive Copy
-    return await _recursiveCopy(
-      sourceId: id,
-      targetParentId: parentId,
-      nameOverride: "${original['name']}_copy",
-    );
-  }
-
-  /// Deep Copying
-  Future<String?> _recursiveCopy({
-    required String sourceId,
-    required String? targetParentId,
-    String? nameOverride,
-  }) async {
-    final db = await _db;
-    // A. Fetch Source Data
-    final maps = await db.query(
-      'nodes',
-      where: 'id = ? AND collection_id = ?',
-      whereArgs: [sourceId, collectionId],
-    );
-    if (maps.isEmpty) return null;
-    final source = maps.first;
-
-    // B. Generate New ID
-    final newId = _uuid.v4();
-    final newName = nameOverride ?? (source['name'] as String);
-    final typeStr = source['type'] as String;
-
-    // C. Calculate Sort Order
-    // - If nameOverride is set (Top Level), put it at the bottom (MAX + 1).
-    // - If null (Child), keep original sort_order to preserve the folder structure exactly.
-    int sortOrder = source['sort_order'] as int;
-
-    if (nameOverride != null) {
-      final whereClause = targetParentId == null
-          ? 'collection_id = ? AND parent_id IS NULL'
-          : 'collection_id = ? AND parent_id = ?';
-      final args = targetParentId == null
-          ? [collectionId]
-          : [collectionId, targetParentId];
-
-      final res = await db.rawQuery(
-        'SELECT MAX(sort_order) as maxOrd FROM nodes WHERE $whereClause',
-        args,
-      );
-      sortOrder = (res.first['maxOrd'] as int? ?? 0) + 1;
+    for (final node in nodes) {
+      final map = node.toMap();
+      batch.insert('nodes', map);
     }
 
-    // D. Insert the Copy
-    await db.insert('nodes', {
-      'id': newId,
-      'collection_id': collectionId,
-      'parent_id': targetParentId,
-      'name': newName,
-      'type': typeStr,
-      'method': source['method'], // Copy request fields
-      'url': source['url'],
-      'body': source['body'],
-      'sort_order': sortOrder,
-    });
-
-    // E. Recursion: If it's a folder, copy its children
-    if (typeStr == NodeType.folder.toString()) {
-      final children = await db.query(
-        'nodes',
-        where: 'parent_id = ? AND collection_id = ?',
-        whereArgs: [sourceId, collectionId],
-      );
-
-      for (final child in children) {
-        await _recursiveCopy(
-          sourceId: child['id'] as String,
-          targetParentId:
-              newId, // <--- Key: Parent is the NEW folder we just made
-          nameOverride: null, // Keep original name for children
-        );
-      }
-    }
-    return newId;
+    await batch.commit(noResult: true);
   }
 
-  // @override
-  // Future<NodeConfig> getNodeConfig(String id) async {
-  //   final res = await db.query(
-  //     'nodes',
-  //     // Fetch specific config columns
-  //     columns: ['description', 'headers', 'auth', 'variables'],
-  //     where: 'id = ? AND collection_id = ?',
-  //     whereArgs: [id, collectionId],
-  //   );
-
-  //   if (res.isEmpty) return const NodeConfig();
-
-  //   final row = res.first;
-
-  //   return NodeConfig(
-  //     description: row['description'] as String? ?? '',
-  //     headers: row['headers'] != null
-  //         ? Map<String, String>.from(jsonDecode(row['headers'] as String))
-  //         : const {},
-  //     variables: row['variables'] != null
-  //         ? Map<String, String>.from(jsonDecode(row['variables'] as String))
-  //         : const {},
-  //     auth: row['auth'] != null ? jsonDecode(row['auth'] as String) : null,
-  //   );
-  // }
-
-  // @override
-  // Future<void> saveNodeConfig(String id, NodeConfig config) async {
-  //   await db.update(
-  //     'nodes',
-  //     {
-  //       'description': config.description,
-  //       'headers': jsonEncode(config.headers),
-  //       'variables': jsonEncode(config.variables),
-  //       'auth': config.auth != null ? jsonEncode(config.auth) : null,
-  //     },
-  //     where: 'id = ? AND collection_id = ?',
-  //     whereArgs: [id, collectionId],
-  //   );
-  // }
+  @override
+  Future<void> createOne(Node node) async {
+    final db = await _db;
+    final map = node.toMap();
+    debugPrint('db::create-one-node ${node.id}: $map');
+    map['collection_id'] = collectionId;
+    await db.insert('nodes', map);
+  }
 }

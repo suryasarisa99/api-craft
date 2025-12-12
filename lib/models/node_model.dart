@@ -13,6 +13,7 @@ abstract class Node<T extends NodeConfig> {
   final String? parentId;
   final String name;
   final NodeType type;
+  final int sortOrder;
 
   // The Configuration (Reference is final, contents are mutable)
   final T config;
@@ -25,6 +26,7 @@ abstract class Node<T extends NodeConfig> {
     required this.name,
     required this.type,
     required this.config,
+    this.sortOrder = 0,
   });
 
   // --- Helpers ---
@@ -53,7 +55,14 @@ abstract class Node<T extends NodeConfig> {
   Map<String, dynamic> toMap();
 
   // Basic copyWith for renaming/moving (creates new Node shell, shares Config)
-  Node<T> copyWith({String? name, String? parentId, T? config});
+  Node<T> copyWith({
+    String? id,
+    String? name,
+    String? parentId,
+    bool forceNullParent = false, // to set null parentId
+    T? config,
+    int? sortOrder,
+  });
 
   @override
   String toString() {
@@ -70,6 +79,7 @@ class FolderNode extends Node<FolderNodeConfig> {
     required super.parentId,
     required super.name,
     required super.config, // Specific Type
+    required super.sortOrder,
     this.children = const [],
   }) : super(type: NodeType.folder);
 
@@ -99,6 +109,7 @@ class FolderNode extends Node<FolderNodeConfig> {
       id: map['id'],
       parentId: map['parent_id'],
       name: map['name'],
+      sortOrder: map['sort_order'] ?? 0,
       config: FolderNodeConfig(
         isDetailLoaded: hasDetails,
         description: map['description'] ?? '',
@@ -116,12 +127,16 @@ class FolderNode extends Node<FolderNodeConfig> {
   FolderNode copyWith({
     String? name,
     String? parentId,
+    bool forceNullParent = false,
     FolderNodeConfig? config,
     List<String>? children,
+    int? sortOrder,
+    String? id,
   }) {
     return FolderNode(
-      id: id,
-      parentId: parentId ?? this.parentId,
+      sortOrder: sortOrder ?? this.sortOrder,
+      id: id ?? this.id,
+      parentId: forceNullParent ? null : (parentId ?? this.parentId),
       name: name ?? this.name,
       config: config ?? folderConfig, // Share the same config object
       children: children ?? this.children,
@@ -135,6 +150,7 @@ class FolderNode extends Node<FolderNodeConfig> {
       'parent_id': parentId,
       'name': name,
       'type': NodeType.folder.toString(),
+      'sort_order': sortOrder,
       // Delegate detailed fields to the config object
       'description': folderConfig.description,
       'headers': jsonEncode(
@@ -160,6 +176,7 @@ class RequestNode extends Node<RequestNodeConfig> {
     required super.parentId,
     required super.name,
     required super.config,
+    required super.sortOrder,
   }) : super(type: NodeType.request);
 
   RequestNodeConfig get reqConfig => config;
@@ -188,6 +205,7 @@ class RequestNode extends Node<RequestNodeConfig> {
       id: map['id'],
       parentId: map['parent_id'],
       name: map['name'],
+      sortOrder: map['sort_order'] ?? 0,
       config: RequestNodeConfig(
         isDetailLoaded: hasDetails,
         description: map['description'] ?? '',
@@ -204,15 +222,19 @@ class RequestNode extends Node<RequestNodeConfig> {
 
   @override
   RequestNode copyWith({
+    String? id,
     String? name,
     String? parentId,
+    bool forceNullParent = false, // to set null parentId
     RequestNodeConfig? config,
+    int? sortOrder,
   }) {
     return RequestNode(
-      id: id,
-      parentId: parentId ?? this.parentId,
+      id: id ?? this.id,
+      parentId: forceNullParent ? null : (parentId ?? this.parentId),
       name: name ?? this.name,
       config: config ?? reqConfig,
+      sortOrder: sortOrder ?? this.sortOrder,
     );
   }
 
@@ -222,6 +244,7 @@ class RequestNode extends Node<RequestNodeConfig> {
       'id': id,
       'parent_id': parentId,
       'name': name,
+      'sort_order': sortOrder,
       'type': NodeType.request.toString(),
       'description': reqConfig.description,
       'headers': jsonEncode(reqConfig.headers.map((e) => e.toMap()).toList()),

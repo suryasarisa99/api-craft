@@ -23,6 +23,8 @@ abstract class NodeConfig {
   String toString() {
     return ':::NodeConfig:::\n  description: $description\n  headers: ${headers.length}\n isDetailLoaded: $isDetailLoaded\n';
   }
+
+  NodeConfig clone();
 }
 
 class FolderNodeConfig extends NodeConfig {
@@ -52,6 +54,16 @@ class FolderNodeConfig extends NodeConfig {
       description: description ?? this.description,
       isDetailLoaded: isDetailLoaded ?? this.isDetailLoaded,
       variables: variables ?? this.variables,
+    );
+  }
+
+  FolderNodeConfig clone() {
+    return FolderNodeConfig(
+      headers: List<KeyValueItem>.from(headers),
+      auth: auth.clone(),
+      description: description,
+      isDetailLoaded: isDetailLoaded,
+      variables: List<KeyValueItem>.from(variables),
     );
   }
 }
@@ -91,6 +103,18 @@ class RequestNodeConfig extends NodeConfig {
       method: method ?? this.method,
       url: url ?? this.url,
       body: body ?? this.body,
+    );
+  }
+
+  RequestNodeConfig clone() {
+    return RequestNodeConfig(
+      headers: List<KeyValueItem>.from(headers),
+      auth: auth.clone(),
+      description: description,
+      isDetailLoaded: isDetailLoaded,
+      method: method,
+      url: url,
+      body: body,
     );
   }
 }
@@ -175,6 +199,15 @@ class AuthData {
       token: token ?? this.token,
       username: username ?? this.username,
       password: password ?? this.password,
+    );
+  }
+
+  AuthData clone() {
+    return AuthData(
+      type: type,
+      token: token,
+      username: username,
+      password: password,
     );
   }
 }

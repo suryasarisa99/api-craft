@@ -31,8 +31,8 @@ abstract class StorageRepository {
   /// Updates the sort order of children within a parent.
   Future<void> saveSortOrder(String? parentId, List<String> orderedIds);
 
-  /// Duplicates an item.
-  Future<String?> duplicateItem(String id);
+  Future<void> createOne(Node node);
+  Future<void> createMany(List<Node> nodes);
 
   /// Reads the configuration columns (headers, auth, vars, desc) for a node
   // Future<NodeConfig> getNodeConfig(String id);

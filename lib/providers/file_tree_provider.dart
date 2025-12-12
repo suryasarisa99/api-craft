@@ -1,8 +1,10 @@
 import 'package:api_craft/models/models.dart';
 import 'package:api_craft/providers/providers.dart';
 import 'package:api_craft/repository/storage_repository.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
+import 'package:uuid/uuid.dart';
 
 // Configuration Provider (Database vs FileSystem)
 enum StorageMode { filesystem, database }
@@ -33,6 +35,8 @@ class FileTreeNotifier extends Notifier<TreeData> {
   ActiveReqIdNotifier get _activeReqNotifier =>
       ref.read(activeReqIdProvider.notifier);
 
+  Map<String, Node> get map => state.nodeMap;
+
   @override
   TreeData build() {
     _loadInitialData();
@@ -42,7 +46,6 @@ class FileTreeNotifier extends Notifier<TreeData> {
   }
 
   // --- INITIAL LOAD ---
-
   Future<void> _loadInitialData() async {
     try {
       final repo = ref.read(repositoryProvider);
@@ -72,8 +75,6 @@ class FileTreeNotifier extends Notifier<TreeData> {
       state = state.copyWith(isLoading: false);
     }
   }
-
-  Map<String, Node> get map => state.nodeMap;
 
   // The helper needs to handle both the item addition AND the state commit.
   void _addItem(Node item) {
@@ -145,17 +146,75 @@ class FileTreeNotifier extends Notifier<TreeData> {
   }
 
   Future<void> duplicateNode(Node node) async {
-    if (state.isLoading) return;
+    if (node is FolderNode) {
+      await duplicateFolder(node);
+    } else {
+      final duplicatedNode = node.copyWith(
+        id: const Uuid().v4(),
+        name: '${node.name}_copy',
+        config: node.config.clone(),
+      );
+      debugPrint(
+        "headers: ${duplicatedNode.config.headers.length}, original: ${node.config.headers.length}",
+      );
+      await _repo.createOne(duplicatedNode);
+      _addItem(duplicatedNode);
+    }
+  }
 
-    final newId = await _repo.duplicateItem(node.id);
-    final duplicatedNode = Node.fromMap({
-      'id': newId,
-      'parent_id': node.parentId,
-      'name': '${node.name}_copy',
-      'type': node.type.index,
-    });
+  Future<void> duplicateFolder(FolderNode node) async {
+    final allNodes = [
+      node,
+      ...getChildrenNodes(node),
+    ]; // includes the folder itself
+    final idMap = <String, String>{}; // oldId → newId
 
-    _addItem(duplicatedNode);
+    // 1. Generate all new IDs first
+    for (final n in allNodes) {
+      idMap[n.id] = const Uuid().v4();
+    }
+
+    // 2. Rebuild nodes with new IDs + fixed parentId
+    final duplicated = <Node>[];
+
+    for (final n in allNodes) {
+      final newId = idMap[n.id]!;
+      final newParentId = n.parentId == null ? null : idMap[n.parentId]!;
+
+      if (n is FolderNode) {
+        duplicated.add(
+          n.copyWith(
+            id: newId,
+            parentId: newParentId,
+            children: n.children.map((cid) => idMap[cid]!).toList(),
+            config: n.config.clone(),
+          ),
+        );
+      } else {
+        duplicated.add(n.copyWith(id: newId, parentId: newParentId));
+      }
+    }
+    duplicated[0] = duplicated[0].copyWith(name: '${node.name}_copy');
+
+    // 3. Insert duplicated nodes into map
+    for (final n in duplicated) {
+      map[n.id] = n;
+    }
+
+    // 4. Add duplicated root folder to its parent
+    final originalParent = node.parentId;
+    if (originalParent != null) {
+      final parent = map[originalParent];
+      if (parent is FolderNode) {
+        final updatedParent = parent.copyWith(
+          children: [...parent.children, idMap[node.id]!],
+        );
+        map[originalParent] = updatedParent;
+      }
+    }
+    await _repo.createMany(duplicated);
+    // 5. Commit
+    state = state.copyWith(nodeMap: map);
   }
 
   List<Node> getChildrenNodes(FolderNode folder) {
@@ -218,21 +277,113 @@ class FileTreeNotifier extends Notifier<TreeData> {
     state = state.copyWith(nodeMap: newMap);
   }
 
-  // The handleDrop logic remains complex and should either return affected nodes from repo
-  // or be handled by a full refresh, but the pattern is now clear: update repo, then commit state.
   Future<void> handleDrop({
     required Node movedNode,
     required Node targetNode,
     required DropSlot slot,
   }) async {
-    // ... repository calls ...
+    // 1. Determine Target Parent ID
+    String? newParentId;
+    if (slot == DropSlot.center && targetNode is FolderNode) {
+      newParentId = targetNode.id;
+    } else {
+      newParentId = targetNode.parentId;
+    }
 
-    // The safest approach for this complex operation:
-    // 1. Perform complex repo updates
-    // 2. Refresh the entire node map from the repo (like the AsyncNotifier build() did)
-    // 3. Commit the new state
-    final nodes = await _repo.getNodes();
-    final Map<String, Node> nodeMap = {for (var node in nodes) node.id: node};
-    state = state.copyWith(nodeMap: nodeMap);
+    // 2. Repo Update (Move)
+    await _repo.moveItem(movedNode.id, newParentId);
+
+    // 3. Prepare Local State
+    final currentMap = state.nodeMap;
+    final newMap = Map<String, Node>.from(currentMap);
+
+    // --- A. REMOVE FROM OLD PARENT ---
+    if (movedNode.parentId != null && newMap.containsKey(movedNode.parentId)) {
+      final oldParent = newMap[movedNode.parentId] as FolderNode;
+      final updatedOldChildren = oldParent.children
+          .where((id) => id != movedNode.id)
+          .toList();
+      newMap[movedNode.parentId!] = oldParent.copyWith(
+        children: updatedOldChildren,
+      );
+    }
+
+    // --- B. UPDATE MOVED NODE PARENT POINTER (DO THIS FIRST) ---
+    // Update the map immediately so subsequent lookups see the correct Parent ID
+    if (newMap.containsKey(movedNode.id)) {
+      newMap[movedNode.id] = newMap[movedNode.id]!.copyWith(
+        parentId: newParentId,
+        forceNullParent: newParentId == null,
+      );
+    }
+
+    // --- C. CALCULATE & APPLY NEW ORDER ---
+    List<String> newOrderIds = [];
+
+    if (newParentId != null) {
+      // CASE 1: MOVING INTO A FOLDER
+      if (newMap.containsKey(newParentId)) {
+        final newParent = newMap[newParentId] as FolderNode;
+        newOrderIds = List<String>.from(newParent.children);
+        newOrderIds.remove(movedNode.id);
+        _insertAtSlot(newOrderIds, movedNode.id, targetNode.id, slot);
+
+        // Update Parent
+        newMap[newParentId] = newParent.copyWith(children: newOrderIds);
+      }
+    } else {
+      // CASE 2: MOVING TO ROOT
+      final rootNodes = newMap.values.where((n) => n.parentId == null).toList();
+
+      // Ensure we start with current visual order
+      rootNodes.sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+
+      newOrderIds = rootNodes.map((n) => n.id).toList();
+      newOrderIds.remove(movedNode.id);
+      _insertAtSlot(newOrderIds, movedNode.id, targetNode.id, slot);
+    }
+
+    // --- D. CRITICAL: UPDATE SORT ORDER (DO THIS LAST) ---
+    // This loop must run LAST. It iterates over the final list of IDs
+    // and stamps the index (0, 1, 2...) onto the Node objects in the Map.
+    for (int i = 0; i < newOrderIds.length; i++) {
+      final id = newOrderIds[i];
+      if (newMap.containsKey(id)) {
+        // We use newMap[id]! to ensure we get the version
+        // that already has the updated parentId (from Step B).
+        newMap[id] = newMap[id]!.copyWith(sortOrder: i);
+      }
+    }
+
+    // 4. Commit State
+    state = state.copyWith(nodeMap: newMap);
+
+    // 5. Persist Sort Order
+    await _repo.saveSortOrder(newParentId, newOrderIds);
+  }
+
+  // Helper to keep the insertion logic DRY
+  void _insertAtSlot(
+    List<String> list,
+    String movedId,
+    String targetId,
+    DropSlot slot,
+  ) {
+    if (slot == DropSlot.center) {
+      list.add(movedId);
+    } else {
+      int index = list.indexOf(targetId);
+      if (index == -1) index = list.length;
+
+      if (slot == DropSlot.top) {
+        list.insert(index, movedId);
+      } else {
+        if (index + 1 >= list.length) {
+          list.add(movedId);
+        } else {
+          list.insert(index + 1, movedId);
+        }
+      }
+    }
   }
 }

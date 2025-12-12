@@ -279,7 +279,8 @@ class _FileTreeTileState extends ConsumerState<FileNodeTile>
                               // C. LABEL
                               Expanded(
                                 child: Text(
-                                  widget.node.name,
+                                  // widget.node.name,
+                                  "${widget.node.name}-${widget.node.sortOrder}",
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
