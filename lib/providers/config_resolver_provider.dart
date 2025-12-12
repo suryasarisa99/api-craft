@@ -172,9 +172,18 @@ class ResolveConfigNotifier extends Notifier<ResolveConfig> {
   }
 
   void updateHeaders(List<KeyValueItem> headers) {
-    // state = state.copyWith(node: state.node..config.headers = headers);
     updateNode(node.copyWith(config: node.config.copyWith(headers: headers)));
     debugPrint("headers len: ${state.node.config.headers.length}");
+  }
+
+  void updateQueryParameters(List<KeyValueItem> queryParameters) {
+    updateNode(
+      node.copyWith(
+        config: (node as RequestNode).config.copyWith(
+          queryParameters: queryParameters,
+        ),
+      ),
+    );
   }
 
   void updateAuth(AuthData auth) {

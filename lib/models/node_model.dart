@@ -169,14 +169,23 @@ class FolderNode extends Node<FolderNodeConfig> {
   }
 }
 
+enum RequestType { http, wc }
+
 // --- REQUEST NODE ---
 class RequestNode extends Node<RequestNodeConfig> {
+  final String method;
+  final String url;
+  final RequestType requestType;
+
   RequestNode({
     required super.id,
     required super.parentId,
     required super.name,
     required super.config,
     required super.sortOrder,
+    this.method = 'GET',
+    this.url = '',
+    this.requestType = RequestType.http,
   }) : super(type: NodeType.request);
 
   RequestNodeConfig get reqConfig => config;
@@ -188,8 +197,8 @@ class RequestNode extends Node<RequestNodeConfig> {
     config.auth = details['auth'] != null
         ? AuthData.fromMap(jsonDecode(details['auth']))
         : const AuthData();
-    config.method = details['method'] ?? 'GET';
-    config.url = details['url'] ?? '';
+    config.queryParameters = Node.parseHeaders(details['query_parameters']);
+
     config.body = details['body'] ?? '';
     config.isDetailLoaded = true;
   }
@@ -197,12 +206,18 @@ class RequestNode extends Node<RequestNodeConfig> {
   factory RequestNode.fromMap(Map<String, dynamic> map) {
     final bool hasDetails = map.containsKey('headers');
     debugPrint(
-      "FromMap RequestNode hasDetails: $hasDetails for id: ${map['id']}",
+      "FromMap RequestNode hasDetails: $hasDetails for id: ${map['id']},query params: ${map['query_parameters']}",
     );
     // print call stack
     // debugPrint(StackTrace.current.toString());
     return RequestNode(
       id: map['id'],
+      requestType: RequestType.values.firstWhere(
+        (e) => e.toString() == (map['request_type'] ?? 'RequestType.http'),
+        orElse: () => RequestType.http,
+      ),
+      method: map['method'] ?? 'GET',
+      url: map['url'] ?? '',
       parentId: map['parent_id'],
       name: map['name'],
       sortOrder: map['sort_order'] ?? 0,
@@ -213,8 +228,9 @@ class RequestNode extends Node<RequestNodeConfig> {
         auth: (hasDetails && map['auth'] != null)
             ? AuthData.fromMap(jsonDecode(map['auth']))
             : const AuthData(),
-        method: map['method'] ?? 'GET',
-        url: map['url'] ?? '',
+        queryParameters: hasDetails
+            ? Node.parseHeaders(map['query_parameters'])
+            : [],
         body: map['body'] ?? '',
       ),
     );
@@ -228,12 +244,18 @@ class RequestNode extends Node<RequestNodeConfig> {
     bool forceNullParent = false, // to set null parentId
     RequestNodeConfig? config,
     int? sortOrder,
+    RequestType? requestType,
+    String? method,
+    String? url,
   }) {
     return RequestNode(
       id: id ?? this.id,
       parentId: forceNullParent ? null : (parentId ?? this.parentId),
       name: name ?? this.name,
       config: config ?? reqConfig,
+      requestType: requestType ?? this.requestType,
+      method: method ?? this.method,
+      url: url ?? this.url,
       sortOrder: sortOrder ?? this.sortOrder,
     );
   }
@@ -245,12 +267,18 @@ class RequestNode extends Node<RequestNodeConfig> {
       'parent_id': parentId,
       'name': name,
       'sort_order': sortOrder,
+      'method': method,
+      'url': url,
       'type': NodeType.request.toString(),
+
+      // config fields
       'description': reqConfig.description,
       'headers': jsonEncode(reqConfig.headers.map((e) => e.toMap()).toList()),
       'auth': jsonEncode(reqConfig.auth.toMap()),
-      'method': reqConfig.method,
-      'url': reqConfig.url,
+      'request_type': requestType.toString(),
+      'query_parameters': jsonEncode(
+        reqConfig.queryParameters.map((e) => e.toMap()).toList(),
+      ),
       'body': reqConfig.body,
     };
   }

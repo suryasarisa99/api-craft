@@ -29,7 +29,16 @@ class DbStorageRepository implements StorageRepository {
 
     final maps = await db.query(
       'nodes',
-      columns: ['id', 'parent_id', 'name', 'type', 'method', 'sort_order'],
+      columns: [
+        'id',
+        'parent_id',
+        'name',
+        'type',
+        'method',
+        'sort_order',
+        'request_type',
+        'url',
+      ],
       where: 'collection_id = ?',
       whereArgs: [collectionId],
       orderBy: 'sort_order ASC',
@@ -72,6 +81,7 @@ class DbStorageRepository implements StorageRepository {
       columns: [
         'headers',
         'auth',
+        'query_parameters',
         'variables',
         'description',
       ], // Fetch only config cols

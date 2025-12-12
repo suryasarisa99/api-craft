@@ -69,21 +69,19 @@ class FolderNodeConfig extends NodeConfig {
 }
 
 class RequestNodeConfig extends NodeConfig {
-  String method;
-  String url;
   String body;
+  List<KeyValueItem> queryParameters;
 
   RequestNodeConfig({
     super.headers,
     super.auth,
     super.description,
     super.isDetailLoaded,
-    this.method = 'GET',
-    this.url = '',
+    required this.queryParameters,
     this.body = '',
   });
 
-  RequestNodeConfig.empty() : method = 'GET', url = '', body = '', super();
+  RequestNodeConfig.empty() : body = '', queryParameters = [], super();
 
   @override
   RequestNodeConfig copyWith({
@@ -94,14 +92,14 @@ class RequestNodeConfig extends NodeConfig {
     String? method,
     String? url,
     String? body,
+    List<KeyValueItem>? queryParameters,
   }) {
     return RequestNodeConfig(
       headers: headers ?? this.headers,
+      queryParameters: queryParameters ?? this.queryParameters,
       auth: auth ?? this.auth,
       description: description ?? this.description,
       isDetailLoaded: isDetailLoaded ?? this.isDetailLoaded,
-      method: method ?? this.method,
-      url: url ?? this.url,
       body: body ?? this.body,
     );
   }
@@ -112,8 +110,7 @@ class RequestNodeConfig extends NodeConfig {
       auth: auth.clone(),
       description: description,
       isDetailLoaded: isDetailLoaded,
-      method: method,
-      url: url,
+      queryParameters: List<KeyValueItem>.from(queryParameters),
       body: body,
     );
   }

@@ -42,6 +42,8 @@ class Tables {
     -- 4. Request Specific
     method TEXT,
     url TEXT,
+    request_type TEXT,    -- 'http', 'graphql','wc','grpc' etc.
+    query_parameters TEXT, -- JSON: List of {key, val, enabled}
     body TEXT
       )
     ''',

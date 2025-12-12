@@ -3,6 +3,7 @@ import 'package:api_craft/providers/providers.dart';
 import 'package:api_craft/utils/debouncer.dart';
 import 'package:api_craft/widgets/tabs/auth_tab.dart';
 import 'package:api_craft/widgets/tabs/headers_tab.dart';
+import 'package:api_craft/widgets/tabs/query_params.dart';
 import 'package:api_craft/widgets/ui/variable_text_field.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -33,7 +34,7 @@ class _RequestTabState extends ConsumerState<RequestTab>
   /// tabs
   late final List<Widget> children = [
     Center(child: Text("Body Tab")),
-    Center(child: Text("Params Tab")),
+    QueryParamsTab(id: widget.node.id),
     HeadersTab(id: widget.node.id),
     AuthTab(id: widget.node.id),
   ];
@@ -45,7 +46,7 @@ class _RequestTabState extends ConsumerState<RequestTab>
 
   late final _provider = resolveConfigProvider(widget.node.id);
   late final _repo = ref.read(repositoryProvider);
-  final debouncer = DebouncerFlush(Duration(milliseconds: 500));
+  final debouncer = DebouncerFlush(Duration(milliseconds: 800));
 
   @override
   void initState() {
@@ -53,7 +54,7 @@ class _RequestTabState extends ConsumerState<RequestTab>
     debugPrint("Initializing Request Tab for ${widget.node.name}");
     ref.listenManual(_provider.select((d) => d.node), (_, v) {
       debouncer.run(() {
-        debugPrint("req-tab:: ${v} ");
+        debugPrint("req-tab:: debounce ${v.name} ");
         _repo.updateNode(v);
       });
     });
@@ -75,7 +76,21 @@ class _RequestTabState extends ConsumerState<RequestTab>
               controller: _tabController,
               tabs: [
                 Tab(text: "Body"),
-                Tab(text: "Params"),
+                Consumer(
+                  builder: (context, ref, child) {
+                    final paramsCount = ref.watch(
+                      _provider.select(
+                        (value) => (value.node as RequestNode)
+                            .config
+                            .queryParameters
+                            .length,
+                      ),
+                    );
+                    return Tab(
+                      text: "Params${paramsCount > 0 ? ' ($paramsCount)' : ''}",
+                    );
+                  },
+                ),
                 Consumer(
                   builder: (context, ref, child) {
                     final headersCount = ref.watch(
@@ -85,7 +100,10 @@ class _RequestTabState extends ConsumerState<RequestTab>
                             (value.inheritedHeaders?.length ?? 0),
                       ),
                     );
-                    return Tab(text: "Headers ($headersCount)");
+                    return Tab(
+                      text:
+                          "Headers${headersCount > 0 ? ' ($headersCount)' : ''}",
+                    );
                   },
                 ),
                 AuthTabHeader(widget.node.id),
