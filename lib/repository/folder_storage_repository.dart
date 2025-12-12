@@ -10,73 +10,74 @@ class FolderStorageRepository implements StorageRepository {
   FolderStorageRepository({required this.rootPath});
 
   @override
-  Future<List<Node>> getContents(String? parentId) async {
+  Future<List<Node>> getNodes() async {
+    throw UnimplementedError();
     // If parentId is null/empty, we are at Root
-    final dirPath = (parentId == null || parentId.isEmpty)
-        ? rootPath
-        : parentId;
-    final dir = Directory(dirPath);
+    // final dirPath = (parentId == null || parentId.isEmpty)
+    //     ? rootPath
+    //     : parentId;
+    // final dir = Directory(dirPath);
 
-    if (!await dir.exists()) return [];
+    // if (!await dir.exists()) return [];
 
-    final entities = await dir.list().toList();
-    final List<Node> nodes = [];
+    // final entities = await dir.list().toList();
+    // final List<Node> nodes = [];
 
-    // 1. Load Nodes
-    for (var entity in entities) {
-      final name = p.basename(entity.path);
-      if (name.startsWith('.') ||
-          name == 'folder.json' ||
-          name == 'collection.json') {
-        continue;
-      }
-      final type = await FileSystemEntity.isDirectory(entity.path)
-          ? NodeType.folder
-          : NodeType.request;
-      final Node newNode = type == NodeType.folder
-          ? FolderNode(
-              id: entity.path,
-              parentId: parentId,
-              name: name,
-              config: FolderNodeConfig.empty(),
-            )
-          : RequestNode(
-              id: entity.path,
-              parentId: parentId,
-              name: name,
-              config: RequestNodeConfig.empty(),
-            );
-      nodes.add(newNode);
-    }
-
-    // 2. Load Sort Order
-    List<String> sortOrder = [];
-    final configFile = File(
-      p.join(dirPath, dirPath == rootPath ? 'collection.json' : 'folder.json'),
-    );
-    if (await configFile.exists()) {
-      try {
-        final data = jsonDecode(await configFile.readAsString());
-        // In FS mode, we sort by NAME because IDs (paths) are long/variable
-        sortOrder = List<String>.from(data['seq'] ?? []);
-      } catch (_) {}
-    }
-
-    // 3. Sort
-    nodes.sort((a, b) {
-      int idxA = sortOrder.indexOf(a.name);
-      int idxB = sortOrder.indexOf(b.name);
-      if (idxA != -1 && idxB != -1) return idxA.compareTo(idxB);
-      if (idxA != -1) return -1;
-      if (idxB != -1) return 1;
-      if (a.type == b.type) {
-        return a.name.toLowerCase().compareTo(b.name.toLowerCase());
-      }
-      return a.type == NodeType.folder ? -1 : 1;
-    });
-
-    return nodes;
+    // // 1. Load Nodes
+    // for (var entity in entities) {
+    //   final name = p.basename(entity.path);
+    //   if (name.startsWith('.') ||
+    //       name == 'folder.json' ||
+    //       name == 'collection.json') {
+    //     continue;
+    //   }
+    //   final type = await FileSystemEntity.isDirectory(entity.path)
+    //       ? NodeType.folder
+    //       : NodeType.request;
+    //   final Node newNode = type == NodeType.folder
+    //       ? FolderNode(
+    //           id: entity.path,
+    //           parentId: parentId,
+    //           name: name,
+    //           config: FolderNodeConfig.empty(),
+    //         )
+    //       : RequestNode(
+    //           id: entity.path,
+    //           parentId: parentId,
+    //           name: name,
+    //           config: RequestNodeConfig.empty(),
+    //         );
+    //   nodes.add(newNode);
   }
+
+  // 2. Load Sort Order
+  //   List<String> sortOrder = [];
+  //   final configFile = File(
+  //     p.join(dirPath, dirPath == rootPath ? 'collection.json' : 'folder.json'),
+  //   );
+  //   if (await configFile.exists()) {
+  //     try {
+  //       final data = jsonDecode(await configFile.readAsString());
+  //       // In FS mode, we sort by NAME because IDs (paths) are long/variable
+  //       sortOrder = List<String>.from(data['seq'] ?? []);
+  //     } catch (_) {}
+  //   }
+
+  //   // 3. Sort
+  //   nodes.sort((a, b) {
+  //     int idxA = sortOrder.indexOf(a.name);
+  //     int idxB = sortOrder.indexOf(b.name);
+  //     if (idxA != -1 && idxB != -1) return idxA.compareTo(idxB);
+  //     if (idxA != -1) return -1;
+  //     if (idxB != -1) return 1;
+  //     if (a.type == b.type) {
+  //       return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+  //     }
+  //     return a.type == NodeType.folder ? -1 : 1;
+  //   });
+
+  //   return nodes;
+  // }
 
   @override
   Future<Map<String, dynamic>> getNodeDetails(String id) async {
@@ -116,6 +117,11 @@ class FolderStorageRepository implements StorageRepository {
     } else {
       await File(id).delete();
     }
+  }
+
+  @override
+  Future<void> deleteItems(List<String> ids) {
+    throw UnimplementedError();
   }
 
   @override
@@ -188,8 +194,9 @@ class FolderStorageRepository implements StorageRepository {
     // ... logic same as your previous code ...
   }
   @override
-  Future<void> duplicateItem(String id) async {
-    await copyTo(id, p.dirname(id));
+  Future<String> duplicateItem(String id) async {
+    throw UnimplementedError();
+    // await copyTo(id, p.dirname(id));
   }
 
   Future<void> copyTo(String sourcePath, String targetParentPath) async {

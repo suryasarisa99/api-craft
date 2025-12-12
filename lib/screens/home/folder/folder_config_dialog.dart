@@ -8,9 +8,9 @@ import 'package:api_craft/models/models.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class FolderConfigDialog extends ConsumerStatefulWidget {
-  final FolderNode node;
+  final String id;
 
-  const FolderConfigDialog({super.key, required this.node});
+  const FolderConfigDialog({super.key, required this.id});
 
   @override
   ConsumerState<FolderConfigDialog> createState() => _FolderConfigDialogState();
@@ -20,8 +20,7 @@ class _FolderConfigDialogState extends ConsumerState<FolderConfigDialog>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   late final ResolveConfigNotifier resolveConfigProviderNotifier;
-  late final EditorParams _editorParams = EditorParams(widget.node);
-  late final notifier = ref.read(resolveConfigProvider(_editorParams).notifier);
+  late final notifier = ref.read(resolveConfigProvider(widget.id).notifier);
   final debouncer = Debouncer(Duration(milliseconds: 1000));
   static const useLazyMode = true;
   bool hasChanges = true;
@@ -32,7 +31,7 @@ class _FolderConfigDialogState extends ConsumerState<FolderConfigDialog>
     _tabController = TabController(length: 4, vsync: this);
 
     subscription = ref.listenManual(
-      resolveConfigProvider(_editorParams).select((d) => d.node),
+      resolveConfigProvider(widget.id).select((d) => d.node),
       (_, n) {
         debugPrint(
           "folder-dialog:: detected node change: ${n.name}, headers len: ${n.config.headers.length}",
@@ -53,7 +52,7 @@ class _FolderConfigDialogState extends ConsumerState<FolderConfigDialog>
 
   @override
   void dispose() {
-    debugPrint("Disposing FolderConfigDialog for node ${widget.node.name}");
+    debugPrint("Disposing FolderConfigDialog for node ${widget.id}");
     _tabController.dispose();
     super.dispose();
   }
@@ -63,13 +62,13 @@ class _FolderConfigDialogState extends ConsumerState<FolderConfigDialog>
     return PopScope(
       canPop: true,
       onPopInvokedWithResult: (pop, result) async {
-        debugPrint("set last updated folder for node ${widget.node.name}");
+        debugPrint("set last updated folder for node ${widget.id}");
         ref
             .read(nodeUpdateTriggerProvider.notifier)
-            .setLastUpdatedFolder(widget.node);
-        debugPrint("Popping FolderConfigDialog for node ${widget.node.name}");
+            .setLastUpdatedFolder(widget.id);
+        debugPrint("Popping FolderConfigDialog for node ${widget.id}");
         if (useLazyMode && hasChanges) {
-          final currentState = ref.read(resolveConfigProvider(_editorParams));
+          final currentState = ref.read(resolveConfigProvider(widget.id));
           ref.read(repositoryProvider).updateNode(currentState.node);
         }
       },
@@ -90,7 +89,7 @@ class _FolderConfigDialogState extends ConsumerState<FolderConfigDialog>
           builder: (context, ref, child) {
             final title = ref.watch(
               resolveConfigProvider(
-                _editorParams,
+                widget.id,
               ).select((value) => value.node.name),
             );
             return Padding(
@@ -125,12 +124,12 @@ class _FolderConfigDialogState extends ConsumerState<FolderConfigDialog>
             controller: _tabController,
             children: [
               // 1. General Tab
-              _GeneralTab(params: _editorParams),
+              _GeneralTab(id: widget.id),
               // 2. Headers Tab
-              HeadersTab(params: _editorParams),
+              HeadersTab(id: widget.id),
               // 3. Auth Tab
-              AuthTab(params: _editorParams),
-              EnvironmentTab(params: _editorParams),
+              AuthTab(id: widget.id),
+              EnvironmentTab(id: widget.id),
               // 4. Variables Tab
               // _VariablesTab(controller: _controller),
             ],
@@ -142,17 +141,17 @@ class _FolderConfigDialogState extends ConsumerState<FolderConfigDialog>
 }
 
 class _GeneralTab extends ConsumerStatefulWidget {
-  final EditorParams params;
-  const _GeneralTab({required this.params});
+  final String id;
+  const _GeneralTab({required this.id});
 
   ResolveConfigNotifier notifier(WidgetRef ref) =>
-      ref.read(resolveConfigProvider(params).notifier);
+      ref.read(resolveConfigProvider(id).notifier);
   @override
   ConsumerState<_GeneralTab> createState() => __GeneralTabState();
 }
 
 class __GeneralTabState extends ConsumerState<_GeneralTab> {
-  late final provider = resolveConfigProvider(widget.params);
+  late final provider = resolveConfigProvider(widget.id);
   // for description  this value is null sometimes, due to lazyload of config
   // thats we we use listener to update text controller
   late final descriptionController = TextEditingController(
@@ -163,7 +162,7 @@ class __GeneralTabState extends ConsumerState<_GeneralTab> {
   );
 
   late final ResolveConfigNotifier notifier = ref.read(
-    resolveConfigProvider(widget.params).notifier,
+    resolveConfigProvider(widget.id).notifier,
   );
 
   @override

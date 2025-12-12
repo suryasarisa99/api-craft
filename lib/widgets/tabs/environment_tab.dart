@@ -5,14 +5,14 @@ import 'package:api_craft/widgets/ui/key_value_editor.dart';
 import 'package:flutter/material.dart';
 
 class EnvironmentTab extends ConsumerWidget {
-  final EditorParams params;
-  const EnvironmentTab({super.key, required this.params});
+  final String id;
+  const EnvironmentTab({super.key, required this.id});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final variables = ref.watch(
       resolveConfigProvider(
-        params,
+        id,
       ).select((value) => (value.node as FolderNode).config.variables),
     );
     return Padding(
@@ -26,7 +26,7 @@ class EnvironmentTab extends ConsumerWidget {
                 variables,
               ), // Pass copy to allow local reordering
               onChanged: (newItems) => ref
-                  .read(resolveConfigProvider(params).notifier)
+                  .read(resolveConfigProvider(id).notifier)
                   .updateVariables(newItems),
             ),
           ),

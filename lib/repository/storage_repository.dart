@@ -5,7 +5,7 @@ export 'db_storage_repository.dart';
 
 abstract class StorageRepository {
   /// Loads children for a given parent (or root if parentId is empty/null)
-  Future<List<Node>> getContents(String? parentId);
+  Future<List<Node>> getNodes();
 
   Future<Map<String, dynamic>> getNodeDetails(String id);
 
@@ -18,6 +18,7 @@ abstract class StorageRepository {
 
   /// Deletes an item (and its children).
   Future<void> deleteItem(String id);
+  Future<void> deleteItems(List<String> ids);
 
   /// Renames an item.
   /// Returns the NEW ID if the ID changed (FileSystem), or null/same ID if it didn't (Database).
@@ -31,7 +32,7 @@ abstract class StorageRepository {
   Future<void> saveSortOrder(String? parentId, List<String> orderedIds);
 
   /// Duplicates an item.
-  Future<void> duplicateItem(String id);
+  Future<String?> duplicateItem(String id);
 
   /// Reads the configuration columns (headers, auth, vars, desc) for a node
   // Future<NodeConfig> getNodeConfig(String id);

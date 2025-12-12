@@ -5,17 +5,17 @@ import 'package:api_craft/screens/home/sidebar/context_menu.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class AuthTapHeader extends ConsumerStatefulWidget {
-  final EditorParams params;
-  const AuthTapHeader(this.params, {super.key});
+class AuthTabHeader extends ConsumerStatefulWidget {
+  final String id;
+  const AuthTabHeader(this.id, {super.key});
 
   @override
-  ConsumerState<AuthTapHeader> createState() => _AuthTapHeaderState();
+  ConsumerState<AuthTabHeader> createState() => _AuthTabHeaderState();
 }
 
-class _AuthTapHeaderState extends ConsumerState<AuthTapHeader> {
+class _AuthTabHeaderState extends ConsumerState<AuthTabHeader> {
   // helpers
-  late final provider = resolveConfigProvider(widget.params);
+  late final provider = resolveConfigProvider(widget.id);
   late final notifier = ref.read(provider.notifier);
 
   @override
@@ -40,21 +40,20 @@ class _AuthTapHeaderState extends ConsumerState<AuthTapHeader> {
 }
 
 class AuthTab extends ConsumerWidget {
-  final EditorParams params;
-  const AuthTab({required this.params, super.key});
+  final String id;
+  const AuthTab({required this.id, super.key});
 
   ResolveConfigNotifier notifier(WidgetRef ref) =>
-      ref.read(resolveConfigProvider(params).notifier);
+      ref.read(resolveConfigProvider(id).notifier);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final auth = ref.watch(
-      resolveConfigProvider(params).select((value) => value.node.config.auth),
+      resolveConfigProvider(id).select((value) => value.node.config.auth),
     );
+    final node = ref.read(fileTreeProvider).nodeMap[id]!;
     final authSource = ref.watch(
-      resolveConfigProvider(
-        params,
-      ).select((value) => value.effectiveAuthSource),
+      resolveConfigProvider(id).select((value) => value.effectiveAuthSource),
     );
     return Column(
       children: [
@@ -88,7 +87,7 @@ class AuthTab extends ConsumerWidget {
                   if (authSource != null)
                     TextButton(
                       onPressed: () {
-                        if (params.node is FolderNode) {
+                        if (node is FolderNode) {
                           // aldready we opened folder dialog
                           // so close it first
                           Navigator.of(context).pop();

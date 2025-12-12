@@ -4,8 +4,8 @@ import 'package:api_craft/widgets/ui/key_value_editor.dart';
 import 'package:flutter/material.dart';
 
 class HeadersTab extends StatelessWidget {
-  final EditorParams params;
-  const HeadersTab({super.key, required this.params});
+  final String id;
+  const HeadersTab({super.key, required this.id});
 
   @override
   Widget build(BuildContext context) {
@@ -19,7 +19,7 @@ class HeadersTab extends StatelessWidget {
             builder: (context, ref, child) {
               final inheritedHeaders = ref.watch(
                 resolveConfigProvider(
-                  params,
+                  id,
                 ).select((value) => value.inheritedHeaders),
               );
               if (inheritedHeaders == null || inheritedHeaders.isEmpty) {
@@ -121,7 +121,7 @@ class HeadersTab extends StatelessWidget {
             builder: (context, ref, _) {
               final headers = ref.watch(
                 resolveConfigProvider(
-                  params,
+                  id,
                 ).select((value) => value.node.config.headers),
               );
               return Expanded(
@@ -132,7 +132,7 @@ class HeadersTab extends StatelessWidget {
                   ), // Pass copy to allow local reordering
                   onChanged: (newItems) {
                     ref
-                        .read(resolveConfigProvider(params).notifier)
+                        .read(resolveConfigProvider(id).notifier)
                         .updateHeaders(newItems);
                   },
                 ),

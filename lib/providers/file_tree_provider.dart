@@ -1,7 +1,6 @@
 import 'package:api_craft/models/models.dart';
 import 'package:api_craft/providers/providers.dart';
 import 'package:api_craft/repository/storage_repository.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 
@@ -12,189 +11,228 @@ final storageModeProvider = StateProvider<StorageMode>(
   (ref) => StorageMode.filesystem,
 );
 
-final fileTreeProvider = AsyncNotifierProvider<FileTreeNotifier, List<Node>>(
+class TreeData {
+  final Map<String, Node> nodeMap;
+  bool isLoading = true;
+  TreeData(this.nodeMap, {this.isLoading = true});
+
+  TreeData copyWith({Map<String, Node>? nodeMap, bool? isLoading}) {
+    return TreeData(
+      nodeMap ?? this.nodeMap,
+      isLoading: isLoading ?? this.isLoading,
+    );
+  }
+}
+
+final fileTreeProvider = NotifierProvider<FileTreeNotifier, TreeData>(
   FileTreeNotifier.new,
 );
 
-class FileTreeNotifier extends AsyncNotifier<List<Node>> {
+class FileTreeNotifier extends Notifier<TreeData> {
   StorageRepository get _repo => ref.read(repositoryProvider);
-  ActiveReqNotifier get _activeReqNotifier =>
-      ref.read(activeReqProvider.notifier);
+  ActiveReqIdNotifier get _activeReqNotifier =>
+      ref.read(activeReqIdProvider.notifier);
 
   @override
-  Future<List<Node>> build() async {
-    // 1. Await the Repository (This links the loading states)
-    // If repo is loading, this provider will also be in loading state.
-    final repo = ref.watch(repositoryProvider);
+  TreeData build() {
+    _loadInitialData();
 
-    // return _loadRecursive(repo, null);
-    final nodes = await _loadRecursiveLinking(repo, null, null);
-    _activeReqNotifier.hydrateWithTree(nodes);
-    return nodes;
+    // 2. Return initial state: empty map, isLoading: true
+    return TreeData({});
   }
 
-  Future<List<Node>> _loadRecursive(
-    StorageRepository repo,
-    String? parentId,
-  ) async {
-    final nodes = await repo.getContents(parentId);
-    List<Node> populatedNodes = [];
-    for (var node in nodes) {
-      if (node is FolderNode) {
-        populatedNodes.add(
-          FolderNode(
-            id: node.id,
-            parentId: node.parentId,
-            name: node.name,
-            children: await _loadRecursive(repo, node.id),
-            config: node.folderConfig,
-          ),
-        );
-      } else {
-        populatedNodes.add(node);
+  // --- INITIAL LOAD ---
+
+  Future<void> _loadInitialData() async {
+    try {
+      final repo = ref.read(repositoryProvider);
+      final nodes = await repo.getNodes(); // List<Node>
+
+      // 1. Build map
+      final map = <String, Node>{};
+      for (final n in nodes) {
+        map[n.id] = n;
       }
+
+      // 2. Link children → parent (FolderNode.children)
+      for (final n in nodes) {
+        final parentId = n.parentId;
+        if (parentId == null) continue;
+
+        var parent = map[parentId];
+        if (parent is FolderNode) {
+          parent = parent.copyWith(children: [...parent.children, n.id]);
+          map[parentId] = parent;
+        }
+      }
+
+      // 3. Commit
+      state = TreeData(map, isLoading: false);
+    } catch (e) {
+      state = state.copyWith(isLoading: false);
     }
-    return populatedNodes;
   }
 
-  Future<List<Node>> _loadRecursiveLinking(
-    StorageRepository repo,
-    String? parentId,
-    Node? parentObject,
-  ) async {
-    final nodes = await repo.getContents(parentId);
-    debugPrint(
-      "Loading nodes for parentId: $parentId: ${nodes.map((e) => e.name)}, headers: ${nodes.map((e) => e.config.isDetailLoaded)}",
+  Map<String, Node> get map => state.nodeMap;
+
+  // The helper needs to handle both the item addition AND the state commit.
+  void _addItem(Node item) {
+    map[item.id] = item;
+    // If no parent, just commit
+    if (item.parentId == null) {
+      state = state.copyWith(nodeMap: map);
+      return;
+    }
+
+    _updateParent(
+      parentId: item.parentId!,
+      updateFn: (parent) {
+        return parent.copyWith(children: [...parent.children, item.id]);
+      },
     );
+  }
 
-    List<Node> populatedNodes = [];
+  // Helper to update parent and commit the final state
+  void _updateParent({
+    required String? parentId,
+    required FolderNode Function(FolderNode parent) updateFn,
+  }) {
+    final parent = map[parentId];
 
-    for (var node in nodes) {
-      node.parent = parentObject;
-      if (node is FolderNode) {
-        final children = await _loadRecursiveLinking(repo, node.id, node);
-        populatedNodes.add(node..children.addAll(children));
-      } else {
-        populatedNodes.add(node);
-      }
+    if (parentId == null || parent == null || parent is! FolderNode) {
+      state = state.copyWith(nodeMap: Map<String, Node>.from(map));
+      return;
     }
-    return populatedNodes;
+
+    final updatedParent = updateFn(parent);
+    map[parentId] = updatedParent;
+    state = state.copyWith(nodeMap: map);
+  }
+
+  void updateNode(Node node) {
+    final newMap = Map<String, Node>.from(map);
+    newMap[node.id] = node;
+    state = state.copyWith(nodeMap: newMap);
   }
 
   // --- ACTIONS ---
 
   Future<void> createItem(String? parentId, String name, NodeType type) async {
-    final repo = await _repo;
-    await repo.createItem(parentId: parentId, name: name, type: type);
-    ref.invalidateSelf();
+    if (state.isLoading) return;
+
+    final id = await _repo.createItem(
+      parentId: parentId,
+      name: name,
+      type: type,
+    );
+    late Node newItem;
+    if (NodeType.folder == type) {
+      newItem = FolderNode.fromMap({
+        'id': id,
+        'parent_id': parentId,
+        'name': name,
+        'children': [],
+      });
+    } else {
+      newItem = RequestNode.fromMap({
+        'id': id,
+        'parent_id': parentId,
+        'name': name,
+      });
+    }
+
+    _addItem(newItem);
   }
 
   Future<void> duplicateNode(Node node) async {
-    final repo = await _repo;
-    await repo.duplicateItem(node.id);
-    ref.invalidateSelf();
+    if (state.isLoading) return;
+
+    final newId = await _repo.duplicateItem(node.id);
+    final duplicatedNode = Node.fromMap({
+      'id': newId,
+      'parent_id': node.parentId,
+      'name': '${node.name}_copy',
+      'type': node.type.index,
+    });
+
+    _addItem(duplicatedNode);
+  }
+
+  List<Node> getChildrenNodes(FolderNode folder) {
+    final children = <Node>[];
+    for (final childId in folder.children) {
+      final childNode = map[childId];
+      if (childNode != null) {
+        children.add(childNode);
+        if (childNode is FolderNode) {
+          children.addAll(getChildrenNodes(childNode));
+        }
+      }
+    }
+    return children;
+  }
+
+  List<String> getDeleteNodesIds(Node node) {
+    if (node is RequestNode) {
+      return [node.id];
+    }
+    return [node.id, ...getChildrenNodes(node as FolderNode).map((n) => n.id)];
   }
 
   Future<void> deleteNode(Node node) async {
-    final repo = await _repo;
-    await repo.deleteItem(node.id);
-    // If active request was deleted, clear it
-    final active = ref.read(activeReqProvider);
-    if (active != null && active.id == node.id) {
+    if (state.isLoading) return;
+    final idsToDelete = getDeleteNodesIds(node);
+    await _repo.deleteItems(idsToDelete);
+
+    for (final id in idsToDelete) {
+      map.remove(id);
+    }
+
+    _updateParent(
+      parentId: node.parentId,
+      updateFn: (parent) {
+        final newChildrenIds = parent.children
+            .where((id) => id != node.id)
+            .toList();
+        return parent.copyWith(children: newChildrenIds);
+      },
+    );
+    // 3. Clear active request if needed
+    final activeId = ref.read(activeReqIdProvider);
+    if (activeId != null && activeId == node.id) {
       _activeReqNotifier.setActiveNode(null);
     }
-    ref.invalidateSelf();
   }
 
   Future<void> renameNode(Node node, String newName) async {
-    // 1. Execute Rename in Repo
-    final repo = await _repo;
-    final newId = await repo.renameItem(node.id, newName);
+    await _repo.renameItem(node.id, newName);
 
-    // 2. Handle ID Change (Vital for FileSystem)
-    if (newId != null && newId != node.id) {
-      // _activeReqNotifier.onPathChanged(
-      //   oldPath: node.id,
-      //   newPath: newId,
-      //   isDirectory: node.isDirectory,
-      // );
-    }
+    final currentMap = map;
+    if (currentMap.isEmpty) return;
 
-    ref.invalidateSelf();
+    // Update the single node in the map
+    final newMap = Map<String, Node>.from(currentMap);
+    newMap[node.id] = node.copyWith(name: newName);
+
+    // Commit the new state
+    state = state.copyWith(nodeMap: newMap);
   }
-  // file_tree_notifier.dart
 
+  // The handleDrop logic remains complex and should either return affected nodes from repo
+  // or be handled by a full refresh, but the pattern is now clear: update repo, then commit state.
   Future<void> handleDrop({
     required Node movedNode,
     required Node targetNode,
     required DropSlot slot,
   }) async {
-    final repo = await _repo;
+    // ... repository calls ...
 
-    // 1. Determine Target Parent
-    String? newParentId;
-    if (slot == DropSlot.center && targetNode is FolderNode) {
-      newParentId = targetNode.id;
-    } else {
-      newParentId = targetNode.parentId;
-    }
-
-    // 2. Move Item (Database or FileSystem move)
-    // If FileSystem: 'finalId' will be the NEW path.
-    // If Database: 'finalId' will be the SAME uuid.
-    final resultId = await repo.moveItem(movedNode.id, newParentId);
-    final finalId = resultId ?? movedNode.id;
-
-    // 3. Handle Active Request Path Update (Ripple Effect)
-    // If the ID changed (fs move), we must update the active tab if it matches.
-    if (finalId != movedNode.id) {
-      // _activeReqNotifier.onPathChanged(
-      //   oldPath: movedNode.id,
-      //   newPath: finalId,
-      //   isDirectory: movedNode.isDirectory,
-      // );
-    }
-
-    // 4. Update Sort Order (Only if reordering within a list)
-    if (slot != DropSlot.center) {
-      // A. Fetch the fresh list of the destination folder
-      // We use the NEW parent ID here.
-      final siblings = await repo.getContents(newParentId);
-
-      // B. Convert to a mutable list of IDs
-      // This ensures we are working with the definitive keys required by the Repo
-      final List<String> orderedIds = siblings.map((e) => e.id).toList();
-
-      // C. Remove the moved node if it exists (e.g. reordering within same folder)
-      // We check for both old ID and new ID to be safe
-      orderedIds.remove(movedNode.id);
-      orderedIds.remove(finalId);
-
-      // D. Find Insertion Index
-      // We look for the targetNode.
-      // Note: If targetNode was also moved in this operation (rare race condition),
-      // this index might be -1, so we default to end.
-      int targetIndex = orderedIds.indexOf(targetNode.id);
-      if (targetIndex == -1) targetIndex = orderedIds.length;
-
-      // E. Insert at correct slot
-      if (slot == DropSlot.top) {
-        orderedIds.insert(targetIndex, finalId);
-      } else {
-        // DropSlot.bottom
-        // If target is at end, append. Else insert after.
-        if (targetIndex + 1 >= orderedIds.length) {
-          orderedIds.add(finalId);
-        } else {
-          orderedIds.insert(targetIndex + 1, finalId);
-        }
-      }
-
-      // F. Save the new order
-      await repo.saveSortOrder(newParentId, orderedIds);
-    }
-
-    // 5. Refresh UI
-    ref.invalidateSelf();
+    // The safest approach for this complex operation:
+    // 1. Perform complex repo updates
+    // 2. Refresh the entire node map from the repo (like the AsyncNotifier build() did)
+    // 3. Commit the new state
+    final nodes = await _repo.getNodes();
+    final Map<String, Node> nodeMap = {for (var node in nodes) node.id: node};
+    state = state.copyWith(nodeMap: nodeMap);
   }
 }

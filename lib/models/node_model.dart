@@ -18,7 +18,6 @@ abstract class Node<T extends NodeConfig> {
   final T config;
 
   // Runtime Links (Mutable for tree traversal)
-  Node? parent;
 
   Node({
     required this.id,
@@ -26,7 +25,6 @@ abstract class Node<T extends NodeConfig> {
     required this.name,
     required this.type,
     required this.config,
-    this.parent,
   });
 
   // --- Helpers ---
@@ -65,17 +63,15 @@ abstract class Node<T extends NodeConfig> {
 
 // --- FOLDER NODE ---
 class FolderNode extends Node<FolderNodeConfig> {
-  final List<Node> children;
+  final List<String> children;
 
   FolderNode({
     required super.id,
     required super.parentId,
     required super.name,
     required super.config, // Specific Type
-    super.parent,
-    List<Node>? children,
-  }) : children = children ?? [],
-       super(type: NodeType.folder);
+    this.children = const [],
+  }) : super(type: NodeType.folder);
 
   // Getter helper to avoid casting 'config' manually
   FolderNodeConfig get folderConfig => config;
@@ -121,14 +117,14 @@ class FolderNode extends Node<FolderNodeConfig> {
     String? name,
     String? parentId,
     FolderNodeConfig? config,
+    List<String>? children,
   }) {
     return FolderNode(
       id: id,
       parentId: parentId ?? this.parentId,
       name: name ?? this.name,
       config: config ?? folderConfig, // Share the same config object
-      parent: parent,
-      children: children,
+      children: children ?? this.children,
     );
   }
 
@@ -150,6 +146,11 @@ class FolderNode extends Node<FolderNodeConfig> {
       ),
     };
   }
+
+  @override
+  String toString() {
+    return ':::Node:::\n  id: $id\n  name: $name\n  type: $type\n  children: ${children.length}\n  parentId: $parentId\n  config: $config\n';
+  }
 }
 
 // --- REQUEST NODE ---
@@ -159,7 +160,6 @@ class RequestNode extends Node<RequestNodeConfig> {
     required super.parentId,
     required super.name,
     required super.config,
-    super.parent,
   }) : super(type: NodeType.request);
 
   RequestNodeConfig get reqConfig => config;
@@ -213,7 +213,6 @@ class RequestNode extends Node<RequestNodeConfig> {
       parentId: parentId ?? this.parentId,
       name: name ?? this.name,
       config: config ?? reqConfig,
-      parent: parent,
     );
   }
 

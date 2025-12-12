@@ -11,23 +11,6 @@ import 'package:super_context_menu/super_context_menu.dart';
 import 'package:suryaicons/bulk_rounded.dart';
 import 'package:suryaicons/suryaicons.dart';
 
-class FileNodeTile extends ConsumerStatefulWidget {
-  final Node node; // Your Node class
-  final int depth; // Current indentation level (0 for root)
-  final VoidCallback? onRefresh; // Optional callback
-  final bool isFirstNode;
-  const FileNodeTile({
-    super.key,
-    required this.node,
-    this.depth = 0,
-    this.onRefresh,
-    this.isFirstNode = false,
-  });
-
-  @override
-  ConsumerState<FileNodeTile> createState() => _FileTreeTileState();
-}
-
 final _folderClr = const Color(0xFFC4742D);
 final _folderSize = 18.0;
 
@@ -47,18 +30,35 @@ final folderOpenIcon = SuryaIcon(
   size: _folderSize,
 );
 
+class FileNodeTile extends ConsumerStatefulWidget {
+  final Node node; // Your Node class
+  final int depth; // Current indentation level (0 for root)
+  final VoidCallback? onRefresh; // Optional callback
+  final bool isFirstNode;
+  const FileNodeTile({
+    super.key,
+    required this.node,
+    this.depth = 0,
+    this.onRefresh,
+    this.isFirstNode = false,
+  });
+
+  @override
+  ConsumerState<FileNodeTile> createState() => _FileTreeTileState();
+}
+
 class _FileTreeTileState extends ConsumerState<FileNodeTile>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _iconTurns;
   late Animation<double> _heightFactor;
-  // expand is about for active and all its parent directories
   late bool _isExpanded = false;
   late final FocusNode _focusNode = FocusNode();
-  // selected for to select multiple files
 
-  // Configuration Constants
-  late final double _kTileHeight = widget.node is FolderNode ? 32.0 : 28.0;
+  // Your Constants (Unchanged)
+  late final double _kTileHeight = widget.node.type == NodeType.folder
+      ? 32.0
+      : 28.0;
   static const double _kIndentation = 6.0;
   static const double _kIconSize = 14.0;
   static const double _kFolderIconSize = 17.0;
@@ -72,7 +72,6 @@ class _FileTreeTileState extends ConsumerState<FileNodeTile>
       vsync: this,
     );
 
-    // Rotate 90 degrees (0.25 turns) when expanded
     _iconTurns = Tween<double>(
       begin: 0.0,
       end: 0.25,
@@ -80,17 +79,16 @@ class _FileTreeTileState extends ConsumerState<FileNodeTile>
 
     _heightFactor = _controller.view;
 
-    // Check if initially expanded via your Provider
-    final initiallyExpanded = widget.node is FolderNode
-        ? ref.read(activeReqProvider.notifier).isAncestor(widget.node)
-        : false;
-    // final _isSelected = ref
-    //     .read(selectedNodesProvider.notifier)
-    //     .isSelected(widget.node.path);
-    if (initiallyExpanded) {
-      _isExpanded = true;
-      _controller.value = 1.0;
-    }
+    // Expansion Logic (Assuming isAncestor works with your Node/Map setup)
+    //TODO:
+    // final initiallyExpanded = widget.node.type == NodeType.folder
+    //     ? ref.read(activeReqIdProvider.notifier).isAncestor(widget.node)
+    //     : false;
+
+    // if (initiallyExpanded) {
+    //   _isExpanded = true;
+    //   _controller.value = 1.0;
+    // }
   }
 
   @override
@@ -101,41 +99,33 @@ class _FileTreeTileState extends ConsumerState<FileNodeTile>
   }
 
   void _handleTap() {
-    // 1. Handle Selection Logic (Multi-select or Single)
     final hk = HardwareKeyboard.instance;
     final isCtrl = Platform.isMacOS ? hk.isMetaPressed : hk.isControlPressed;
     if (isCtrl) {
-      // setState(() {
-      //   _isSelected = !_isSelected;
-      // });
       ref.read(selectedNodesProvider.notifier).toggle(widget.node.id);
       return;
     }
 
-    // 2. Handle Expansion if directory
-    if (widget.node is FolderNode) {
+    if (widget.node.type == NodeType.folder) {
       setState(() {
         _isExpanded = !_isExpanded;
         if (_isExpanded) {
           _controller.forward();
-          // ref.read(activeReqProvider.notifier).setDirectoryOpen(widget.node.path, true);
         } else {
           _controller.reverse().then((_) {
             if (!mounted) return;
-            setState(() {}); // Rebuild to ensure offstage cleaning if needed
+            setState(() {});
           });
-          // ref.read(activeReqProvider.notifier).setDirectoryOpen(widget.node.path, false);
         }
       });
     } else {
-      // set file is selected
-      ref.read(activeReqProvider.notifier).setActiveNode(widget.node);
+      ref.read(activeReqIdProvider.notifier).setActiveNode(widget.node.id);
       ref.read(selectedNodesProvider.notifier).clear();
     }
   }
 
   void handleToggleExpand() {
-    if (widget.node is FolderNode) {
+    if (widget.node.type == NodeType.folder) {
       setState(() {
         _isExpanded = !_isExpanded;
         if (_isExpanded) {
@@ -159,7 +149,6 @@ class _FileTreeTileState extends ConsumerState<FileNodeTile>
       canRequestFocus: true,
       onKeyEvent: (FocusNode node, KeyEvent keyEvent) {
         if (keyEvent is KeyUpEvent) return KeyEventResult.ignored;
-        // only allows keyDown and keyRepeat events.
         final k = keyEvent.logicalKey;
 
         if (k == LogicalKeyboardKey.arrowDown) {
@@ -171,7 +160,7 @@ class _FileTreeTileState extends ConsumerState<FileNodeTile>
           return KeyEventResult.handled;
         }
         if (k == LogicalKeyboardKey.arrowRight) {
-          if (widget.node is FolderNode && !_isExpanded) {
+          if (widget.node.type == NodeType.folder && !_isExpanded) {
             handleToggleExpand();
           } else {
             FocusScope.of(context).nextFocus();
@@ -179,12 +168,8 @@ class _FileTreeTileState extends ConsumerState<FileNodeTile>
           return KeyEventResult.handled;
         }
         if (k == LogicalKeyboardKey.arrowLeft) {
-          if (widget.node is FolderNode && _isExpanded) {
+          if (widget.node.type == NodeType.folder && _isExpanded) {
             handleToggleExpand();
-            // when folder closes rebuild happens it causes focus to next child
-            // here the next child is folder children at that time the animation is not yet completed
-            // so focus goes to children and folder colapses.
-            // so to get back the focus to folder after a small delay
             Future.delayed(const Duration(milliseconds: 10), () {
               _focusNode.requestFocus();
             });
@@ -193,7 +178,6 @@ class _FileTreeTileState extends ConsumerState<FileNodeTile>
           }
           return KeyEventResult.handled;
         }
-
         return KeyEventResult.ignored;
       },
       child: child,
@@ -204,15 +188,18 @@ class _FileTreeTileState extends ConsumerState<FileNodeTile>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
-    // --- SELECTION LOGIC ---
-    // Change this to check against a Set/List for multi-selection
-    // bool isSelected = ref.watch(selectedNodesProvider).contains(widget.node.path);
-    // For now, using your existing logic pattern:
+
+    // --- WATCH REQUIRED PROVIDERS ---
     final activeNode = ref.watch(activeReqProvider);
     final selected = ref.watch(selectedNodesProvider);
+
+    // Watch tree state to lookup children
+    final treeState = ref.watch(fileTreeProvider);
+
     final isSelected = selected.contains(widget.node.id);
     final isActive = activeNode?.id == widget.node.id;
     final hasFocus = (activeNode == null && widget.isFirstNode) || isActive;
+    final isFolder = widget.node.type == NodeType.folder;
 
     final Color textColor = isActive
         ? cs.primary
@@ -222,7 +209,8 @@ class _FileTreeTileState extends ConsumerState<FileNodeTile>
         ? cs.secondary.withValues(alpha: 0.15)
         : isSelected
         ? cs.secondary.withValues(alpha: 0.10)
-        : null; // Add Hover logic here using InkWell's hoverColor
+        : null;
+
     return FileNodeDragWrapper(
       node: widget.node,
       isOpen: _isExpanded,
@@ -230,15 +218,13 @@ class _FileTreeTileState extends ConsumerState<FileNodeTile>
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // --- 1. THE HEADER (Full Width Background) ---
+          // --- 1. THE HEADER ---
           SizedBox(
             height: _kTileHeight,
             child: Material(
-              color:
-                  backgroundColor ??
-                  Colors.transparent, // Background spans full width
+              color: backgroundColor ?? Colors.transparent,
               child: _contextMenuWrapper(
-                isDirectory: widget.node is FolderNode,
+                isDirectory: isFolder,
                 child: focusWrapper(
                   hasFocus: hasFocus,
                   child: Builder(
@@ -249,24 +235,17 @@ class _FileTreeTileState extends ConsumerState<FileNodeTile>
                             ? cs.primary.withValues(alpha: 0.08)
                             : null,
                         child: InkWell(
-                          // autofocus: hasFocus,
-                          // focusNode: _focusNode,
                           canRequestFocus: false,
                           autofocus: false,
                           onTap: _handleTap,
-                          onFocusChange: (f) {
-                            debugPrint(
-                              "InkWell Focus changed: $f,node: ${widget.node.name}",
-                            );
-                          },
                           hoverColor: theme.colorScheme.onSurface.withValues(
                             alpha: 0.05,
                           ),
                           child: Row(
                             children: [
                               SizedBox(width: _kIndentation),
-                              // A. ARROW (Only for directories)
-                              if (widget.node is FolderNode)
+                              // A. ARROW
+                              if (isFolder)
                                 RotationTransition(
                                   turns: _iconTurns,
                                   child: SizedBox(
@@ -279,21 +258,19 @@ class _FileTreeTileState extends ConsumerState<FileNodeTile>
                                   ),
                                 )
                               else
-                                const SizedBox(
-                                  width: _kIconSize + 2,
-                                ), // Spacing for files
+                                const SizedBox(width: _kIconSize + 2),
                               const SizedBox(
                                 width: _kSpacingBetweenArrowAndIcon,
                               ),
 
-                              // B. FOLDER/FILE ICON
-                              if (widget.node is FolderNode)
+                              // B. ICON
+                              if (isFolder)
                                 _isExpanded ? folderOpenIcon : folderIcon
                               else
                                 Icon(
                                   Icons.data_object,
                                   size: _kFolderIconSize,
-                                  color: widget.node is FolderNode
+                                  color: isFolder
                                       ? Colors.amber[700]
                                       : Colors.blueGrey,
                                 ),
@@ -309,7 +286,7 @@ class _FileTreeTileState extends ConsumerState<FileNodeTile>
                                     fontSize: 14,
                                     color: textColor,
                                     fontWeight: FontWeight.normal,
-                                    height: 1.0, // Tight text height
+                                    height: 1.0,
                                   ),
                                 ),
                               ),
@@ -324,18 +301,15 @@ class _FileTreeTileState extends ConsumerState<FileNodeTile>
             ),
           ),
 
-          // --- 2. THE CHILDREN (Animated Expansion) ---
-          // Only build children tree if expanded to save resources (optional optimization)
-          if (widget.node is FolderNode)
+          // --- 2. THE CHILDREN (Refactored for Map Lookup) ---
+          if (isFolder)
             ExcludeFocus(
               excluding: !_isExpanded,
               child: SizeTransition(
                 sizeFactor: _heightFactor,
-                axisAlignment: -1.0, // Expands from top down
+                axisAlignment: -1.0,
                 child: Container(
-                  // The Vertical Guide Line Logic
                   decoration: BoxDecoration(
-                    // color: Colors.red,
                     border: Border(
                       left: BorderSide(
                         color: theme.dividerColor.withValues(alpha: 0.2),
@@ -346,16 +320,31 @@ class _FileTreeTileState extends ConsumerState<FileNodeTile>
                   margin: EdgeInsets.only(
                     left: (_kIndentation) + (_kIconSize / 2),
                   ),
-                  child: Column(
-                    mainAxisSize: .min,
-                    children: (widget.node as FolderNode).children.map((child) {
-                      return FileNodeTile(
-                        node: child,
-                        depth:
-                            widget.depth +
-                            1, // Don't rely on 'indent' padding, pass depth
+                  child: Builder(
+                    builder: (context) {
+                      // Lookup children IDs from the current folder node
+                      final folder = widget.node as FolderNode;
+
+                      // Map IDs to actual Node objects using the provider map
+                      // We filter nulls in case of sync issues
+                      final childNodes = folder.children
+                          .map((id) => treeState.nodeMap[id])
+                          .where((n) => n != null)
+                          .cast<Node>()
+                          .toList();
+
+                      return Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: childNodes.map((child) {
+                          return FileNodeTile(
+                            // Important: ValueKey ensures efficient updates
+                            key: ValueKey(child.id),
+                            node: child,
+                            depth: widget.depth + 1,
+                          );
+                        }).toList(),
                       );
-                    }).toList(),
+                    },
                   ),
                 ),
               ),

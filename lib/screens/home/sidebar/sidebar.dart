@@ -6,116 +6,94 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:super_context_menu/super_context_menu.dart';
 
-// class FileExplorerView extends ConsumerWidget {
-//   const FileExplorerView({super.key});
-
-//   @override
-//   Widget build(BuildContext context, WidgetRef ref) {
-//     final treeAsync = ref.watch(fileTreeProvider);
-
-//     return Scaffold(
-//       body: treeAsync.when(
-//         data: (nodes) => ContextMenuWidget(
-//           menuProvider: (_) async {
-//             return getMenuProvider(ref: ref, context: context, isRoot: true);
-//           },
-//           child: ListView(
-//             children: nodes.map((node) => FileNodeTile(node: node)).toList(),
-//           ),
-//         ),
-//         loading: () => const Center(child: CircularProgressIndicator()),
-//         error: (err, stack) => Center(child: Text('Error: $err')),
-//       ),
-//     );
-//   }
-// }
-
 class FileExplorerView extends ConsumerWidget {
   const FileExplorerView({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final treeAsync = ref.watch(fileTreeProvider);
+    // 1. Watch the new Tree State
+    final treeState = ref.watch(fileTreeProvider);
     final theme = Theme.of(context);
 
+    // 2. Derive Root Nodes (Filter map for items with no parent)
+    // Note: No sorting applied as requested.
+    final rootNodes = treeState.nodeMap.values
+        .where((n) => n.parentId == null)
+        .toList();
+    // debugPrint(
+    //   "build:::file-explorer:::Rendering FileExplorerView with ${rootNodes.length} root nodes",
+    // );
+    // debugPrint(
+    //   "nodes (${treeState.nodeMap.values.length}): ${treeState.nodeMap.values}",
+    // );
+
     return Scaffold(
-      body: treeAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, stack) => Center(child: Text('Error: $err')),
-        data: (nodes) => ContextMenuWidget(
-          menuProvider: (_) async {
-            return getMenuProvider(ref: ref, context: context, isRoot: true);
-          },
-          // 1. Use CustomScrollView to handle the layout
-          child: CustomScrollView(
-            slivers: [
-              // 2. The List of Files
-              SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) => FocusTraversalGroup(
-                    policy: ReadingOrderTraversalPolicy(),
-                    child: FileNodeTile(
-                      node: nodes[index],
-                      isFirstNode: index == 0,
+      body: treeState.isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : ContextMenuWidget(
+              menuProvider: (_) async {
+                return getMenuProvider(
+                  ref: ref,
+                  context: context,
+                  isRoot: true,
+                );
+              },
+              child: CustomScrollView(
+                slivers: [
+                  SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) => FocusTraversalGroup(
+                        policy: ReadingOrderTraversalPolicy(),
+                        child: FileNodeTile(
+                          node: rootNodes[index],
+                          isFirstNode: index == 0,
+                        ),
+                      ),
+                      childCount: rootNodes.length,
                     ),
                   ),
-                  childCount: nodes.length,
-                ),
-              ),
 
-              // 3. The Empty Space Drop Zone
-              SliverFillRemaining(
-                hasScrollBody: false,
-                child: DragTarget<Node>(
-                  onWillAcceptWithDetails: (details) {
-                    // Don't accept if dragging the very last item onto the whitespace
-                    // if (nodes.isNotEmpty && details.data.id == nodes.last.id) {
-                    //   return false;
-                    // }
-                    return true;
-                  },
-                  onAcceptWithDetails: (details) {
-                    if (nodes.isEmpty) {
-                      // Handle empty list case if needed (needs root parent ID logic)
-                      return;
-                    }
-
-                    // TARGET: The last item in the list
-                    final lastNode = nodes.last;
-
-                    // ACTION: Drop below the last item
-                    ref
-                        .read(fileTreeProvider.notifier)
-                        .handleDrop(
-                          movedNode: details.data,
-                          targetNode: lastNode,
-                          slot: DropSlot.bottom,
+                  // The Empty Space Drop Zone (Unchanged)
+                  SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: DragTarget<Node>(
+                      onWillAcceptWithDetails: (details) => true,
+                      onAcceptWithDetails: (details) {
+                        if (rootNodes.isEmpty) {
+                          // Handle drop into empty list if needed
+                          return;
+                        }
+                        // Drop below the last item
+                        final lastNode = rootNodes.last;
+                        ref
+                            .read(fileTreeProvider.notifier)
+                            .handleDrop(
+                              movedNode: details.data,
+                              targetNode: lastNode,
+                              slot: DropSlot.bottom,
+                            );
+                      },
+                      builder: (context, candidateData, rejectedData) {
+                        final isHovering = candidateData.isNotEmpty;
+                        return Container(
+                          color: isHovering
+                              ? theme.colorScheme.primary.withValues(alpha: 0.1)
+                              : Colors.transparent,
+                          alignment: Alignment.topCenter,
+                          padding: const EdgeInsets.only(top: 2),
+                          child: isHovering
+                              ? Container(
+                                  height: 2,
+                                  color: theme.colorScheme.primary,
+                                )
+                              : null,
                         );
-                  },
-                  builder: (context, candidateData, rejectedData) {
-                    final isHovering = candidateData.isNotEmpty;
-
-                    return Container(
-                      color: isHovering
-                          ? theme.colorScheme.primary.withValues(alpha: 0.1)
-                          : Colors.transparent,
-                      alignment: Alignment.topCenter,
-                      padding: const EdgeInsets.only(top: 2),
-                      // Optional: Show a hint text or line if hovering
-                      child: isHovering
-                          ? Container(
-                              height: 2,
-                              color: theme.colorScheme.primary,
-                            )
-                          : null,
-                    );
-                  },
-                ),
+                      },
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
-        ),
-      ),
+            ),
     );
   }
 }

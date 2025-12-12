@@ -15,15 +15,14 @@ class NodeUpdateTriggerProvider extends Notifier<NodeUpdateEvent?> {
     return null;
   }
 
-  void setLastUpdatedFolder(FolderNode node) {
-    state = NodeUpdateEvent(node);
+  void setLastUpdatedFolder(String id) {
+    state = NodeUpdateEvent(id);
   }
 }
 
 class NodeUpdateEvent {
-  final FolderNode node;
+  final String id;
   final int timestamp; // Optional debug helper
 
-  NodeUpdateEvent(this.node)
-    : timestamp = DateTime.now().millisecondsSinceEpoch;
+  NodeUpdateEvent(this.id) : timestamp = DateTime.now().millisecondsSinceEpoch;
 }

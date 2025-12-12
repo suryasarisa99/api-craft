@@ -1,3 +1,4 @@
+import 'package:api_craft/models/models.dart';
 import 'package:api_craft/providers/providers.dart';
 import 'package:api_craft/utils/debouncer.dart';
 import 'package:api_craft/widgets/tabs/auth_tab.dart';
@@ -15,13 +16,13 @@ class ReqTabWrapper extends ConsumerWidget {
     if (activeNode == null) {
       return const Center(child: Text("No active request"));
     }
-    return RequestTab(key: ValueKey(activeNode.id), EditorParams(activeNode));
+    return RequestTab(key: ValueKey(activeNode.id), activeNode);
   }
 }
 
 class RequestTab extends ConsumerStatefulWidget {
-  final EditorParams params;
-  const RequestTab(this.params, {super.key});
+  final RequestNode node;
+  const RequestTab(this.node, {super.key});
 
   @override
   ConsumerState<ConsumerStatefulWidget> createState() => _RequestTabState();
@@ -33,8 +34,8 @@ class _RequestTabState extends ConsumerState<RequestTab>
   late final List<Widget> children = [
     Center(child: Text("Body Tab")),
     Center(child: Text("Params Tab")),
-    HeadersTab(params: widget.params),
-    AuthTab(params: widget.params),
+    HeadersTab(id: widget.node.id),
+    AuthTab(id: widget.node.id),
   ];
 
   late final TabController _tabController = TabController(
@@ -42,14 +43,14 @@ class _RequestTabState extends ConsumerState<RequestTab>
     vsync: this,
   );
 
-  late final _provider = resolveConfigProvider(widget.params);
+  late final _provider = resolveConfigProvider(widget.node.id);
   late final _repo = ref.read(repositoryProvider);
   final debouncer = DebouncerFlush(Duration(milliseconds: 500));
 
   @override
   void initState() {
     super.initState();
-    debugPrint("Initializing Request Tab for ${widget.params.node.name}");
+    debugPrint("Initializing Request Tab for ${widget.node.name}");
     ref.listenManual(_provider.select((d) => d.node), (_, v) {
       debouncer.run(() {
         debugPrint("req-tab:: ${v} ");
@@ -63,11 +64,11 @@ class _RequestTabState extends ConsumerState<RequestTab>
     debugPrint("building::: Request Tab");
 
     return Padding(
-      padding: const EdgeInsets.all(16.0),
+      padding: const EdgeInsets.all(0.0),
       child: Column(
         children: [
           VariableTextField(),
-          SizedBox(height: 16),
+          SizedBox(height: 4),
           SizedBox(
             height: 36,
             child: TabBar(
@@ -87,7 +88,7 @@ class _RequestTabState extends ConsumerState<RequestTab>
                     return Tab(text: "Headers ($headersCount)");
                   },
                 ),
-                AuthTapHeader(widget.params),
+                AuthTabHeader(widget.node.id),
               ],
             ),
           ),

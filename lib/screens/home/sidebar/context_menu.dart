@@ -19,7 +19,7 @@ FutureOr<Menu?> getMenuProvider({
   return Menu(
     children: [
       if (isDirectory || isRoot)
-        ...await _getFolderSpecificMenuActions(
+        ..._getFolderSpecificMenuActions(
           ref: ref,
           context: context,
           node: node,
@@ -109,7 +109,7 @@ void showFolderConfigDialog({
   showDialog(
     context: context,
     builder: (context) {
-      return FolderConfigDialog(node: node);
+      return FolderConfigDialog(id: node.id);
     },
   );
 }
@@ -138,7 +138,7 @@ void createFolder({
         placeholder: "Folder Name",
         onConfirmed: (folderName) {
           final folder = useSelectedNode
-              ? ref.read(activeReqProvider.notifier).getDirectory()
+              ? ref.read(activeReqProvider)?.parentId
               : parentId;
           ref
               .read(fileTreeProvider.notifier)
@@ -164,7 +164,7 @@ void createFile({
         placeholder: "File Name",
         onConfirmed: (fileName) {
           final folder = useSelectedNode
-              ? ref.read(activeReqProvider.notifier).getDirectory()
+              ? ref.read(activeReqProvider)?.parentId
               : parentId;
           ref
               .read(fileTreeProvider.notifier)

@@ -6,7 +6,7 @@ import 'package:api_craft/providers/providers.dart';
 import 'repository_provider.dart';
 
 final resolveConfigProvider = NotifierProvider.autoDispose
-    .family<ResolveConfigNotifier, ResolveConfig, EditorParams>(
+    .family<ResolveConfigNotifier, ResolveConfig, String>(
       ResolveConfigNotifier.new,
     );
 
@@ -25,38 +25,43 @@ class EditorParams {
 }
 
 class ResolveConfigNotifier extends Notifier<ResolveConfig> {
-  final Node node;
-  ResolveConfigNotifier(EditorParams init) : node = init.node;
+  final String id;
+  ResolveConfigNotifier(this.id);
 
+  late final Node node = ref.read(
+    fileTreeProvider.select((treeData) => treeData.nodeMap[id]!),
+  );
   late final StorageRepository _repo = ref.read(repositoryProvider);
 
   @override
-  ResolveConfig build() {
+  build() {
+    final node = ref.read(
+      fileTreeProvider.select((treeData) => treeData.nodeMap[id]!),
+    );
     debugPrint(
       "Building ResolveConfigNotifier for node ${node.name},: ${node.config.isDetailLoaded}",
     );
-    // if (node is RequestNode) {
-    //   ref.listen(nodeUpdateTriggerProvider, (_, event) {
-    //     if (event != null && _isAncestor(event.node)) {
-    //       debugPrint(
-    //         "Ancestor ${event.node.name} updated. Refreshing ${node.name}...",
-    //       );
-    //       _calculateInheritance();
-    //       _resolveAuth();
-    //     }
-    //   });
-    // }
+    if (node is RequestNode) {
+      ref.listen(nodeUpdateTriggerProvider, (_, event) {
+        debugPrint("triggered node update for ${node.name}");
+        if (event != null &&
+            _isAncestor(ref.read(fileTreeProvider).nodeMap[event.id]!)) {
+          _calculateInheritance();
+          _resolveAuth();
+        }
+      });
+    }
     load();
     return ResolveConfig.empty(node);
   }
 
   bool _isAncestor(Node ancestor) {
-    Node? ptr = node.parent;
+    Node? ptr = getParent(node);
     while (ptr != null) {
       if (ptr.id == ancestor.id) {
         return true;
       }
-      ptr = ptr.parent;
+      ptr = getParent(ptr);
     }
     return false;
   }
@@ -85,23 +90,27 @@ class ResolveConfigNotifier extends Notifier<ResolveConfig> {
     }
   }
 
+  FolderNode? getParent(Node node) {
+    return ref.read(fileTreeProvider).nodeMap[node.parentId] as FolderNode?;
+  }
+
   Future<void> hydrateAncestors() async {
-    Node? ptr = node.parent;
+    Node? ptr = getParent(node);
     while (ptr != null) {
       if (!ptr.config.isDetailLoaded) {
         await hydrateNode(ptr);
       }
-      ptr = ptr.parent;
+      ptr = getParent(ptr);
     }
   }
 
   void _calculateInheritance() {
     List<KeyValueItem> inheritedHeaders = [];
-    Node? ptr = node.parent;
+    Node? ptr = getParent(node);
     while (ptr != null) {
       final headers = ptr.config.headers;
       inheritedHeaders.insertAll(0, headers.where((h) => h.isEnabled));
-      ptr = ptr.parent;
+      ptr = getParent(ptr);
     }
     // stop notifying here,because it is synchronous calculation,next notify will be in resolve auth
     state = state.copyWith(inheritedHeaders: inheritedHeaders);
@@ -124,7 +133,7 @@ class ResolveConfigNotifier extends Notifier<ResolveConfig> {
     }
 
     // Case 2: Walk the chain
-    Node? ptr = state.node.parent;
+    Node? ptr = getParent(state.node);
     while (ptr != null) {
       final pAuth = ptr.config.auth;
 
@@ -140,7 +149,7 @@ class ResolveConfigNotifier extends Notifier<ResolveConfig> {
         state = state.copyWith(effectiveAuth: pAuth, effectiveAuthSource: ptr);
         return;
       }
-      ptr = ptr.parent;
+      ptr = getParent(ptr);
     }
 
     // Case 3: Root reached
@@ -190,19 +199,20 @@ class ResolveConfigNotifier extends Notifier<ResolveConfig> {
     // notify
     state = state.copyWith(node: node);
     debugPrint("updated node: $node");
-    reLinkToParent(node);
+    ref.read(fileTreeProvider.notifier).updateNode(node);
+    // reLinkToParent(node);
   }
 
   /// parent children has node references, so copywith breaks that link
   /// so we need to re-link the updated node to its parent
-  void reLinkToParent(Node node) {
-    final FolderNode? parent = node.parent as FolderNode?;
-    if (parent == null) return;
-    final index = parent.children.indexWhere((n) => n.id == node.id);
-    if (index != -1) {
-      parent.children[index] = node;
-    }
-  }
+  // void reLinkToParent(Node node) {
+  //   final FolderNode? parent = node.parent as FolderNode?;
+  //   if (parent == null) return;
+  //   final index = parent.children.indexWhere((n) => n.id == node.id);
+  //   if (index != -1) {
+  //     parent.children[index] = node;
+  //   }
+  // }
 }
 
 // class ResolverConfigInitializer {

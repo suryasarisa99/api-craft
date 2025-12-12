@@ -24,29 +24,45 @@ class DbStorageRepository implements StorageRepository {
   }
 
   @override
-  Future<List<Node>> getContents(String? parentId) async {
+  Future<List<Node>> getNodes() async {
     final db = await _db;
-    // If parentId is null, we look for root items (parent_id IS NULL)
-    // AND strictly filter by collection_id
-    final whereClause = parentId == null
-        ? 'collection_id = ? AND parent_id IS NULL'
-        : 'collection_id = ? AND parent_id = ?';
-
-    final whereArgs = parentId == null
-        ? [collectionId]
-        : [collectionId, parentId];
 
     final maps = await db.query(
       'nodes',
       columns: ['id', 'parent_id', 'name', 'type', 'method', 'sort_order'],
-      where: whereClause,
-      whereArgs: whereArgs,
+      where: 'collection_id = ?',
+      whereArgs: [collectionId],
       orderBy: 'sort_order ASC',
     );
     debugPrint("db::get-contents ${maps}");
 
     return maps.map((m) => Node.fromMap(m)).toList();
   }
+
+  // @override
+  // Future<List<Node>> getContents(String? parentId) async {
+  //   final db = await _db;
+  //   // If parentId is null, we look for root items (parent_id IS NULL)
+  //   // AND strictly filter by collection_id
+  //   final whereClause = parentId == null
+  //       ? 'collection_id = ? AND parent_id IS NULL'
+  //       : 'collection_id = ? AND parent_id = ?';
+
+  //   final whereArgs = parentId == null
+  //       ? [collectionId]
+  //       : [collectionId, parentId];
+
+  //   final maps = await db.query(
+  //     'nodes',
+  //     columns: ['id', 'parent_id', 'name', 'type', 'method', 'sort_order'],
+  //     where: whereClause,
+  //     whereArgs: whereArgs,
+  //     orderBy: 'sort_order ASC',
+  //   );
+  //   debugPrint("db::get-contents ${maps}");
+
+  //   return maps.map((m) => Node.fromMap(m)).toList();
+  // }
 
   @override
   Future<Map<String, dynamic>> getNodeDetails(String id) async {
@@ -87,7 +103,7 @@ class DbStorageRepository implements StorageRepository {
   }) async {
     final db = await _db;
     final newId = _uuid.v4();
-    debugPrint('Creating item in collection $collectionId with ID $newId');
+    debugPrint('db::create-item $collectionId with ID $newId');
 
     // Get max sort order for this specific folder
     // Note: We must also filter by collection_id here!
@@ -118,6 +134,18 @@ class DbStorageRepository implements StorageRepository {
       'nodes',
       where: 'id = ? AND collection_id = ?',
       whereArgs: [id, collectionId],
+    );
+  }
+
+  @override
+  Future<void> deleteItems(List<String> ids) async {
+    final db = await _db;
+    // Batch delete for multiple IDs
+    final idPlaceholders = List.filled(ids.length, '?').join(', ');
+    await db.delete(
+      'nodes',
+      where: 'id IN ($idPlaceholders) AND collection_id = ?',
+      whereArgs: [...ids, collectionId],
     );
   }
 
@@ -163,7 +191,7 @@ class DbStorageRepository implements StorageRepository {
   }
 
   @override
-  Future<void> duplicateItem(String id) async {
+  Future<String?> duplicateItem(String id) async {
     final db = await _db;
     // 1. Fetch the original item to start the process
     final maps = await db.query(
@@ -171,13 +199,13 @@ class DbStorageRepository implements StorageRepository {
       where: 'id = ? AND collection_id = ?',
       whereArgs: [id, collectionId],
     );
-    if (maps.isEmpty) return;
+    if (maps.isEmpty) return null;
 
     final original = maps.first;
     final parentId = original['parent_id'] as String?;
 
     // 2. Start Recursive Copy
-    await _recursiveCopy(
+    return await _recursiveCopy(
       sourceId: id,
       targetParentId: parentId,
       nameOverride: "${original['name']}_copy",
@@ -185,7 +213,7 @@ class DbStorageRepository implements StorageRepository {
   }
 
   /// Deep Copying
-  Future<void> _recursiveCopy({
+  Future<String?> _recursiveCopy({
     required String sourceId,
     required String? targetParentId,
     String? nameOverride,
@@ -197,7 +225,7 @@ class DbStorageRepository implements StorageRepository {
       where: 'id = ? AND collection_id = ?',
       whereArgs: [sourceId, collectionId],
     );
-    if (maps.isEmpty) return;
+    if (maps.isEmpty) return null;
     final source = maps.first;
 
     // B. Generate New ID
@@ -255,6 +283,7 @@ class DbStorageRepository implements StorageRepository {
         );
       }
     }
+    return newId;
   }
 
   // @override
