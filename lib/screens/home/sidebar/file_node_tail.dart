@@ -61,6 +61,8 @@ class _FileTreeTileState extends ConsumerState<FileNodeTile>
   static const double _kFolderIconSize = 17.0;
   static const double _kSpacingBetweenArrowAndIcon = 2.0;
 
+  late final activeNode = ref.read(activeReqProvider);
+
   @override
   void initState() {
     super.initState();
@@ -81,12 +83,28 @@ class _FileTreeTileState extends ConsumerState<FileNodeTile>
     final node = ref.read(fileTreeProvider).nodeMap[widget.nodeId];
     if (node != null && node.type == NodeType.folder) {
       // Assuming your ancestor check works with ID or Node
-      // final initiallyExpanded = ref.read(activeReqIdProvider.notifier).isAncestor(node);
-      // if (initiallyExpanded) {
-      //   _isExpanded = true;
-      //   _controller.value = 1.0;
-      // }
+      final initiallyExpanded = _isAncestor();
+      if (initiallyExpanded) {
+        _isExpanded = true;
+        _controller.value = 1.0;
+      }
     }
+  }
+
+  bool _isAncestor() {
+    var ptr = getParent(activeNode);
+    while (ptr != null) {
+      if (ptr.id == widget.nodeId) {
+        return true;
+      }
+      ptr = getParent(ptr);
+    }
+    return false;
+  }
+
+  Node? getParent(Node? node) {
+    final tree = ref.read(fileTreeProvider);
+    return tree.nodeMap[node?.parentId];
   }
 
   @override

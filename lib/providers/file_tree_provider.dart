@@ -143,6 +143,10 @@ class FileTreeNotifier extends Notifier<TreeData> {
     }
 
     _addItem(newItem);
+    // check if we need to set active request
+    if (type == NodeType.request) {
+      _activeReqNotifier.setActiveNode(id);
+    }
   }
 
   Future<void> duplicateNode(Node node) async {
