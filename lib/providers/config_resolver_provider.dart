@@ -45,6 +45,17 @@ class ResolveConfigNotifier extends Notifier<ResolveConfig> {
           _resolveAuth();
         }
       });
+      ref.listen(
+        fileTreeProvider.select((tree) => tree.nodeMap[id]!.parentId),
+        (old, newId) {
+          if (old != newId) {
+            debugPrint("active request parent changed");
+            hydrateAncestors();
+            _calculateInheritance();
+            _resolveAuth();
+          }
+        },
+      );
     }
     load(node);
     return ResolveConfig.empty(node);
