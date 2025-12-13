@@ -2,7 +2,7 @@ import 'package:api_craft/http/send_request.dart';
 import 'package:api_craft/models/models.dart';
 import 'package:api_craft/providers/config_resolver_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:api_craft/widgets/ui/variable_text_field.dart';
+import 'package:api_craft/widgets/ui/variable_text_field_custom.dart';
 import 'package:flutter/material.dart';
 
 class RequestUrl extends ConsumerStatefulWidget {
@@ -58,7 +58,7 @@ class _RequestUrlState extends ConsumerState<RequestUrl> {
         SizedBox(width: 8),
 
         Expanded(
-          child: VariableTextField(
+          child: VariableTextFieldCustom(
             controller: _controller,
             onChanged: (v) {
               notifier.updateUrl(v);
