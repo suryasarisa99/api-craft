@@ -42,9 +42,8 @@ class MainApp extends StatelessWidget {
       darkTheme: ThemeData(
         colorScheme: colorSchema,
         useMaterial3: true,
-        dialogTheme: DialogThemeData(
-          backgroundColor: const Color.fromARGB(255, 19, 19, 19),
-        ),
+        scaffoldBackgroundColor: const Color(0xFF1A1C1D),
+        dialogTheme: DialogThemeData(backgroundColor: const Color(0xFF1A1C1D)),
       ),
       debugShowCheckedModeBanner: false,
       home: Scaffold(body: HomeScreen()),

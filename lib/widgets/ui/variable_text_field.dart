@@ -6,14 +6,23 @@ import 'package:extended_text_field/extended_text_field.dart';
 import 'package:flutter/material.dart';
 
 class VariableTextField extends StatefulWidget {
-  const VariableTextField({super.key});
+  final String? initialValue;
+  final TextEditingController? controller;
+  final Function(String)? onChanged;
+  const VariableTextField({
+    this.initialValue,
+    this.controller,
+    this.onChanged,
+    super.key,
+  });
 
   @override
   State<VariableTextField> createState() => _VariableTextFieldState();
 }
 
 class _VariableTextFieldState extends State<VariableTextField> {
-  final TextEditingController _controller = TextEditingController();
+  late final TextEditingController _controller =
+      widget.controller ?? TextEditingController(text: widget.initialValue);
   final FocusNode _focusNode = FocusNode();
   late VariableTextBuilder _variableBuilder;
   int latestCursorPos = 0;
@@ -229,43 +238,43 @@ class _VariableTextFieldState extends State<VariableTextField> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Autocomplete<FillOptions>(
-        focusNode: _focusNode,
-        textEditingController: _controller,
-        optionsBuilder: FilterService.getOptions,
-        displayStringForOption: displayStringForOption,
-        optionsViewBuilder: optionsViewBuilder,
-        fieldViewBuilder:
-            (context, textEditingController, focusNode, onFieldSubmitted) {
-              return ExtendedTextField(
-                controller: textEditingController,
-                focusNode: focusNode,
-                specialTextSpanBuilder: _variableBuilder,
-                style: TextStyle(fontSize: fontSize, height: 1.4),
-                autofillHints: const [AutofillHints.url],
-                // Ensure onSubmitted calls the autocomplete logic if needed,
-                // though Autocomplete handles Enter key internally when an option is highlighted.
-                onSubmitted: (value) {
-                  onFieldSubmitted();
-                  moveToCursorPosition();
-                  focusNode.requestFocus();
-                },
-                canRequestFocus: true,
-                autofocus: true,
-                decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
-                  isDense: true,
-                  contentPadding: EdgeInsets.symmetric(
-                    horizontal: 8.0,
-                    vertical: 10.0,
-                  ),
-                  hintText: 'Try typing {{baseUrl}}/users or just "base"...',
+    return Autocomplete<FillOptions>(
+      focusNode: _focusNode,
+      textEditingController: _controller,
+      optionsBuilder: FilterService.getOptions,
+      displayStringForOption: displayStringForOption,
+      optionsViewBuilder: optionsViewBuilder,
+      fieldViewBuilder:
+          (context, textEditingController, focusNode, onFieldSubmitted) {
+            return ExtendedTextField(
+              controller: textEditingController,
+              focusNode: focusNode,
+              specialTextSpanBuilder: _variableBuilder,
+              style: TextStyle(fontSize: fontSize, height: 1.4),
+              autofillHints: const [AutofillHints.url],
+              // Ensure onSubmitted calls the autocomplete logic if needed,
+              // though Autocomplete handles Enter key internally when an option is highlighted.
+              onSubmitted: (value) {
+                onFieldSubmitted();
+                moveToCursorPosition();
+                focusNode.requestFocus();
+              },
+              onChanged: (v) {
+                widget.onChanged?.call(v);
+              },
+              canRequestFocus: true,
+              autofocus: true,
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                isDense: true,
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: 8.0,
+                  vertical: 10.0,
                 ),
-              );
-            },
-      ),
+                hintText: 'Try typing {{baseUrl}}/users or just "base"...',
+              ),
+            );
+          },
     );
   }
 

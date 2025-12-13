@@ -28,9 +28,7 @@ class ResolveConfigNotifier extends Notifier<ResolveConfig> {
   final String id;
   ResolveConfigNotifier(this.id);
 
-  late final Node node = ref.read(
-    fileTreeProvider.select((treeData) => treeData.nodeMap[id]!),
-  );
+  Node get node => state.node;
   late final StorageRepository _repo = ref.read(repositoryProvider);
 
   @override
@@ -164,6 +162,14 @@ class ResolveConfigNotifier extends Notifier<ResolveConfig> {
     updateNode(node.copyWith(name: name));
   }
 
+  void updateMethod(String method) {
+    updateNode((node as RequestNode).copyWith(method: method));
+  }
+
+  void updateUrl(String url) {
+    updateNode((node as RequestNode).copyWith(url: url));
+  }
+
   void updateDescription(String description) {
     // state = state.copyWith(node: state.node..config.description = description);
     updateNode(
@@ -206,9 +212,9 @@ class ResolveConfigNotifier extends Notifier<ResolveConfig> {
 
   void updateNode(Node node) {
     // notify
+    ref.read(fileTreeProvider.notifier).updateNode(node);
     state = state.copyWith(node: node);
     debugPrint("updated node: $node");
-    ref.read(fileTreeProvider.notifier).updateNode(node);
     // reLinkToParent(node);
   }
 

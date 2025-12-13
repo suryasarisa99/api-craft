@@ -1,5 +1,6 @@
 import 'package:api_craft/models/models.dart';
 import 'package:api_craft/providers/providers.dart';
+import 'package:api_craft/screens/home/request/request_url.dart';
 import 'package:api_craft/utils/debouncer.dart';
 import 'package:api_craft/widgets/tabs/auth_tab.dart';
 import 'package:api_craft/widgets/tabs/headers_tab.dart';
@@ -68,12 +69,15 @@ class _RequestTabState extends ConsumerState<RequestTab>
       padding: const EdgeInsets.all(0.0),
       child: Column(
         children: [
-          VariableTextField(),
+          RequestUrl(id: widget.node.id),
           SizedBox(height: 4),
           SizedBox(
-            height: 36,
+            height: 32,
             child: TabBar(
               controller: _tabController,
+              isScrollable: true,
+              tabAlignment: TabAlignment.start,
+              labelStyle: TextStyle(fontSize: 14, fontWeight: FontWeight.w400),
               tabs: [
                 Tab(text: "Body"),
                 Consumer(

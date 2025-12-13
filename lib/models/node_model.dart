@@ -248,6 +248,9 @@ class RequestNode extends Node<RequestNodeConfig> {
     String? method,
     String? url,
   }) {
+    debugPrint(
+      "copy with method; actual: $method, this.method: ${this.method}",
+    );
     return RequestNode(
       id: id ?? this.id,
       parentId: forceNullParent ? null : (parentId ?? this.parentId),
@@ -281,6 +284,20 @@ class RequestNode extends Node<RequestNodeConfig> {
       ),
       'body': reqConfig.body,
     };
+  }
+
+  @override
+  String toString() {
+    return '''RequestNode(
+  id: $id,
+  name: $name,
+  type: $type,
+  parentId: $parentId,
+  method: $method,
+  url: $url,
+  requestType: $requestType,
+  config: $config,
+    )''';
   }
 }
 

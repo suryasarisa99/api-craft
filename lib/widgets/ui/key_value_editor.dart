@@ -158,9 +158,6 @@ class _KeyValueEditorState extends State<KeyValueEditor> {
                                       fillColor: WidgetStateColor.resolveWith((
                                         states,
                                       ) {
-                                        debugPrint(
-                                          "check box text: ${widget.items[i].key}, states: $states",
-                                        );
                                         return widget.items[i].key.isNotEmpty &&
                                                 states.contains(
                                                   WidgetState.selected,
