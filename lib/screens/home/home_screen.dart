@@ -2,6 +2,7 @@ import 'package:api_craft/providers/providers.dart';
 import 'package:api_craft/screens/home/request/request.dart';
 import 'package:api_craft/screens/home/response/response_tab.dart';
 import 'package:api_craft/screens/home/sidebar/sidebar.dart';
+import 'package:api_craft/widgets/ui/top_bar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
 import 'package:multi_split_view/multi_split_view.dart';
@@ -48,7 +49,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return Scaffold(
       body: Column(
         children: [
-          const HomeTopBar(),
+          // const HomeTopBar(),
+          TopBar(items: [CollectionPicker()]),
           // Expanded(child: MultiSplitView(controller: _controller)),
           Expanded(
             child: MultiSplitViewTheme(
@@ -84,26 +86,31 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 }
 
-class HomeTopBar extends ConsumerStatefulWidget {
-  const HomeTopBar({super.key});
+class CollectionPicker extends ConsumerStatefulWidget {
+  const CollectionPicker({super.key});
 
   @override
   ConsumerState<ConsumerStatefulWidget> createState() => _HomeTopBarState();
 }
 
-class _HomeTopBarState extends ConsumerState<HomeTopBar> {
+class _HomeTopBarState extends ConsumerState<CollectionPicker> {
   @override
   Widget build(BuildContext context) {
     final selectedCollection = ref.watch(selectedCollectionProvider);
-    return Row(
-      children: [
-        Text(
-          selectedCollection != null
-              ? 'Selected Collection: ${selectedCollection.name}'
-              : 'No Collection Selected',
-          style: Theme.of(context).textTheme.titleMedium,
-        ),
-      ],
+    // return Text(
+    //   selectedCollection != null
+    //       ? '${selectedCollection.name}'
+    //       : 'No Collection Selected',
+    //   style: Theme.of(context).textTheme.titleMedium,
+    // );
+    return TextButton(
+      onPressed: () {},
+      child: Text(
+        selectedCollection != null
+            ? selectedCollection.name
+            : 'No Collection Selected',
+        style: Theme.of(context).textTheme.bodyMedium,
+      ),
     );
   }
 }

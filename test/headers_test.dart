@@ -1,4 +1,4 @@
-import 'package:api_craft/http/utils/header_utils.dart';
+import 'package:api_craft/http/header_utils.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

@@ -6,6 +6,7 @@ import 'package:api_craft/widgets/tabs/headers_tab.dart';
 import 'package:flutter/material.dart';
 import 'package:api_craft/models/models.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lazy_load_indexed_stack/lazy_load_indexed_stack.dart';
 
 class FolderConfigDialog extends ConsumerStatefulWidget {
   final String id;
@@ -16,20 +17,18 @@ class FolderConfigDialog extends ConsumerStatefulWidget {
   ConsumerState<FolderConfigDialog> createState() => _FolderConfigDialogState();
 }
 
-class _FolderConfigDialogState extends ConsumerState<FolderConfigDialog>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
+class _FolderConfigDialogState extends ConsumerState<FolderConfigDialog> {
   late final ResolveConfigNotifier resolveConfigProviderNotifier;
   late final notifier = ref.read(resolveConfigProvider(widget.id).notifier);
   final debouncer = Debouncer(Duration(milliseconds: 1000));
   static const useLazyMode = true;
   bool hasChanges = true;
   late final ProviderSubscription<Node> subscription;
+  var tabIndex = 0;
+
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
-
     subscription = ref.listenManual(
       resolveConfigProvider(widget.id).select((d) => d.node),
       (_, n) {
@@ -53,7 +52,6 @@ class _FolderConfigDialogState extends ConsumerState<FolderConfigDialog>
   @override
   void dispose() {
     debugPrint("Disposing FolderConfigDialog for node ${widget.id}");
-    _tabController.dispose();
     super.dispose();
   }
 
@@ -75,67 +73,141 @@ class _FolderConfigDialogState extends ConsumerState<FolderConfigDialog>
       child: Dialog(
         insetPadding: const EdgeInsets.all(24),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        child: SizedBox(width: 900, height: 700, child: _buildDialog()),
+        child: SizedBox(width: 900, height: 600, child: _buildDialog()),
       ),
     );
   }
 
   Widget _buildDialog() {
-    return Column(
-      crossAxisAlignment: .start,
-      children: [
-        // Header
-        Consumer(
-          builder: (context, ref, child) {
-            final title = ref.watch(
-              resolveConfigProvider(
-                widget.id,
-              ).select((value) => value.node.name),
-            );
-            return Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Row(
-                children: [
-                  Icon(Icons.folder_outlined, size: 28, color: Colors.grey),
-                  const SizedBox(width: 12),
-                  Text(title, style: Theme.of(context).textTheme.headlineSmall),
-                ],
-              ),
-            );
-          },
-        ),
-        SizedBox(
-          height: 36,
-          child: TabBar(
-            controller: _tabController,
-            labelColor: Colors.blue,
-            unselectedLabelColor: Colors.grey,
-            tabs: const [
-              Tab(text: "General"),
-              Tab(text: "Headers"),
-              Tab(text: "Authorization"),
-              Tab(text: "Variables"),
-            ],
+    final tabs = ["General", "Headers", "Auth", "Environment"];
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: Column(
+        crossAxisAlignment: .start,
+        children: [
+          // Header
+          Consumer(
+            builder: (context, ref, child) {
+              final title = ref.watch(
+                resolveConfigProvider(
+                  widget.id,
+                ).select((value) => value.node.name),
+              );
+              return Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Row(
+                  children: [
+                    Icon(Icons.folder_outlined, size: 28, color: Colors.grey),
+                    const SizedBox(width: 12),
+                    Text(
+                      title,
+                      style: Theme.of(context).textTheme.headlineSmall,
+                    ),
+                  ],
+                ),
+              );
+            },
           ),
-        ),
-        const Divider(height: 1),
-        Expanded(
-          child: TabBarView(
-            controller: _tabController,
-            children: [
-              // 1. General Tab
-              _GeneralTab(id: widget.id),
-              // 2. Headers Tab
-              HeadersTab(id: widget.id),
-              // 3. Auth Tab
-              AuthTab(id: widget.id),
-              EnvironmentTab(id: widget.id),
-              // 4. Variables Tab
-              // _VariablesTab(controller: _controller),
-            ],
+          // SizedBox(
+          //   height: 36,
+          //   child: TabBar(
+          //     controller: _tabController,
+          //     labelColor: Colors.blue,
+          //     unselectedLabelColor: Colors.grey,
+          //     tabs: const [
+          //       Tab(text: "General"),
+          //       Tab(text: "Headers"),
+          //       Tab(text: "Authorization"),
+          //       Tab(text: "Variables"),
+          //     ],
+          //   ),
+          // ),
+          Expanded(
+            child: Row(
+              children: [
+                const SizedBox(width: 16),
+                Column(
+                  children: [
+                    for (final (index, tab) in tabs.indexed)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 2.0),
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(4),
+                          onTap: () {
+                            setState(() {
+                              tabIndex = index;
+                            });
+                          },
+                          child: Container(
+                            width: 150,
+                            decoration: BoxDecoration(
+                              color: tabIndex == index
+                                  ? const Color(
+                                      0xFFEC21F3,
+                                    ).withValues(alpha: 0.1)
+                                  : Colors.transparent,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            padding: EdgeInsets.symmetric(
+                              vertical: index == 2 ? 0 : 6,
+                              horizontal: 8,
+                            ),
+
+                            child: index == 2
+                                ? SizedBox(
+                                    height: 32,
+                                    child: AuthTabHeader(
+                                      color: tabIndex == index
+                                          ? const Color(0xFFE17FF0)
+                                          : Colors.grey,
+                                      widget.id,
+                                      isTabActive: tabIndex == index,
+                                      handleSetTab: () {
+                                        setState(() {
+                                          tabIndex = index;
+                                        });
+                                      },
+                                    ),
+                                  )
+                                : Text(
+                                    tab,
+                                    style: TextStyle(
+                                      color: tabIndex == index
+                                          ? const Color(0xFFE17FF0)
+                                          : Colors.grey,
+                                    ),
+                                  ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  // child: TabBarView(
+                  //   controller: _tabController,
+                  //   children: ,
+                  // ),
+                  child: LazyLoadIndexedStack(
+                    index: tabIndex,
+                    children: [
+                      // 1. General Tab
+                      _GeneralTab(id: widget.id),
+                      // 2. Headers Tab
+                      HeadersTab(id: widget.id),
+                      // 3. Auth Tab
+                      AuthTab(id: widget.id),
+                      EnvironmentTab(id: widget.id),
+                      // 4. Variables Tab
+                      // _VariablesTab(controller: _controller),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

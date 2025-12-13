@@ -23,6 +23,8 @@ dependencies:
   lazy_load_indexed_stack: ^1.2.1
   dio: ^5.9.0
   multi_split_view: ^3.6.1
+  flutter_popup: ^3.3.9
+  window_manager: ^0.5.1
 
 dev_dependencies:
   flutter_test:

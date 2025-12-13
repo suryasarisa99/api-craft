@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import 'dart:developer'; // Use for better logging
+import 'package:window_manager/window_manager.dart';
 
 Future<String> getDatabaseFilePath() async {
   // 1. Get the default databases directory for the current platform (macOS in this case)
@@ -22,14 +23,24 @@ Future<String> getDatabaseFilePath() async {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // final path = await getDatabaseFilePath();
+  await windowManager.ensureInitialized();
+  const WindowOptions windowOptions = WindowOptions(
+    center: true,
+    backgroundColor: Colors.transparent,
+    skipTaskbar: false,
+    titleBarStyle: TitleBarStyle.hidden,
+  );
+  await windowManager.waitUntilReadyToShow(windowOptions, () async {
+    await windowManager.show();
+    await windowManager.focus();
+  });
   prefs = await SharedPreferences.getInstance();
-  final path = await getDatabaseFilePath();
-  debugPrint("Database will be initialized at: $path");
   runApp(ProviderScope(child: const MainApp()));
 }
 
 final colorSchema = ColorScheme.fromSeed(
-  seedColor: const Color.fromARGB(255, 13, 138, 255),
+  seedColor: const Color.fromARGB(255, 251, 13, 255),
   brightness: Brightness.dark,
 );
 
@@ -42,8 +53,27 @@ class MainApp extends StatelessWidget {
       darkTheme: ThemeData(
         colorScheme: colorSchema,
         useMaterial3: true,
-        scaffoldBackgroundColor: const Color(0xFF1A1C1D),
+        scaffoldBackgroundColor: const Color.fromARGB(255, 32, 29, 32),
         dialogTheme: DialogThemeData(backgroundColor: const Color(0xFF1A1C1D)),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(6.0),
+            ),
+            backgroundColor: colorSchema.secondaryContainer.withValues(
+              alpha: 0.6,
+            ),
+            foregroundColor: colorSchema.onPrimaryContainer,
+          ),
+        ),
+        textButtonTheme: TextButtonThemeData(
+          style: TextButton.styleFrom(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(6.0),
+            ),
+            foregroundColor: colorSchema.primaryContainer,
+          ),
+        ),
       ),
       debugShowCheckedModeBanner: false,
       home: Scaffold(body: HomeScreen()),

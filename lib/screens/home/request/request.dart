@@ -110,7 +110,7 @@ class _RequestTabState extends ConsumerState<RequestTab>
                     );
                   },
                 ),
-                AuthTabHeader(widget.node.id),
+                AuthTabHeader(widget.node.id, controller: _tabController),
               ],
             ),
           ),

@@ -162,7 +162,12 @@ class _KeyValueEditorState extends State<KeyValueEditor> {
                                                 states.contains(
                                                   WidgetState.selected,
                                                 )
-                                            ? Colors.greenAccent.shade700
+                                            ? const Color.fromARGB(
+                                                255,
+                                                215,
+                                                101,
+                                                166,
+                                              )
                                             : Colors.grey.shade600;
                                       }),
                                       value: widget.items[i].isEnabled,

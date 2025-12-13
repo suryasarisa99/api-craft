@@ -245,84 +245,88 @@ class _FileTreeTileState extends ConsumerState<FileNodeTile>
           // --- 1. THE HEADER ---
           SizedBox(
             height: tileHeight,
-            child: Material(
-              color: backgroundColor ?? Colors.transparent,
-              child: _contextMenuWrapper(
-                vNode: vNode,
-                isDirectory: isFolder,
-                child: focusWrapper(
-                  hasFocus: hasFocus,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: Material(
+                borderRadius: BorderRadius.circular(4),
+                color: backgroundColor ?? Colors.transparent,
+                child: _contextMenuWrapper(
                   vNode: vNode,
-                  child: Builder(
-                    builder: (context) {
-                      final isFocused = Focus.of(context).hasFocus;
-                      return Ink(
-                        color: isFocused
-                            ? cs.primary.withValues(alpha: 0.08)
-                            : null,
-                        child: InkWell(
-                          canRequestFocus: false,
-                          autofocus: false,
-                          onTap: () => _handleTap(vNode),
-                          hoverColor: theme.colorScheme.onSurface.withValues(
-                            alpha: 0.05,
-                          ),
-                          child: Row(
-                            children: [
-                              SizedBox(width: _kIndentation),
-                              // A. ARROW
-                              if (isFolder)
-                                RotationTransition(
-                                  turns: _iconTurns,
-                                  child: SizedBox(
-                                    width: _kIconSize + 2,
-                                    child: Icon(
-                                      Icons.keyboard_arrow_right,
-                                      size: _kIconSize + 2,
-                                      color: textColor.withValues(alpha: 0.3),
+                  isDirectory: isFolder,
+                  child: focusWrapper(
+                    hasFocus: hasFocus,
+                    vNode: vNode,
+                    child: Builder(
+                      builder: (context) {
+                        final isFocused = Focus.of(context).hasFocus;
+                        return Ink(
+                          color: isFocused
+                              ? cs.primary.withValues(alpha: 0.08)
+                              : null,
+                          child: InkWell(
+                            canRequestFocus: false,
+                            autofocus: false,
+                            onTap: () => _handleTap(vNode),
+                            hoverColor: theme.colorScheme.onSurface.withValues(
+                              alpha: 0.05,
+                            ),
+                            child: Row(
+                              children: [
+                                SizedBox(width: _kIndentation),
+                                // A. ARROW
+                                if (isFolder)
+                                  RotationTransition(
+                                    turns: _iconTurns,
+                                    child: SizedBox(
+                                      width: _kIconSize + 2,
+                                      child: Icon(
+                                        Icons.keyboard_arrow_right,
+                                        size: _kIconSize + 2,
+                                        color: textColor.withValues(alpha: 0.3),
+                                      ),
+                                    ),
+                                  )
+                                else
+                                  const SizedBox(width: _kIconSize + 2),
+                                const SizedBox(
+                                  width: _kSpacingBetweenArrowAndIcon,
+                                ),
+
+                                // B. ICON
+                                if (isFolder)
+                                  _isExpanded
+                                      ? folderOpenIcon
+                                      : folderIcon // (Ensure these are accessible)
+                                else
+                                  Icon(
+                                    Icons.data_object,
+                                    size: _kFolderIconSize,
+                                    color: isFolder
+                                        ? Colors.amber[700]
+                                        : Colors.blueGrey,
+                                  ),
+                                const SizedBox(width: 8),
+
+                                // C. LABEL
+                                Expanded(
+                                  child: Text(
+                                    vNode.name,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: textColor,
+                                      fontWeight: FontWeight.normal,
+                                      height: 1.0,
                                     ),
                                   ),
-                                )
-                              else
-                                const SizedBox(width: _kIconSize + 2),
-                              const SizedBox(
-                                width: _kSpacingBetweenArrowAndIcon,
-                              ),
-
-                              // B. ICON
-                              if (isFolder)
-                                _isExpanded
-                                    ? folderOpenIcon
-                                    : folderIcon // (Ensure these are accessible)
-                              else
-                                Icon(
-                                  Icons.data_object,
-                                  size: _kFolderIconSize,
-                                  color: isFolder
-                                      ? Colors.amber[700]
-                                      : Colors.blueGrey,
                                 ),
-                              const SizedBox(width: 8),
-
-                              // C. LABEL
-                              Expanded(
-                                child: Text(
-                                  vNode.name,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: textColor,
-                                    fontWeight: FontWeight.normal,
-                                    height: 1.0,
-                                  ),
-                                ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                        ),
-                      );
-                    },
+                        );
+                      },
+                    ),
                   ),
                 ),
               ),
@@ -346,20 +350,17 @@ class _FileTreeTileState extends ConsumerState<FileNodeTile>
                     ),
                   ),
                   margin: EdgeInsets.only(
-                    left: (_kIndentation) + (_kIconSize / 2),
+                    left: (_kIndentation) + (_kIconSize / 2) + 4,
                   ),
                   child: Builder(
                     builder: (context) {
-                      // MAGIC: Use children IDs from VisualNode directly
-                      // No need to look up in treeState manually
                       final childIds = vNode.children;
-
                       return Column(
                         mainAxisSize: MainAxisSize.min,
                         children: childIds.map((childId) {
                           return FileNodeTile(
-                            key: ValueKey(childId), // Optimizes updates
-                            nodeId: childId, // PASS ID ONLY
+                            key: ValueKey(childId),
+                            nodeId: childId,
                             depth: widget.depth + 1,
                           );
                         }).toList(),
