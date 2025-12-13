@@ -362,8 +362,20 @@ class FileTreeNotifier extends Notifier<TreeData> {
     // 4. Commit State
     state = state.copyWith(nodeMap: newMap);
 
+    // to trigger inheritance if parent changes
+    // not part of reorder logic.
+
     // 5. Persist Sort Order
     await _repo.saveSortOrder(newParentId, newOrderIds);
+
+    if (movedNode is FolderNode) {
+      debugPrint(
+        "triggering node update for folder move for: ${movedNode.name}",
+      );
+      ref
+          .read(nodeUpdateTriggerProvider.notifier)
+          .setLastUpdatedFolder(movedNode.id);
+    }
   }
 
   // Helper to keep the insertion logic DRY

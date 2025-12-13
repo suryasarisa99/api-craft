@@ -38,13 +38,20 @@ class ResolveConfigNotifier extends Notifier<ResolveConfig> {
       fileTreeProvider.select((treeData) => treeData.nodeMap[id]!),
     );
     if (node is RequestNode) {
+      // handles all non immediate parent position changes
+      // handles ancestor folder updates
       ref.listen(nodeUpdateTriggerProvider, (_, event) {
+        debugPrint("received trigger event");
         if (event != null &&
             _isAncestor(ref.read(fileTreeProvider).nodeMap[event.id]!)) {
+          debugPrint(
+            "ancestor updated (changes in parent/parents position changes)",
+          );
           _calculateInheritance();
           _resolveAuth();
         }
       });
+      // only handles immediate parent position changes
       ref.listen(
         fileTreeProvider.select((tree) => tree.nodeMap[id]!.parentId),
         (old, newId) {
