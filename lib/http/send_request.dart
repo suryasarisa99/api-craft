@@ -1,4 +1,4 @@
-import 'package:api_craft/http/utils/header_utils.dart';
+import 'package:api_craft/http/header_utils.dart';
 import 'package:api_craft/http/raw_req.dart';
 import 'package:api_craft/models/models.dart';
 import 'package:flutter/cupertino.dart';

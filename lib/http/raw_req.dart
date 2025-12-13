@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:flutter/rendering.dart';
+
 Future<String> sendRawHttp({
   required String method,
   required Uri url,
@@ -93,10 +95,14 @@ Future<String> sendRawHttp({
   // 5. Body
   List<int> bodyBytes = [];
   if (body != null) {
-    if (body is String)
+    if (headers?.any((h) => h[0].toLowerCase() == 'content-length') ?? false) {
+      // do nothing, user provided content-length
+      debugPrint("Using user provided content-length");
+    } else if (body is String) {
       bodyBytes = utf8.encode(body);
-    else if (body is List<int>)
+    } else if (body is List<int>) {
       bodyBytes = body;
+    }
     buffer.write('Content-Length: ${bodyBytes.length}\r\n');
   }
 
