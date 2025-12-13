@@ -207,7 +207,6 @@ class AuthTab extends ConsumerWidget {
               child: Row(
                 mainAxisAlignment: .center,
                 children: [
-                  Text("No Authentication"),
                   if (authSource != null)
                     TextButton(
                       onPressed: () {
@@ -219,7 +218,8 @@ class AuthTab extends ConsumerWidget {
                         showFolderConfigDialog(
                           context: context,
                           ref: ref,
-                          node: authSource as FolderNode,
+                          id: authSource.id,
+                          tabIndex: 2,
                         );
                       },
                       child: Text(authSource.name),

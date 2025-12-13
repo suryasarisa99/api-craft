@@ -60,6 +60,7 @@ class _RequestUrlState extends ConsumerState<RequestUrl> {
         Expanded(
           child: VariableTextFieldCustom(
             controller: _controller,
+            id: widget.id,
             onChanged: (v) {
               notifier.updateUrl(v);
             },
@@ -68,7 +69,15 @@ class _RequestUrlState extends ConsumerState<RequestUrl> {
         SizedBox(width: 8),
         IconButton(
           onPressed: () {
-            run(ref.read(resolveConfigProvider(widget.id)));
+            final variables = ref
+                .read(resolveConfigProvider(widget.id))
+                .allVariables;
+            final resolvedUrl = resolveVariables(
+              _controller.text,
+              variables ?? {},
+            );
+            debugPrint("Resolved URL: $resolvedUrl");
+            run(ref.read(resolveConfigProvider(widget.id)), url: resolvedUrl);
           },
           iconSize: 17,
           icon: Icon(Icons.send),
@@ -76,4 +85,17 @@ class _RequestUrlState extends ConsumerState<RequestUrl> {
       ],
     );
   }
+}
+
+String resolveVariables(String text, Map<String, VariableValue> values) {
+  // Match all {{variable}} patterns
+  final regex = RegExp(r'{{\s*([a-zA-Z0-9_]+)\s*}}');
+
+  return text.replaceAllMapped(regex, (match) {
+    final key = match.group(1);
+    if (key != null && values.containsKey(key)) {
+      return values[key]!.value; // Replace with value
+    }
+    return match.group(0)!; // leave as is if no value found
+  });
 }

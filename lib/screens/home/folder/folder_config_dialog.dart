@@ -10,8 +10,8 @@ import 'package:lazy_load_indexed_stack/lazy_load_indexed_stack.dart';
 
 class FolderConfigDialog extends ConsumerStatefulWidget {
   final String id;
-
-  const FolderConfigDialog({super.key, required this.id});
+  final int? tabIndex;
+  const FolderConfigDialog({super.key, required this.id, this.tabIndex});
 
   @override
   ConsumerState<FolderConfigDialog> createState() => _FolderConfigDialogState();
@@ -24,7 +24,7 @@ class _FolderConfigDialogState extends ConsumerState<FolderConfigDialog> {
   static const useLazyMode = true;
   bool hasChanges = true;
   late final ProviderSubscription<Node> subscription;
-  var tabIndex = 0;
+  late var tabIndex = widget.tabIndex ?? 0;
 
   @override
   void initState() {

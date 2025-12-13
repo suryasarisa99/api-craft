@@ -49,6 +49,7 @@ class ResolveConfigNotifier extends Notifier<ResolveConfig> {
           );
           _calculateInheritance();
           _resolveAuth();
+          _mergeVariables();
         }
       });
       // only handles immediate parent position changes
@@ -57,9 +58,7 @@ class ResolveConfigNotifier extends Notifier<ResolveConfig> {
         (old, newId) {
           if (old != newId) {
             debugPrint("active request parent changed");
-            hydrateAncestors();
-            _calculateInheritance();
-            _resolveAuth();
+            load(node);
           }
         },
       );
@@ -93,6 +92,10 @@ class ResolveConfigNotifier extends Notifier<ResolveConfig> {
     _calculateInheritance();
 
     _resolveAuth();
+
+    if (node is RequestNode) {
+      _mergeVariables();
+    }
   }
 
   Future<void> hydrateNode(Node node) async {
@@ -119,7 +122,7 @@ class ResolveConfigNotifier extends Notifier<ResolveConfig> {
 
   void _calculateInheritance() {
     List<KeyValueItem> inheritedHeaders = [];
-    Node? ptr = getParent(getNode);
+    var ptr = getParent(getNode);
     while (ptr != null) {
       final headers = ptr.config.headers;
       inheritedHeaders.insertAll(0, headers.where((h) => h.isEnabled));
@@ -165,6 +168,30 @@ class ResolveConfigNotifier extends Notifier<ResolveConfig> {
       effectiveAuth: const AuthData(type: AuthType.noAuth),
       effectiveAuthSource: null,
     );
+  }
+
+  void _mergeVariables() {
+    Map<String, VariableValue> allVars = {};
+
+    // Collect the chain from top parent to the current node
+    List<FolderNode> chain = [];
+    var ptr = getParent(getNode);
+    while (ptr != null) {
+      chain.insert(0, ptr); // insert at start to reverse order
+      ptr = getParent(ptr);
+    }
+
+    // Merge variables: top parent first, child later
+    for (var node in chain) {
+      for (var v in node.config.variables) {
+        if (v.isEnabled) {
+          // later keys override earlier ones
+          allVars[v.key] = VariableValue(node.id, v.value);
+        }
+      }
+    }
+    debugPrint("Merged variables: $allVars");
+    state = state.copyWith(allVariables: allVars);
   }
 
   /// Updates

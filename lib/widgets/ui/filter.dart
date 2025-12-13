@@ -1,12 +1,12 @@
 import 'package:flutter/services.dart';
 
-final List<String> variables = [
-  'baseUrl',
-  'apiKey',
-  'userId',
-  'userName',
-  'token',
-];
+// final List<String> variables = [
+//   'baseUrl',
+//   'apiKey',
+//   'userId',
+//   'userName',
+//   'token',
+// ];
 final List<String> urls = [
   'https://api.example.com',
   'https://google.com',
@@ -114,6 +114,8 @@ class FuzzySearch {
 }
 
 class FilterService {
+  final List<String> variables;
+  FilterService({required this.variables});
   static bool _isWordBoundary(String char) {
     return char == ' ' ||
         char == '\n' ||
@@ -283,7 +285,7 @@ class FilterService {
     };
   }
 
-  static List<FillOptions> getOptions(TextEditingValue value) {
+  List<FillOptions> getOptions(TextEditingValue value) {
     final context = detectTypingContext(value);
     final String type = context['type'];
     final String query = context['query'];

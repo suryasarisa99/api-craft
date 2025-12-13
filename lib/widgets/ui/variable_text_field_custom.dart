@@ -1,13 +1,22 @@
 import 'dart:math';
 
+import 'package:api_craft/providers/config_resolver_provider.dart';
+import 'package:api_craft/providers/filter_provider.dart';
+import 'package:api_craft/screens/home/sidebar/context_menu.dart';
 import 'package:api_craft/widgets/ui/filter.dart';
 import 'package:api_craft/widgets/ui/variable_text_builder.dart';
 import 'package:extended_text_field/extended_text_field.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class VariableTextFieldCustom extends StatefulWidget {
+/*
+  need listen for consumer variables.
+
+*/
+class VariableTextFieldCustom extends ConsumerStatefulWidget {
   final String? initialValue;
+  final String id;
   final TextEditingController? controller;
   final ValueChanged<String>? onChanged;
 
@@ -16,14 +25,16 @@ class VariableTextFieldCustom extends StatefulWidget {
     this.initialValue,
     this.controller,
     this.onChanged,
+    required this.id,
   });
 
   @override
-  State<VariableTextFieldCustom> createState() =>
+  ConsumerState<VariableTextFieldCustom> createState() =>
       _VariableTextFieldCustomState();
 }
 
-class _VariableTextFieldCustomState extends State<VariableTextFieldCustom> {
+class _VariableTextFieldCustomState
+    extends ConsumerState<VariableTextFieldCustom> {
   late final TextEditingController _controller =
       widget.controller ?? TextEditingController(text: widget.initialValue);
 
@@ -43,17 +54,39 @@ class _VariableTextFieldCustomState extends State<VariableTextFieldCustom> {
     super.initState();
 
     _variableBuilder = VariableTextBuilder(
-      builderOnTap: (dynamic parameter) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Edit variable: $parameter')));
-      },
+      builderOnTap: handleVariableTap,
       builderTextStyle: TextStyle(
         fontWeight: FontWeight.bold,
         fontSize: fontSize,
         backgroundColor: const Color(0x5F763417),
       ),
     );
+  }
+
+  void handleVariableTap(dynamic variableName) {
+    debugPrint("Variable clicked in UI: $variableName");
+    final variableValue = ref
+        .read(resolveConfigProvider(widget.id))
+        .allVariables?[variableName];
+    if (variableValue != null) {
+      debugPrint(
+        "Variable source ID: ${variableValue.sourceId}, value: ${variableValue.value}",
+      );
+      showFolderConfigDialog(
+        context: context,
+        ref: ref,
+        id: variableValue.sourceId,
+        tabIndex: 3,
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('variable: $variableName not found')),
+      );
+    }
+  }
+
+  FilterService get _filterService {
+    return ref.read(filterServiceProvider(widget.id));
   }
 
   // ─────────────────────────────────────────────────────────────
@@ -112,9 +145,8 @@ class _VariableTextFieldCustomState extends State<VariableTextFieldCustom> {
       return;
     }
 
-    final results = FilterService.getOptions(
-      TextEditingValue(text: text, selection: _controller.selection),
-    );
+    final results = _filterService.getOptions(_controller.value);
+    // TextEditingValue(text: text, selection: _controller.selection),
 
     if (results.isEmpty) {
       _hideOverlay();

@@ -93,7 +93,7 @@ List<MenuElement> _getFolderSpecificMenuActions({
       MenuAction(
         title: 'Configure Folder',
         callback: () async {
-          showFolderConfigDialog(context: context, ref: ref, node: node);
+          showFolderConfigDialog(context: context, ref: ref, id: node.id);
         },
       ),
   ];
@@ -102,14 +102,15 @@ List<MenuElement> _getFolderSpecificMenuActions({
 void showFolderConfigDialog({
   required BuildContext context,
   required WidgetRef ref,
-  required FolderNode node,
+  required String id,
+  int? tabIndex,
 }) {
   if (!context.mounted) return;
 
   showDialog(
     context: context,
     builder: (context) {
-      return FolderConfigDialog(id: node.id);
+      return FolderConfigDialog(id: id, tabIndex: tabIndex);
     },
   );
 }

@@ -25,9 +25,9 @@ List<List<String>> headersHandle(
   ];
 }
 
-void run(ResolveConfig config) async {
+void run(ResolveConfig config, {required String url}) async {
   final node = config.node as RequestNode;
-  final uri = Uri.parse(node.url);
+  final uri = Uri.parse(url);
   final headers = headersHandle(
     node.config.headers,
     config.inheritedHeaders ?? [],
