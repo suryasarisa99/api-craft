@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:api_craft/widgets/examples/at_text.dart';
 import 'package:api_craft/widgets/ui/filter.dart';
 import 'package:api_craft/widgets/ui/variable_text_builder.dart';
 import 'package:extended_text_field/extended_text_field.dart';
@@ -25,6 +26,7 @@ class _VariableTextFieldState extends State<VariableTextField> {
       widget.controller ?? TextEditingController(text: widget.initialValue);
   final FocusNode _focusNode = FocusNode();
   late VariableTextBuilder _variableBuilder;
+  // late MySpecialTextSpanBuilder _variableBuilder;
   int latestCursorPos = 0;
   final fontSize = 16.0;
 

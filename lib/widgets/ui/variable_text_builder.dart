@@ -1,140 +1,56 @@
 import 'package:extended_text_field/extended_text_field.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
 class VariableText extends SpecialText {
   static const String startKey = "{{";
   static const String endKey = "}}";
+  final int start; // <--- 2. Add this property
 
   SpecialTextGestureTapCallback? customOnTap;
+
   VariableText({
     TextStyle? textStyle,
     this.customOnTap,
     SpecialTextGestureTapCallback? onTap,
-  }) : super(startKey, endKey, textStyle, onTap: null);
+    required this.start, // <--- 1. Add this parameter
+  }) : super(startKey, endKey, textStyle, onTap: onTap);
 
   @override
   InlineSpan finishText() {
-    // remove {{ and }}
-    final String variableName = toString().substring(
-      startKey.length,
-      toString().length - endKey.length,
-    );
-    debugPrint("detect variable: $variableName");
-    // We render a WidgetSpan to make it look like a distinct pill/chip
-    return WidgetSpan(
-      alignment: PlaceholderAlignment.middle,
+    final String variableName = getContent();
 
-      child: MouseRegion(
-        //cursor
-        cursor: SystemMouseCursors.click,
-        child: GestureDetector(
-          onTap: () {
-            debugPrint("tapped a variable: $variableName");
-            customOnTap?.call(variableName);
-          },
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 4.0),
-            decoration: BoxDecoration(
-              color: const Color.fromARGB(58, 134, 51, 0),
-              borderRadius: BorderRadius.circular(4),
-              border: Border.all(
-                color: Colors.orange.withValues(alpha: 0.5),
-                width: 0.8,
-              ),
-            ),
-            child: Text(
-              variableName,
-              style: textStyle?.copyWith(
-                backgroundColor: Colors.transparent,
-                color: Colors.deepOrange,
-                fontWeight: FontWeight.w400,
-                fontSize: 14,
-              ),
-            ),
-          ),
-        ),
+    // finad open and close brackets: ( and ), ignore any content inbetween
+    final regex = RegExp(r'\([^)]*\)');
+    final didReplace = regex.hasMatch(variableName);
+    late final String result;
+    if (didReplace) {
+      debugPrint("Variable name with parameters detected: $variableName");
+      result = variableName.replaceAll(regex, '(...)');
+    } else {
+      result = variableName;
+    }
+
+    return SpecialTextSpan(
+      actualText: toString(),
+      text: result,
+      deleteAll: true,
+      start: start,
+      style: textStyle?.copyWith(
+        backgroundColor: Colors.orange.withOpacity(
+          0.2,
+        ), // fixed withValues for compatibility
+        color: Colors.deepOrange,
+        fontWeight: FontWeight.bold,
+        fontSize: 14,
       ),
+      recognizer: TapGestureRecognizer()
+        ..onTap = () {
+          debugPrint("tapped a variable: $variableName");
+          customOnTap?.call(variableName);
+        },
     );
   }
-
-  // @override
-  // InlineSpan finishText() {
-  //   /*
-  //   replacing with white space causes trim at the end,
-  //   so used non-breaking spaces to prevent trim at end.
-  //   */
-  //   // final variableName = toString()
-  //   //     .replaceFirst('{{', '\u00A0\u00A0')
-  //   //     .replaceFirst('}}', '\u00A0\u00A0');
-
-  //   /*
-  //    to sync characters count,to replace {{ we must use any two characters
-  //    but two non-braking spaces takes more space, so we use a zero-width space
-  //   */
-  //   // final String startReplacement = '\u00A0\u200B';
-  //   // final String endReplacement = '\u200B\u00A0';
-  //   final String startReplacement = 'xx';
-  //   final String endReplacement = 'yy';
-  //   final variableName = toString()
-  //       .replaceFirst('{{', startReplacement)
-  //       .replaceFirst('}}', endReplacement);
-
-  //   // We render a WidgetSpan to make it look like a distinct pill/chip
-  //   return TextSpan(
-  //     style: textStyle?.copyWith(
-  //       backgroundColor: Colors.orange.withValues(alpha: 0.2),
-  //       color: Colors.deepOrange,
-  //       fontWeight: FontWeight.bold,
-  //       fontSize: 14,
-  //     ),
-  //     recognizer: TapGestureRecognizer()
-  //       ..onSecondaryTap = () {
-  //         debugPrint("tapped a variable: $variableName");
-  //         if (onTap != null) {
-  //           onTap!(variableName);
-  //         }
-  //       },
-  //     text: variableName,
-  //   );
-  // }
-
-  // @override
-  // InlineSpan finishText() {
-  //   // Extract strictly the name inside
-  //   final String variableName = getContent();
-
-  //   // Common style for the background "chip" look
-
-  //   return TextSpan(
-  //     recognizer: TapGestureRecognizer()
-  //       ..onSecondaryTap = () {
-  //         debugPrint("tapped a variable: $variableName");
-  //         onTap!(variableName);
-  //       },
-  //     children: [
-  //       // 1.  Opening Braces
-  //       TextSpan(
-  //         text: startKey,
-  //         style: textStyle?.copyWith(color: Colors.blue),
-  //       ),
-
-  //       // 2. THE VISIBLE VARIABLE
-  //       TextSpan(
-  //         text: variableName,
-  //         style: textStyle?.copyWith(
-  //           color: Colors.deepOrange,
-  //           fontWeight: FontWeight.bold,
-  //         ),
-  //       ),
-
-  //       // 3. Closing Braces
-  //       TextSpan(
-  //         text: endKey,
-  //         style: textStyle?.copyWith(color: Colors.blue),
-  //       ),
-  //     ],
-  //   );
-  // }
 }
 
 class VariableTextBuilder extends SpecialTextSpanBuilder {
@@ -154,7 +70,11 @@ class VariableTextBuilder extends SpecialTextSpanBuilder {
     if (flag == '') return null;
 
     if (isStart(flag, VariableText.startKey)) {
+      final start = index - (VariableText.startKey.length - 1);
+      debugPrint('flag: $flag (${flag.length})at index: $index');
+      debugPrint("Creating VariableText at position: $start");
       return VariableText(
+        start: start,
         textStyle: builderTextStyle ?? textStyle,
         customOnTap: builderOnTap,
         onTap: onTap,
