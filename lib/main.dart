@@ -74,6 +74,16 @@ class MainApp extends StatelessWidget {
             foregroundColor: colorSchema.primaryContainer,
           ),
         ),
+        iconButtonTheme: IconButtonThemeData(
+          style: IconButton.styleFrom(
+            minimumSize: const Size(32, 28),
+            maximumSize: const Size(32, 28),
+            padding: .zero,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(6.0),
+            ),
+          ),
+        ),
       ),
       debugShowCheckedModeBanner: false,
       home: Scaffold(body: HomeScreen()),

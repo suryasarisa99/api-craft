@@ -11,8 +11,11 @@ class TopBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (Platform.isMacOS) {
-      return SizedBox(
+      return Container(
         height: 30,
+        decoration: BoxDecoration(
+          border: Border(bottom: BorderSide(color: const Color(0xFF3D3D3D))),
+        ),
         child: Row(children: [SizedBox(width: 70), ...items, const Spacer()]),
       );
     } else {
