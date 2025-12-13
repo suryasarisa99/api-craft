@@ -2,7 +2,6 @@ import 'package:api_craft/globals.dart';
 import 'package:api_craft/models/node_model.dart';
 import 'package:api_craft/providers/providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:path/path.dart' as p;
 
 final activeReqIdProvider = NotifierProvider<ActiveReqIdNotifier, String?>(
   ActiveReqIdNotifier.new,

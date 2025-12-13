@@ -5,118 +5,201 @@ import 'package:api_craft/screens/home/sidebar/file_node_tail.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:super_context_menu/super_context_menu.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class FileExplorerView extends ConsumerWidget {
   const FileExplorerView({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // 1. Watch the new Tree State
-    final treeState = ref.watch(fileTreeProvider);
+    // 1. Watch the Optimized Root List
+    // This only rebuilds if root items are added, removed, or reordered.
+    final rootList = ref.watch(rootIdsProvider);
+
+    // Watch loading state separately
+    final isLoading = ref.watch(fileTreeProvider.select((s) => s.isLoading));
+
+    if (isLoading) return const Center(child: CircularProgressIndicator());
     final theme = Theme.of(context);
-
-    // 2. Derive Root Nodes (Filter map for items with no parent)
-    // Note: No sorting applied as requested.
-    final rootNodes = treeState.nodeMap.values
-        .where((n) => n.parentId == null)
-        .toList();
-    debugPrint("roots: (${rootNodes.length}): ${rootNodes.map((e) => e.name)}");
-    rootNodes.sort((a, b) {
-      // Primary sort: Sort Order index
-      final orderCompare = a.sortOrder.compareTo(b.sortOrder);
-      if (orderCompare != 0) return orderCompare;
-
-      // Fallback sort: Name (if sort orders happen to be equal/zero)
-      return a.name.toLowerCase().compareTo(b.name.toLowerCase());
-    });
-    // debugPrint(
-    //   "build:::file-explorer:::Rendering FileExplorerView with ${rootNodes.length} root nodes",
-    // );
-    // debugPrint(
-    //   "nodes (${treeState.nodeMap.values.length}): ${treeState.nodeMap.values}",
-    // );
-
+    debugPrint("build:::file-explorer");
     return Scaffold(
-      body: treeState.isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : ContextMenuWidget(
-              menuProvider: (_) async {
-                return getMenuProvider(
-                  ref: ref,
-                  context: context,
-                  isRoot: true,
+      body: ContextMenuWidget(
+        menuProvider: (_) async {
+          return getMenuProvider(ref: ref, context: context, isRoot: true);
+        },
+        child: CustomScrollView(
+          slivers: [
+            SliverList(
+              delegate: SliverChildBuilderDelegate((context, index) {
+                final id = rootList.ids[index];
+                return FocusTraversalGroup(
+                  policy: ReadingOrderTraversalPolicy(),
+                  child: FileNodeTile(
+                    key: ValueKey(id), // Important for performance
+                    nodeId: id, // Pass ID only
+                    isFirstNode: index == 0,
+                  ),
                 );
-              },
-              child: CustomScrollView(
-                slivers: [
-                  SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) => FocusTraversalGroup(
-                        policy: ReadingOrderTraversalPolicy(),
-                        child: FileNodeTile(
-                          node: rootNodes[index],
-                          isFirstNode: index == 0,
-                        ),
-                      ),
-                      childCount: rootNodes.length,
-                    ),
-                  ),
+              }, childCount: rootList.ids.length),
+            ),
 
-                  // The Empty Space Drop Zone (Unchanged)
-                  SliverFillRemaining(
-                    hasScrollBody: false,
-                    child: DragTarget<Node>(
-                      onWillAcceptWithDetails: (details) => true,
-                      onAcceptWithDetails: (details) {
-                        if (rootNodes.isEmpty) {
-                          // Handle drop into empty list if needed
-                          return;
-                        }
-                        // Drop below the last item
-                        final lastNode = rootNodes.last;
-                        ref
-                            .read(fileTreeProvider.notifier)
-                            .handleDrop(
-                              movedNode: details.data,
-                              targetNode: lastNode,
-                              slot: DropSlot.bottom,
-                            );
-                      },
-                      builder: (context, candidateData, rejectedData) {
-                        final isHovering = candidateData.isNotEmpty;
-                        return Container(
-                          color: isHovering
-                              ? theme.colorScheme.primary.withValues(alpha: 0.1)
-                              : Colors.transparent,
-                          alignment: Alignment.topCenter,
-                          padding: const EdgeInsets.only(top: 2),
-                          child: isHovering
-                              ? Container(
-                                  height: 2,
-                                  color: theme.colorScheme.primary,
-                                )
-                              : null,
+            // --- Drop Zone (Unchanged) ---
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: DragTarget<Node>(
+                onWillAcceptWithDetails: (details) => true,
+                onAcceptWithDetails: (details) {
+                  if (rootList.ids.isEmpty) return;
+
+                  // Fetch the actual node object for the target using the ID
+                  // We can use ref.read here safely
+                  final lastId = rootList.ids.last;
+                  final lastNode = ref.read(fileTreeProvider).nodeMap[lastId];
+
+                  if (lastNode != null) {
+                    ref
+                        .read(fileTreeProvider.notifier)
+                        .handleDrop(
+                          movedNode: details.data,
+                          targetNode: lastNode,
+                          slot: DropSlot.bottom,
                         );
-                      },
-                    ),
-                  ),
-                ],
+                  }
+                },
+                builder: (context, candidateData, rejectedData) {
+                  final isHovering = candidateData.isNotEmpty;
+                  return Container(
+                    color: isHovering
+                        ? theme.colorScheme.primary.withValues(alpha: 0.1)
+                        : Colors.transparent,
+                    alignment: Alignment.topCenter,
+                    padding: const EdgeInsets.only(top: 2),
+                    child: isHovering
+                        ? Container(height: 2, color: theme.colorScheme.primary)
+                        : null,
+                  );
+                },
               ),
             ),
+          ],
+        ),
+      ),
     );
   }
 }
 
+// class FileExplorerView extends ConsumerWidget {
+//   const FileExplorerView({super.key});
+
+//   @override
+//   Widget build(BuildContext context, WidgetRef ref) {
+//     // 1. Watch the new Tree State
+//     final treeState = ref.watch(fileTreeProvider);
+//     final theme = Theme.of(context);
+
+//     // 2. Derive Root Nodes (Filter map for items with no parent)
+//     // Note: No sorting applied as requested.
+//     final rootNodes = treeState.nodeMap.values
+//         .where((n) => n.parentId == null)
+//         .toList();
+//     debugPrint("roots: (${rootNodes.length}): ${rootNodes.map((e) => e.name)}");
+//     rootNodes.sort((a, b) {
+//       // Primary sort: Sort Order index
+//       final orderCompare = a.sortOrder.compareTo(b.sortOrder);
+//       if (orderCompare != 0) return orderCompare;
+
+//       // Fallback sort: Name (if sort orders happen to be equal/zero)
+//       return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+//     });
+//     // debugPrint(
+//     //   "build:::file-explorer:::Rendering FileExplorerView with ${rootNodes.length} root nodes",
+//     // );
+//     // debugPrint(
+//     //   "nodes (${treeState.nodeMap.values.length}): ${treeState.nodeMap.values}",
+//     // );
+
+//     return Scaffold(
+//       body: treeState.isLoading
+//           ? const Center(child: CircularProgressIndicator())
+//           : ContextMenuWidget(
+//               menuProvider: (_) async {
+//                 return getMenuProvider(
+//                   ref: ref,
+//                   context: context,
+//                   isRoot: true,
+//                 );
+//               },
+//               child: CustomScrollView(
+//                 slivers: [
+//                   SliverList(
+//                     delegate: SliverChildBuilderDelegate(
+//                       (context, index) => FocusTraversalGroup(
+//                         policy: ReadingOrderTraversalPolicy(),
+//                         child: FileNodeTile(
+//                           node: rootNodes[index],
+//                           isFirstNode: index == 0,
+//                         ),
+//                       ),
+//                       childCount: rootNodes.length,
+//                     ),
+//                   ),
+
+//                   // The Empty Space Drop Zone (Unchanged)
+//                   SliverFillRemaining(
+//                     hasScrollBody: false,
+//                     child: DragTarget<Node>(
+//                       onWillAcceptWithDetails: (details) => true,
+//                       onAcceptWithDetails: (details) {
+//                         if (rootNodes.isEmpty) {
+//                           // Handle drop into empty list if needed
+//                           return;
+//                         }
+//                         // Drop below the last item
+//                         final lastNode = rootNodes.last;
+//                         ref
+//                             .read(fileTreeProvider.notifier)
+//                             .handleDrop(
+//                               movedNode: details.data,
+//                               targetNode: lastNode,
+//                               slot: DropSlot.bottom,
+//                             );
+//                       },
+//                       builder: (context, candidateData, rejectedData) {
+//                         final isHovering = candidateData.isNotEmpty;
+//                         return Container(
+//                           color: isHovering
+//                               ? theme.colorScheme.primary.withValues(alpha: 0.1)
+//                               : Colors.transparent,
+//                           alignment: Alignment.topCenter,
+//                           padding: const EdgeInsets.only(top: 2),
+//                           child: isHovering
+//                               ? Container(
+//                                   height: 2,
+//                                   color: theme.colorScheme.primary,
+//                                 )
+//                               : null,
+//                         );
+//                       },
+//                     ),
+//                   ),
+//                 ],
+//               ),
+//             ),
+//     );
+//   }
+// }
+
 class FileNodeDragWrapper extends ConsumerStatefulWidget {
-  final Node node;
+  final String id;
   final Widget child;
   final bool isOpen;
 
   const FileNodeDragWrapper({
     super.key,
-    required this.node,
     this.isOpen = false,
     required this.child,
+    required this.id,
   });
 
   @override
@@ -126,6 +209,7 @@ class FileNodeDragWrapper extends ConsumerStatefulWidget {
 class _FileNodeTileState extends ConsumerState<FileNodeDragWrapper> {
   DropSlot? _currentDropSlot;
   bool _isDragging = false;
+  late final node = ref.read(fileTreeProvider).nodeMap[widget.id]!;
 
   // folder tile height
   static const double kTileHeight = 32.0;
@@ -142,8 +226,8 @@ class _FileNodeTileState extends ConsumerState<FileNodeDragWrapper> {
     final theme = Theme.of(context);
 
     // --- DRAGGABLE ---
-    Widget draggable = LongPressDraggable<Node>(
-      data: widget.node,
+    Widget draggable = LongPressDraggable(
+      data: node,
       delay: const Duration(milliseconds: 150),
       feedback: Material(
         color: Colors.transparent,
@@ -165,11 +249,11 @@ class _FileNodeTileState extends ConsumerState<FileNodeDragWrapper> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
-                widget.node is FolderNode ? Icons.folder : Icons.description,
+                node is FolderNode ? Icons.folder : Icons.description,
                 size: 16,
               ),
               const SizedBox(width: 8),
-              Text(widget.node.name, style: theme.textTheme.bodyMedium),
+              Text(node.name, style: theme.textTheme.bodyMedium),
             ],
           ),
         ),
@@ -183,7 +267,7 @@ class _FileNodeTileState extends ConsumerState<FileNodeDragWrapper> {
     return DragTarget<Node>(
       onWillAcceptWithDetails: (details) {
         final movedNode = details.data;
-        final targetNode = widget.node;
+        final targetNode = node;
 
         // 1. Cannot drop onto self
         if (movedNode.id == targetNode.id) return false;
@@ -213,7 +297,7 @@ class _FileNodeTileState extends ConsumerState<FileNodeDragWrapper> {
         // If folder is OPEN, we only interact with the Header (30px).
         // If the cursor is below 30px (over the children), we cancel the
         // parent's drop slot so the children can handle the event.
-        if (widget.node is FolderNode && widget.isOpen) {
+        if (node is FolderNode && widget.isOpen) {
           if (dy > kTileHeight) {
             debugPrint("Dropping over children, cancel parent drop slot");
             if (_currentDropSlot != null) {
@@ -224,14 +308,14 @@ class _FileNodeTileState extends ConsumerState<FileNodeDragWrapper> {
         }
 
         // Determine height to use for percentage calculation
-        final activeHeight = (widget.node is FolderNode && widget.isOpen)
+        final activeHeight = (node is FolderNode && widget.isOpen)
             ? kTileHeight
             : box.size.height;
 
         final percent = dy / activeHeight;
         DropSlot newSlot;
 
-        if (widget.node is FolderNode) {
+        if (node is FolderNode) {
           // Folder Logic
           if (percent < 0.05) {
             newSlot = DropSlot.top;
@@ -258,11 +342,7 @@ class _FileNodeTileState extends ConsumerState<FileNodeDragWrapper> {
         final slot = _currentDropSlot ?? DropSlot.center;
         ref
             .read(fileTreeProvider.notifier)
-            .handleDrop(
-              movedNode: details.data,
-              targetNode: widget.node,
-              slot: slot,
-            );
+            .handleDrop(movedNode: details.data, targetNode: node, slot: slot);
         setState(() => _currentDropSlot = null);
       },
       builder: (context, candidateData, rejectedData) {
@@ -299,7 +379,7 @@ class _FileNodeTileState extends ConsumerState<FileNodeDragWrapper> {
     if (_currentDropSlot == DropSlot.bottom) {
       // Logic: If open, the "bottom" of the header is at kTileHeight.
       // If closed, "bottom" is at bottom: 0.
-      if (widget.node is FolderNode && widget.isOpen) {
+      if (node is FolderNode && widget.isOpen) {
         return Positioned(
           top: kTileHeight - borderThick,
           left: 0,
@@ -320,7 +400,7 @@ class _FileNodeTileState extends ConsumerState<FileNodeDragWrapper> {
 
     // DropSlot.center (Inside Folder)
     // Only highlight the HEADER (30px) if open, otherwise highlight full box
-    if (widget.node is FolderNode && widget.isOpen) {
+    if (node is FolderNode && widget.isOpen) {
       return Positioned(
         top: 0,
         height: kTileHeight,
