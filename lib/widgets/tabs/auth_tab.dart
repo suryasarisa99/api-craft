@@ -2,7 +2,7 @@
 import 'package:api_craft/models/models.dart';
 import 'package:api_craft/providers/providers.dart';
 import 'package:api_craft/screens/home/sidebar/context_menu.dart';
-import 'package:api_craft/widgets/ui/custom_context_menu.dart';
+import 'package:api_craft/widgets/ui/custom_menu.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_popup/flutter_popup.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -142,43 +142,19 @@ class _AuthTabHeaderState extends ConsumerState<AuthTabHeader> {
 
   Widget _buildAuthOption(AuthType type, {bool checked = false}) {
     final n = type.title[0].toUpperCase() + type.title.substring(1);
-    return SizedBox(
-      width: 180,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(4),
-        onTap: () {
-          ref
-              .read(resolveConfigProvider(widget.id).notifier)
-              .updateAuth(
-                ref
-                    .read(resolveConfigProvider(widget.id))
-                    .node
-                    .config
-                    .auth
-                    .copyWith(type: type),
-              );
-          Navigator.of(context).pop();
-        },
-        child: Ink(
-          padding: const .symmetric(vertical: 3, horizontal: 4),
-          // alignment: Alignment.centerLeft,
-          width: 140,
-          child: Row(
-            children: [
-              if (checked)
-                Icon(
-                  Icons.check,
-                  color: const Color.fromARGB(255, 120, 120, 120),
-                  size: 16,
-                )
-              else
-                SizedBox(width: 16),
-              SizedBox(width: 8),
-              Text(n),
-            ],
-          ),
-        ),
-      ),
+    return CustomMenuTickItem(
+      checked: checked,
+      title: Text(n),
+      value: type.name,
+      onTap: (v) {
+        final auth = ref
+            .read(resolveConfigProvider(widget.id))
+            .node
+            .config
+            .auth
+            .copyWith(type: type);
+        notifier.updateAuth(auth);
+      },
     );
   }
 }

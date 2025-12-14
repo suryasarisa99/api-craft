@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 
 // final List<String> variables = [
@@ -12,6 +13,7 @@ final List<String> urls = [
   'https://google.com',
   'http://localhost:3000',
   'https://test/{{token}}',
+  'https://test/{{token}}/magictext',
 ];
 final List<String> functions = [
   'getData',
@@ -298,7 +300,7 @@ class FilterService {
     }
 
     List<FillOptions> options = [];
-
+    debugPrint("multi-type detection: $type for query '$query'");
     // Handle multi-type matching (check all categories)
     if (type == 'multi') {
       // Try URLs first

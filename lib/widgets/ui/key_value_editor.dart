@@ -20,10 +20,12 @@ class KeyValueEditor extends StatefulWidget {
   final bool isVariable;
   final bool hideValuesGlobal;
   final KeyValueEditorMode mode;
+  final String id;
 
   const KeyValueEditor({
     required this.items,
     required this.onChanged,
+    required this.id,
     // required this.onItemReordered,
     // required this.onItemChanged,
     // required this.onItemAdded,
@@ -281,6 +283,7 @@ class _KeyValueEditorState extends State<KeyValueEditor> {
 
     if (extra) {
       return CustomInput(
+        id: widget.id,
         autofocus: false,
         value: '',
         isExtra: extra,
@@ -301,6 +304,7 @@ class _KeyValueEditorState extends State<KeyValueEditor> {
       TextEditingController? controller,
     ]) => CustomInput(
       focusNode: focusNode,
+      id: widget.id,
       controller: controller,
       value: isKey ? item.key : item.value,
       isExtra: extra,

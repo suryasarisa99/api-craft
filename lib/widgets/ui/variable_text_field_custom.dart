@@ -19,13 +19,23 @@ class VariableTextFieldCustom extends ConsumerStatefulWidget {
   final String id;
   final TextEditingController? controller;
   final ValueChanged<String>? onChanged;
+  final ValueChanged<String>? onSubmitted;
+  final FocusNode? focusNode;
+  final InputDecoration? decoration;
+  final String? placeHolder;
+  final KeyEventResult Function(FocusNode, KeyEvent)? onKeyEvent;
 
   const VariableTextFieldCustom({
     super.key,
     this.initialValue,
     this.controller,
     this.onChanged,
+    this.focusNode,
     required this.id,
+    this.decoration,
+    this.placeHolder,
+    this.onKeyEvent,
+    this.onSubmitted,
   });
 
   @override
@@ -38,7 +48,7 @@ class _VariableTextFieldCustomState
   late final TextEditingController _controller =
       widget.controller ?? TextEditingController(text: widget.initialValue);
 
-  final FocusNode _focusNode = FocusNode();
+  late final FocusNode _focusNode = widget.focusNode ?? FocusNode();
   final LayerLink _layerLink = LayerLink();
 
   late VariableTextBuilder _variableBuilder;
@@ -47,7 +57,7 @@ class _VariableTextFieldCustomState
   List<FillOptions> _options = [];
   int _highlightedIndex = 0;
 
-  final double fontSize = 16.0;
+  final double fontSize = 14.0;
 
   @override
   void initState() {
@@ -58,9 +68,17 @@ class _VariableTextFieldCustomState
       builderTextStyle: TextStyle(
         fontWeight: FontWeight.bold,
         fontSize: fontSize,
-        backgroundColor: const Color(0x5F763417),
+        color: const Color.fromARGB(255, 254, 145, 223),
+        backgroundColor: const Color.fromARGB(68, 63, 21, 63),
       ),
     );
+
+    // close on focus lost
+    _focusNode.addListener(() {
+      if (!_focusNode.hasFocus && _overlayEntry != null) {
+        _hideOverlay();
+      }
+    });
   }
 
   void handleVariableTap(dynamic variableName) {
@@ -184,28 +202,31 @@ class _VariableTextFieldCustomState
   // ─────────────────────────────────────────────────────────────
 
   KeyEventResult _handleKey(FocusNode node, KeyEvent event) {
-    if (_overlayEntry == null) return KeyEventResult.ignored;
     if (event is KeyUpEvent) return KeyEventResult.ignored;
-
-    if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
-      setState(() {
-        _highlightedIndex = (_highlightedIndex + 1) % _options.length;
-      });
-      _overlayEntry?.markNeedsBuild();
-      return KeyEventResult.handled;
-    } else if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
-      setState(() {
-        _highlightedIndex =
-            (_highlightedIndex - 1 + _options.length) % _options.length;
-      });
-      _overlayEntry?.markNeedsBuild();
-      return KeyEventResult.handled;
-    } else if (event.logicalKey == LogicalKeyboardKey.enter) {
-      _selectOption(_options[_highlightedIndex]);
-      return KeyEventResult.handled;
-    } else if (event.logicalKey == LogicalKeyboardKey.escape) {
-      _hideOverlay();
-      return KeyEventResult.handled;
+    if (_overlayEntry != null) {
+      if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
+        setState(() {
+          _highlightedIndex = (_highlightedIndex + 1) % _options.length;
+        });
+        _overlayEntry?.markNeedsBuild();
+        return KeyEventResult.handled;
+      } else if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
+        setState(() {
+          _highlightedIndex =
+              (_highlightedIndex - 1 + _options.length) % _options.length;
+        });
+        _overlayEntry?.markNeedsBuild();
+        return KeyEventResult.handled;
+      } else if (event.logicalKey == LogicalKeyboardKey.enter) {
+        _selectOption(_options[_highlightedIndex]);
+        return KeyEventResult.handled;
+      } else if (event.logicalKey == LogicalKeyboardKey.escape) {
+        _hideOverlay();
+        return KeyEventResult.handled;
+      }
+    }
+    if (widget.onKeyEvent != null) {
+      return widget.onKeyEvent!(node, event);
     }
     return KeyEventResult.ignored;
   }
@@ -310,7 +331,7 @@ class _VariableTextFieldCustomState
             fontSize: 14,
             fontWeight: isMatched ? FontWeight.bold : FontWeight.normal,
             color: isMatched
-                ? const Color(0xFF57ABFF)
+                ? const Color.fromARGB(255, 251, 134, 233)
                 : (isHighlighted ? Colors.white : null),
           ),
         ),
@@ -329,6 +350,7 @@ class _VariableTextFieldCustomState
     return CompositedTransformTarget(
       link: _layerLink,
       child: Focus(
+        canRequestFocus: false,
         focusNode: FocusNode(),
         onKeyEvent: _handleKey,
         child: ExtendedTextField(
@@ -338,12 +360,13 @@ class _VariableTextFieldCustomState
           style: TextStyle(fontSize: fontSize, height: 1.4),
           autofocus: true,
           onChanged: _onTextChanged,
-          decoration: const InputDecoration(
-            border: OutlineInputBorder(),
-            isDense: true,
-            contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-            hintText: 'Try typing {{baseUrl}}/users or just "base"...',
-          ),
+          onSubmitted: widget.onSubmitted,
+          decoration:
+              widget.decoration ??
+              InputDecoration(
+                labelStyle: TextStyle(fontSize: 12),
+                hintText: widget.placeHolder,
+              ),
         ),
       ),
     );

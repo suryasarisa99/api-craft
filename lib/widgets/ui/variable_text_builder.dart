@@ -31,24 +31,50 @@ class VariableText extends SpecialText {
       result = variableName;
     }
 
-    return SpecialTextSpan(
+    // return SpecialTextSpan(
+    //   actualText: toString(),
+    //   text: result,
+    //   deleteAll: true,
+    //   start: start,
+    //   style: textStyle?.copyWith(fontWeight: FontWeight.bold),
+    //   recognizer: TapGestureRecognizer()
+    //     ..onTap = () {
+    //       debugPrint("tapped a variable: $variableName");
+    //       customOnTap?.call(variableName);
+    //     },
+    // );
+    return ExtendedWidgetSpan(
+      alignment: PlaceholderAlignment.baseline,
       actualText: toString(),
-      text: result,
-      deleteAll: true,
       start: start,
-      style: textStyle?.copyWith(
-        backgroundColor: Colors.orange.withOpacity(
-          0.2,
-        ), // fixed withValues for compatibility
-        color: Colors.deepOrange,
-        fontWeight: FontWeight.bold,
-        fontSize: 14,
+      baseline: TextBaseline.alphabetic,
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: Container(
+          clipBehavior: Clip.hardEdge,
+          // transformAlignment: Alignment.center,
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
+          decoration: BoxDecoration(
+            color: textStyle?.backgroundColor,
+            borderRadius: BorderRadius.circular(4),
+            border: Border.all(color: const Color(0x66857383), width: 1),
+          ),
+          child: GestureDetector(
+            onTap: () {
+              debugPrint("tapped a variable: $variableName");
+              customOnTap?.call(variableName);
+            },
+            child: Text(
+              result,
+              style: textStyle?.copyWith(
+                fontWeight: FontWeight.w400,
+                fontSize: 13,
+                backgroundColor: Colors.transparent,
+              ),
+            ),
+          ),
+        ),
       ),
-      recognizer: TapGestureRecognizer()
-        ..onTap = () {
-          debugPrint("tapped a variable: $variableName");
-          customOnTap?.call(variableName);
-        },
     );
   }
 }

@@ -1,9 +1,11 @@
 import 'package:api_craft/utils/debouncer.dart';
+import 'package:api_craft/widgets/ui/variable_text_field_custom.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 class CustomInput extends StatefulWidget {
   final Function()? onTap;
+  final String id;
   final Function(String)? onFieldSubmitted;
   final Function(String)? onUpdate;
   final Function(String)? onChanged;
@@ -18,7 +20,7 @@ class CustomInput extends StatefulWidget {
   // final String flowId;
 
   const CustomInput({
-    // required this.flowId,
+    required this.id,
     this.autofocus = false,
     this.onFieldSubmitted,
     this.controller,
@@ -66,24 +68,10 @@ class _CustomInputState extends State<CustomInput> {
 
   @override
   Widget build(BuildContext context) {
-    return Focus(
-      autofocus: widget.autofocus,
-      canRequestFocus: false,
-
-      onFocusChange: (hasFocus) {
-        if (hasFocus) {
-          if (widget.isExtra) {
-            if (newRowByFocus) {
-              widget.onExtraInputChange?.call("");
-            }
-          } else {
-            // widget.onUpdate?.call(_controller.text);
-          }
-        } else {
-          debugPrint("losing focus");
-          // tableFocusNode.requestFocus();
-        }
-      },
+    return VariableTextFieldCustom(
+      id: widget.id,
+      focusNode: widget.focusNode,
+      controller: _controller,
       onKeyEvent: (hasFocus, event) {
         if (event.logicalKey == LogicalKeyboardKey.escape) {
           FocusScope.of(context).unfocus();
@@ -91,52 +79,15 @@ class _CustomInputState extends State<CustomInput> {
         }
         return KeyEventResult.ignored;
       },
-      child: TextFormField(
-        controller: _controller,
-        focusNode: widget.focusNode,
-        style: TextStyle(
-          fontSize: 14,
-          color: widget.isEnabled ? Colors.white : Colors.grey[600],
-        ),
-        decoration: InputDecoration(
-          isDense: true,
-          contentPadding: const .symmetric(horizontal: 8, vertical: 8),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(4),
-            borderSide: .new(color: Colors.grey[600]!, width: 0.6),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(4),
-            borderSide: BorderSide(
-              color: const .fromARGB(150, 117, 117, 117),
-              width: 0.6,
-            ),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(4),
-            borderSide: const BorderSide(
-              color: .fromARGB(210, 255, 167, 95),
-              width: 2,
-            ),
-          ),
-          disabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(4),
-            borderSide: .new(color: Colors.grey[800]!, width: 1),
-          ),
-        ),
-        onChanged: (v) {
-          if (widget.isExtra && !newRowByFocus) {
-            widget.onExtraInputChange?.call(v);
-          } else {
-            debouncer.run(() {
-              widget.onUpdate?.call(_controller.text);
-            });
-          }
-        },
-        onTapOutside: (e) {
-          FocusScope.of(context).unfocus();
-        },
-      ),
+      onChanged: (v) {
+        if (widget.isExtra && !newRowByFocus) {
+          widget.onExtraInputChange?.call(v);
+        } else {
+          debouncer.run(() {
+            widget.onUpdate?.call(_controller.text);
+          });
+        }
+      },
     );
   }
 }

@@ -47,18 +47,36 @@ Future<RawHttpResponse> run(ResolveConfig config) async {
 
   /// handle variable injection
 
-  // resolve url
+  // for url
   final resolvedUrl = resolveVariables(node.url, config.allVariables ?? {});
   final uri = Uri.parse(resolvedUrl);
+  // for headers
+  headers = [
+    for (var header in headers)
+      [
+        resolveVariables(header[0], config.allVariables ?? {}),
+        resolveVariables(header[1], config.allVariables ?? {}),
+      ],
+  ];
+  // for query parameters
+  final queryParameters = [
+    for (var qp in node.config.queryParameters)
+      KeyValueItem(
+        key: resolveVariables(qp.key, config.allVariables ?? {}),
+        value: resolveVariables(qp.value, config.allVariables ?? {}),
+        isEnabled: qp.isEnabled,
+      ),
+  ];
 
   /// Handle Headers, Params Merging
   headers = HeaderUtils.handleHeaders(headers);
   // encode + filter query parameters
   final queryParams = [
-    for (var qp in node.config.queryParameters)
+    for (var qp in queryParameters)
       if (qp.isEnabled)
         "${Uri.encodeQueryComponent(qp.key)}=${Uri.encodeQueryComponent(qp.value)}",
   ].join('&');
+
   // append query params to uri
   final uriWithQuery = queryParams.isNotEmpty
       ? uri.replace(

@@ -1,6 +1,8 @@
 import 'package:api_craft/http/send_request.dart';
 import 'package:api_craft/models/models.dart';
 import 'package:api_craft/providers/config_resolver_provider.dart';
+import 'package:api_craft/widgets/ui/custom_menu.dart';
+import 'package:flutter_popup/flutter_popup.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:api_craft/widgets/ui/variable_text_field_custom.dart';
 import 'package:flutter/material.dart';
@@ -13,9 +15,35 @@ class RequestUrl extends ConsumerStatefulWidget {
   ConsumerState<RequestUrl> createState() => _RequestUrlState();
 }
 
+const methods = [
+  "GET",
+  "POST",
+  "PUT",
+  "DELETE",
+  "PATCH",
+  "OPTIONS",
+  "HEAD",
+  "Query",
+  "CONNECT",
+  "CUSTOM",
+];
+const Map<String, Color> methodsColorsMap = {
+  "GET": Colors.green,
+  "POST": Colors.blue,
+  "PUT": Colors.orange,
+  "DELETE": Colors.red,
+  "PATCH": Colors.purple,
+  "OPTIONS": Colors.teal,
+  "HEAD": Colors.brown,
+  "Query": Colors.indigo,
+  "CONNECT": Colors.cyan,
+  "CUSTOM": Colors.grey,
+};
+
 class _RequestUrlState extends ConsumerState<RequestUrl> {
   late final TextEditingController _controller;
   late final notifier = ref.read(resolveConfigProvider(widget.id).notifier);
+  final popupKey = GlobalKey<CustomPopupState>();
   @override
   void initState() {
     super.initState();
@@ -33,50 +61,87 @@ class _RequestUrlState extends ConsumerState<RequestUrl> {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        // menu
-        Consumer(
-          builder: (context, ref, child) {
-            final method = ref.watch(
-              resolveConfigProvider(
-                widget.id,
-              ).select((d) => (d.node as RequestNode).method),
-            );
-            debugPrint("RequestUrl rebuild method: $method");
-            return DropdownButton(
-              value: method,
-              isDense: true,
-              items: [
-                DropdownMenuItem(value: "GET", child: Text("GET")),
-                DropdownMenuItem(value: "POST", child: Text("POST")),
-                DropdownMenuItem(value: "PUT", child: Text("PUT")),
-                DropdownMenuItem(value: "DELETE", child: Text("DELETE")),
-                DropdownMenuItem(value: "PATCH", child: Text("PATCH")),
-              ],
+    return Padding(
+      padding: const EdgeInsets.only(top: 8.0, left: 8, right: 8),
+      child: Row(
+        children: [
+          // menu
+          Expanded(
+            child: VariableTextFieldCustom(
+              controller: _controller,
+              id: widget.id,
+              decoration: InputDecoration(
+                prefixIconConstraints: BoxConstraints(maxWidth: 80),
+                prefixIcon: Padding(
+                  padding: const EdgeInsets.only(left: 8),
+                  child: Consumer(
+                    builder: (context, ref, child) {
+                      final method = ref.watch(
+                        resolveConfigProvider(
+                          widget.id,
+                        ).select((d) => (d.node as RequestNode).method),
+                      );
+                      return MyCustomMenu.contentColumn(
+                        popupKey: popupKey,
+                        items: _buildMenuItems(method),
+                        child: Text(
+                          method,
+                          style: TextStyle(
+                            color: methodsColorsMap[method] ?? Colors.grey,
+                            fontWeight: FontWeight.w400,
+                            fontSize: 13,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                suffixIcon: Padding(
+                  padding: const .only(right: 8),
+                  child: IconButton(
+                    onPressed: () {
+                      sendReq();
+                    },
+                    icon: Icon(Icons.send),
+                  ),
+                ),
+                border: OutlineInputBorder(),
+                isDense: true,
+                contentPadding: EdgeInsets.symmetric(
+                  vertical: 8.0,
+                  horizontal: 12.0,
+                ),
+              ),
               onChanged: (v) {
-                if (v != null) {
-                  notifier.updateMethod(v);
-                }
+                notifier.updateUrl(v);
               },
-            );
-          },
-        ),
-        SizedBox(width: 8),
-
-        Expanded(
-          child: VariableTextFieldCustom(
-            controller: _controller,
-            id: widget.id,
-            onChanged: (v) {
-              notifier.updateUrl(v);
-            },
+              onSubmitted: (_) {
+                sendReq();
+              },
+            ),
           ),
-        ),
-        SizedBox(width: 8),
-        IconButton(onPressed: sendReq, iconSize: 17, icon: Icon(Icons.send)),
-      ],
+        ],
+      ),
     );
+  }
+
+  List<Widget> _buildMenuItems(String checkedValue) {
+    return methods.map((m) {
+      return SizedBox(
+        width: 150,
+        child: CustomMenuTickItem(
+          checked: m == checkedValue,
+          onTap: (val) {
+            notifier.updateMethod(m);
+          },
+          title: Text(
+            m,
+            style: TextStyle(color: methodsColorsMap[m] ?? Colors.grey),
+          ),
+          value: m,
+        ),
+      );
+    }).toList();
   }
 }
 

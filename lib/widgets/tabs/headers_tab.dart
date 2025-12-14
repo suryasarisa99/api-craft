@@ -126,6 +126,7 @@ class HeadersTab extends StatelessWidget {
               );
               return Expanded(
                 child: KeyValueEditor(
+                  id: id,
                   mode: KeyValueEditorMode.headers,
                   items: List.from(
                     headers,

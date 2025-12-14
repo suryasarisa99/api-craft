@@ -21,6 +21,7 @@ class EnvironmentTab extends ConsumerWidget {
         children: [
           Expanded(
             child: KeyValueEditor(
+              id: id,
               mode: KeyValueEditorMode.variables,
               items: List.from(
                 variables,

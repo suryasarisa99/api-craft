@@ -53,7 +53,7 @@ class MainApp extends StatelessWidget {
       darkTheme: ThemeData(
         colorScheme: colorSchema,
         useMaterial3: true,
-        scaffoldBackgroundColor: const Color(0xFF272727),
+        scaffoldBackgroundColor: const Color.fromARGB(255, 33, 33, 33),
         dialogTheme: DialogThemeData(
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8.0),
@@ -81,13 +81,30 @@ class MainApp extends StatelessWidget {
         ),
         iconButtonTheme: IconButtonThemeData(
           style: IconButton.styleFrom(
-            minimumSize: const Size(32, 28),
-            maximumSize: const Size(32, 28),
+            minimumSize: const Size(38, 28),
+            maximumSize: const Size(38, 28),
+            alignment: Alignment.center,
             padding: .zero,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(6.0),
             ),
           ),
+        ),
+        inputDecorationTheme: InputDecorationThemeData(
+          isDense: true,
+          contentPadding: EdgeInsets.symmetric(horizontal: 6, vertical: 9),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(6.0)),
+          enabledBorder: OutlineInputBorder(
+            borderSide: BorderSide(color: Color.fromARGB(255, 80, 80, 80)),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderSide: BorderSide(
+              color: const Color.fromARGB(255, 185, 116, 177),
+              width: 1.5,
+            ),
+          ),
+          prefixIconConstraints: BoxConstraints.tight(Size(36, 28)),
+          suffixIconConstraints: BoxConstraints.tight(Size(36, 28)),
         ),
       ),
       debugShowCheckedModeBanner: false,
