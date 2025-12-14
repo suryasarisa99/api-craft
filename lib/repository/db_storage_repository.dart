@@ -1,4 +1,5 @@
 import 'package:api_craft/globals.dart';
+import 'package:api_craft/http/raw/raw_http_req.dart';
 import 'package:api_craft/models/models.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:sqflite/sqflite.dart';
@@ -38,6 +39,7 @@ class DbStorageRepository implements StorageRepository {
         'sort_order',
         'request_type',
         'url',
+        'status_code',
       ],
       where: 'collection_id = ?',
       whereArgs: [collectionId],
@@ -221,5 +223,64 @@ class DbStorageRepository implements StorageRepository {
     debugPrint('db::create-one-node ${node.id}: $map');
     map['collection_id'] = collectionId;
     await db.insert('nodes', map);
+  }
+
+  // ... inside StorageRepository
+
+  /// Adds a history entry and enforces the limit (e.g., max 10)
+  Future<void> addHistoryEntry(RawHttpResponse entry, {int limit = 10}) async {
+    final db = await _db;
+
+    await db.transaction((txn) async {
+      // 1. Insert the new record
+      await txn.insert(
+        'request_history',
+        entry.toMap(),
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+
+      // 2. Cleanup: Delete entries that are outside the top N (descending by time)
+      // This SQL says: "Delete everything from history for this request_id
+      // where the ID is NOT in the top 10 newest items."
+      await txn.rawDelete(
+        '''
+        DELETE FROM request_history 
+        WHERE request_id = ? 
+        AND id NOT IN (
+          SELECT id 
+          FROM request_history 
+          WHERE request_id = ? 
+          ORDER BY executed_at DESC 
+          LIMIT ?
+        )
+        ''',
+        [entry.requestId, entry.requestId, limit],
+      );
+    });
+  }
+
+  /// Get history for a specific request tab
+  @override
+  Future<List<RawHttpResponse>> getHistory(String requestId) async {
+    final db = await _db;
+    final res = await db.query(
+      'request_history',
+      where: 'request_id = ?',
+      whereArgs: [requestId],
+      orderBy: 'executed_at DESC', // Newest first
+    );
+    debugPrint("db::get-history for $requestId: $res");
+    return res.map((e) => RawHttpResponse.fromMap(e)).toList();
+  }
+
+  /// Clear history for a node
+  @override
+  Future<void> clearHistory(String requestId) async {
+    final db = await _db;
+    await db.delete(
+      'request_history',
+      where: 'request_id = ?',
+      whereArgs: [requestId],
+    );
   }
 }

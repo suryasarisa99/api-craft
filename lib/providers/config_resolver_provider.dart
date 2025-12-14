@@ -1,3 +1,4 @@
+import 'package:api_craft/http/raw/raw_http_req.dart';
 import 'package:api_craft/repository/storage_repository.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -95,6 +96,7 @@ class ResolveConfigNotifier extends Notifier<ResolveConfig> {
 
     if (node is RequestNode) {
       _mergeVariables();
+      await loadHistory();
     }
   }
 
@@ -194,6 +196,11 @@ class ResolveConfigNotifier extends Notifier<ResolveConfig> {
     state = state.copyWith(allVariables: allVars);
   }
 
+  Future<void> loadHistory() async {
+    final history = await _repo.getHistory(getNode.id);
+    state = state.copyWith(history: history);
+  }
+
   /// Updates
   void updateName(String name) {
     updateNode(getNode.copyWith(name: name));
@@ -248,6 +255,21 @@ class ResolveConfigNotifier extends Notifier<ResolveConfig> {
         ),
       ),
     );
+  }
+
+  void addHistoryEntry(RawHttpResponse entry, {int limit = 10}) {
+    final currentHistory = state.history ?? [];
+    final updatedHistory = [entry, ...currentHistory];
+    if (updatedHistory.length > limit) {
+      updatedHistory.removeRange(limit, updatedHistory.length);
+    }
+    state = state.copyWith(history: updatedHistory);
+
+    // update node last status code
+    updateNode(
+      (getNode as RequestNode).copyWith(lastStatusCode: entry.statusCode),
+    );
+    _repo.addHistoryEntry(entry);
   }
 
   void updateNode(Node node) {

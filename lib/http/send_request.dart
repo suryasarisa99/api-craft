@@ -1,5 +1,5 @@
 import 'package:api_craft/http/header_utils.dart';
-import 'package:api_craft/http/raw_req.dart';
+import 'package:api_craft/http/raw/raw_http_req.dart';
 import 'package:api_craft/models/models.dart';
 import 'package:flutter/cupertino.dart';
 
@@ -25,13 +25,34 @@ List<List<String>> headersHandle(
   ];
 }
 
-void run(ResolveConfig config, {required String url}) async {
+String resolveVariables(String text, Map<String, VariableValue> values) {
+  // Match all {{variable}} patterns
+  final regex = RegExp(r'{{\s*([a-zA-Z0-9_]+)\s*}}');
+
+  return text.replaceAllMapped(regex, (match) {
+    final key = match.group(1);
+    if (key != null && values.containsKey(key)) {
+      return values[key]!.value; // Replace with value
+    }
+    return match.group(0)!; // leave as is if no value found
+  });
+}
+
+Future<RawHttpResponse> run(ResolveConfig config) async {
   final node = config.node as RequestNode;
-  final uri = Uri.parse(url);
-  final headers = headersHandle(
+  late List<List<String>> headers = headersHandle(
     node.config.headers,
     config.inheritedHeaders ?? [],
   );
+
+  /// handle variable injection
+
+  // resolve url
+  final resolvedUrl = resolveVariables(node.url, config.allVariables ?? {});
+  final uri = Uri.parse(resolvedUrl);
+
+  /// Handle Headers, Params Merging
+  headers = HeaderUtils.handleHeaders(headers);
   // encode + filter query parameters
   final queryParams = [
     for (var qp in node.config.queryParameters)
@@ -50,6 +71,29 @@ void run(ResolveConfig config, {required String url}) async {
   debugPrint("=== RUN REQUEST ======================");
   debugPrint("Running request: ${node.method} $uri");
   debugPrint("Headers: ${headers.length}");
+
+  const bodies = [
+    """{
+  "username":"surya",
+  "password":"123"
+}""",
+  ];
+  // calculate res time
+  final responseStart = DateTime.now();
+  final response = await sendRawHttp(
+    method: node.method,
+    url: uriWithQuery,
+    headers: headers,
+    body: bodies[0],
+    useProxy: false,
+    requestId: node.id,
+  );
+  final responseEnd = DateTime.now();
+  final responseDuration = responseEnd.difference(responseStart);
+  debugPrint('Response status: ${response}');
+  debugPrint('Response time: ${responseDuration.inMilliseconds} ms');
+  return response;
+}
   // httpEngine
   //     .send(
   //       method: node.method,
@@ -64,30 +108,3 @@ void run(ResolveConfig config, {required String url}) async {
   //     .catchError((error) {
   //       debugPrint('Request error: $error');
   //     });
-  const bodies = [
-    """{
-  "username":"surya",
-  "password":"123"
-}""",
-  ];
-  // calculate res time
-  final responseStart = DateTime.now();
-  final response = await sendRawHttp(
-    method: node.method,
-    url: uriWithQuery,
-    // url: uri,
-    headers: HeaderUtils.handleHeaders(headers),
-    body: bodies[0],
-    useProxy: true,
-    // url: uriWithQuery.toString(),
-    // headers: listHeadersToMap(headers),
-  );
-  final responseEnd = DateTime.now();
-  final responseDuration = responseEnd.difference(responseStart);
-  debugPrint('Response status: $response');
-  debugPrint('Response time: ${responseDuration.inMilliseconds} ms');
-
-  // debugPrint('Response status: ${response.statusCode}');
-  // final responseBody = await response.transform(utf8.decoder).join();
-  // debugPrint('Response body: $responseBody');
-}

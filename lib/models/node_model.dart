@@ -175,6 +175,7 @@ enum RequestType { http, wc }
 class RequestNode extends Node<RequestNodeConfig> {
   final String method;
   final String url;
+  final int? statusCode;
   final RequestType requestType;
 
   RequestNode({
@@ -182,6 +183,7 @@ class RequestNode extends Node<RequestNodeConfig> {
     required super.parentId,
     required super.name,
     required super.config,
+    required this.statusCode,
     required super.sortOrder,
     this.method = 'GET',
     this.url = '',
@@ -220,6 +222,7 @@ class RequestNode extends Node<RequestNodeConfig> {
       url: map['url'] ?? '',
       parentId: map['parent_id'],
       name: map['name'],
+      statusCode: map['status_code'],
       sortOrder: map['sort_order'] ?? 0,
       config: RequestNodeConfig(
         isDetailLoaded: hasDetails,
@@ -247,12 +250,14 @@ class RequestNode extends Node<RequestNodeConfig> {
     RequestType? requestType,
     String? method,
     String? url,
+    int? lastStatusCode,
   }) {
     debugPrint(
       "copy with method; actual: $method, this.method: ${this.method}",
     );
     return RequestNode(
       id: id ?? this.id,
+      statusCode: lastStatusCode ?? this.statusCode,
       parentId: forceNullParent ? null : (parentId ?? this.parentId),
       name: name ?? this.name,
       config: config ?? reqConfig,
@@ -273,7 +278,7 @@ class RequestNode extends Node<RequestNodeConfig> {
       'method': method,
       'url': url,
       'type': NodeType.request.toString(),
-
+      'status_code': statusCode,
       // config fields
       'description': reqConfig.description,
       'headers': jsonEncode(reqConfig.headers.map((e) => e.toMap()).toList()),
@@ -296,6 +301,8 @@ class RequestNode extends Node<RequestNodeConfig> {
   method: $method,
   url: $url,
   requestType: $requestType,
+  lastStatusCode: $statusCode,
+  sortOrder: $sortOrder,
   config: $config,
     )''';
   }

@@ -1,3 +1,5 @@
+import 'package:api_craft/http/raw/raw_http_req.dart';
+
 import 'models.dart';
 
 class VariableValue {
@@ -13,6 +15,7 @@ class ResolveConfig {
   final Map<String, VariableValue>? allVariables;
   final AuthData? effectiveAuth;
   final Node? effectiveAuthSource;
+  final List<RawHttpResponse>? history;
 
   ResolveConfig({
     required this.node,
@@ -20,13 +23,15 @@ class ResolveConfig {
     this.effectiveAuth,
     this.effectiveAuthSource,
     this.allVariables,
+    this.history,
   });
 
   ResolveConfig.empty(this.node)
     : inheritedHeaders = null,
       effectiveAuth = null,
       effectiveAuthSource = null,
-      allVariables = null;
+      allVariables = null,
+      history = null;
 
   ResolveConfig copyWith({
     Node? node,
@@ -34,6 +39,7 @@ class ResolveConfig {
     AuthData? effectiveAuth,
     Node? effectiveAuthSource,
     Map<String, VariableValue>? allVariables,
+    List<RawHttpResponse>? history,
   }) {
     return ResolveConfig(
       node: node ?? this.node,
@@ -41,6 +47,7 @@ class ResolveConfig {
       effectiveAuth: effectiveAuth ?? this.effectiveAuth,
       effectiveAuthSource: effectiveAuthSource ?? this.effectiveAuthSource,
       allVariables: allVariables ?? this.allVariables,
+      history: history ?? this.history,
     );
   }
 }

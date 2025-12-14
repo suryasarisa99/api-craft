@@ -26,6 +26,7 @@ dependencies:
   flutter_popup: ^3.3.9
   window_manager: ^0.5.1
   flutter_typeahead: ^5.2.0
+  extended_text: ^15.0.2
 
 dev_dependencies:
   flutter_test:

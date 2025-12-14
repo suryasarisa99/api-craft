@@ -74,6 +74,7 @@ class _RequestTabState extends ConsumerState<RequestTab>
           SizedBox(
             height: 32,
             child: TabBar(
+              dividerColor: Colors.transparent,
               controller: _tabController,
               isScrollable: true,
               tabAlignment: TabAlignment.start,

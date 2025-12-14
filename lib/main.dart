@@ -53,8 +53,13 @@ class MainApp extends StatelessWidget {
       darkTheme: ThemeData(
         colorScheme: colorSchema,
         useMaterial3: true,
-        scaffoldBackgroundColor: const Color.fromARGB(255, 32, 29, 32),
-        dialogTheme: DialogThemeData(backgroundColor: const Color(0xFF1A1C1D)),
+        scaffoldBackgroundColor: const Color(0xFF272727),
+        dialogTheme: DialogThemeData(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8.0),
+          ),
+          backgroundColor: const Color(0xFF201F20),
+        ),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
             shape: RoundedRectangleBorder(

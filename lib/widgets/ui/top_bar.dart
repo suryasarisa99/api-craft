@@ -10,10 +10,13 @@ class TopBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    const topBarColor = Color.fromARGB(255, 27, 27, 27);
+    const topBarHeight = 35.0;
     if (Platform.isMacOS) {
       return Container(
-        height: 30,
+        height: topBarHeight,
         decoration: BoxDecoration(
+          color: topBarColor,
           border: Border(bottom: BorderSide(color: const Color(0xFF3D3D3D))),
         ),
         child: Row(children: [SizedBox(width: 70), ...items, const Spacer()]),
@@ -31,8 +34,8 @@ class TopBar extends ConsumerWidget {
           }
         },
         child: Container(
-          height: kToolbarHeight,
-          color: Colors.transparent,
+          height: topBarHeight,
+          color: topBarColor,
           child: Row(children: items),
         ),
       );

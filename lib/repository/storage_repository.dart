@@ -1,3 +1,4 @@
+import 'package:api_craft/http/raw/raw_http_req.dart';
 import 'package:api_craft/models/models.dart';
 
 export 'folder_storage_repository.dart';
@@ -41,4 +42,9 @@ abstract class StorageRepository {
   // Future<void> saveNodeConfig(String id, NodeConfig config);
 
   Future<void> updateNode(Node node);
+
+  ///
+  Future<void> addHistoryEntry(RawHttpResponse entry, {int limit = 10});
+  Future<List<RawHttpResponse>> getHistory(String requestId);
+  Future<void> clearHistory(String requestId);
 }

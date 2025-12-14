@@ -1,17 +1,18 @@
 enum AuthType {
-  apiKey("API Key"),
-  awsSignature("AWS Signature"),
-  basic("Basic Auth"),
-  bearer("Bearer Token"),
-  jwtBearer("JWT Bearer"),
-  oAuth1("OAuth 1.0"),
-  oAuth2("OAuth 2.0"),
-  ntlm("NTLM Auth"),
-  inherit("Inherit from Parent"),
-  noAuth("No Auth");
+  apiKey("API Key", "API Key"),
+  awsSignature("AWS v4", "AWS Signature"),
+  basic("Basic", "Basic Auth"),
+  bearer("Bearer", "Bearer Token"),
+  jwtBearer("JWT", "JWT Bearer"),
+  oAuth1("OAuth 1", "OAuth 1.0"),
+  oAuth2("OAuth 2", "OAuth 2.0"),
+  ntlm("NTLM", "NTLM Auth"),
+  inherit("Auth", "Inherit from Parent"),
+  noAuth("No Auth", "No Authentication");
 
   final String title;
-  const AuthType(this.title);
+  final String label;
+  const AuthType(this.label, this.title);
 }
 
 class AuthData {

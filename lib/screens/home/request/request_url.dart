@@ -24,6 +24,13 @@ class _RequestUrlState extends ConsumerState<RequestUrl> {
     _controller = TextEditingController(text: initialUrl);
   }
 
+  void sendReq() async {
+    final response = await run(ref.read(resolveConfigProvider(widget.id)));
+    ref
+        .read(resolveConfigProvider(widget.id).notifier)
+        .addHistoryEntry(response);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Row(
@@ -67,35 +74,21 @@ class _RequestUrlState extends ConsumerState<RequestUrl> {
           ),
         ),
         SizedBox(width: 8),
-        IconButton(
-          onPressed: () {
-            final variables = ref
-                .read(resolveConfigProvider(widget.id))
-                .allVariables;
-            final resolvedUrl = resolveVariables(
-              _controller.text,
-              variables ?? {},
-            );
-            debugPrint("Resolved URL: $resolvedUrl");
-            run(ref.read(resolveConfigProvider(widget.id)), url: resolvedUrl);
-          },
-          iconSize: 17,
-          icon: Icon(Icons.send),
-        ),
+        IconButton(onPressed: sendReq, iconSize: 17, icon: Icon(Icons.send)),
       ],
     );
   }
 }
 
-String resolveVariables(String text, Map<String, VariableValue> values) {
-  // Match all {{variable}} patterns
-  final regex = RegExp(r'{{\s*([a-zA-Z0-9_]+)\s*}}');
+// String resolveVariables(String text, Map<String, VariableValue> values) {
+//   // Match all {{variable}} patterns
+//   final regex = RegExp(r'{{\s*([a-zA-Z0-9_]+)\s*}}');
 
-  return text.replaceAllMapped(regex, (match) {
-    final key = match.group(1);
-    if (key != null && values.containsKey(key)) {
-      return values[key]!.value; // Replace with value
-    }
-    return match.group(0)!; // leave as is if no value found
-  });
-}
+//   return text.replaceAllMapped(regex, (match) {
+//     final key = match.group(1);
+//     if (key != null && values.containsKey(key)) {
+//       return values[key]!.value; // Replace with value
+//     }
+//     return match.group(0)!; // leave as is if no value found
+//   });
+// }

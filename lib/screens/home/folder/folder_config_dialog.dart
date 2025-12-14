@@ -73,7 +73,15 @@ class _FolderConfigDialogState extends ConsumerState<FolderConfigDialog> {
       child: Dialog(
         insetPadding: const EdgeInsets.all(24),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        child: SizedBox(width: 900, height: 600, child: _buildDialog()),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(color: const Color(0xFF3D3D3D)),
+          ),
+          width: 900,
+          height: 600,
+          child: _buildDialog(),
+        ),
       ),
     );
   }

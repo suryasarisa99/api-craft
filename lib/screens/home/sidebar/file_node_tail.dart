@@ -298,12 +298,18 @@ class _FileTreeTileState extends ConsumerState<FileNodeTile>
                                       ? folderOpenIcon
                                       : folderIcon // (Ensure these are accessible)
                                 else
-                                  Icon(
-                                    Icons.data_object,
-                                    size: _kFolderIconSize,
-                                    color: isFolder
-                                        ? Colors.amber[700]
-                                        : Colors.blueGrey,
+                                  Text(
+                                    vNode.method ?? '',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w300,
+                                      color: const Color.fromARGB(
+                                        255,
+                                        156,
+                                        192,
+                                        250,
+                                      ),
+                                    ),
                                   ),
                                 const SizedBox(width: 8),
 
@@ -321,6 +327,16 @@ class _FileTreeTileState extends ConsumerState<FileNodeTile>
                                     ),
                                   ),
                                 ),
+                                if (vNode.statusCode != null)
+                                  Text(
+                                    vNode.statusCode.toString(),
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: textColor.withValues(alpha: 0.6),
+                                      fontWeight: FontWeight.w400,
+                                    ),
+                                  ),
+                                SizedBox(width: 8),
                               ],
                             ),
                           ),

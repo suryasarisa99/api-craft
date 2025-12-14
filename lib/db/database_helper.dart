@@ -9,6 +9,7 @@ import 'package:path_provider/path_provider.dart';
 class Tables {
   static const String collections = 'collections';
   static const String nodes = 'nodes';
+  static const String history = 'request_history';
 
   static const queries = (
     collections:
@@ -44,13 +45,39 @@ class Tables {
     url TEXT,
     request_type TEXT,    -- 'http', 'graphql','wc','grpc' etc.
     query_parameters TEXT, -- JSON: List of {key, val, enabled}
-    body TEXT
+    body TEXT,
+    status_code INTEGER
       )
     ''',
+    history:
+        '''CREATE TABLE $history (
+  id TEXT PRIMARY KEY,
+  request_id TEXT NOT NULL,
+  status_code INTEGER,
+  status_message TEXT,
+  protocol_version TEXT,
+  headers TEXT,        -- JSON: List of {key, val}
+  body_bytes BLOB,    -- Raw bytes
+  body_type TEXT,    -- 'text', 'json', 'xml', etc.
+  body_base64 TEXT,   -- Base64 encoded string
+  body TEXT,          -- UTF8 String
+  executed_at INTEGER NOT NULL,
+  duration_ms INTEGER,
+  --  response_size INTEGER,
+  FOREIGN KEY(request_id) REFERENCES nodes(id) ON DELETE CASCADE
+);
+
+-- Index for faster lookups/sorting
+-- CREATE INDEX idx_history_req_date ON $history(request_id, executed_at DESC);
+''',
   );
 
-  static List<String> queriesList = [queries.collections, queries.nodes];
-  static List<String> tableNames = [collections, nodes];
+  static List<String> queriesList = [
+    queries.collections,
+    queries.nodes,
+    queries.history,
+  ];
+  static List<String> tableNames = [collections, nodes, history];
 
   static Future<void> createAllTables(Database db) async {
     for (var query in queriesList) {
@@ -72,7 +99,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: (db, version) async {
         Tables.createAllTables(db);
       },
