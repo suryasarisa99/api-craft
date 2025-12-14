@@ -10,20 +10,6 @@ final resolveConfigProvider = NotifierProvider.autoDispose
       ResolveConfigNotifier.new,
     );
 
-// this wrapper to ensure we only rebuild if the Node ID changes,
-// not if the Node object reference changes (since we are editing it).
-class EditorParams {
-  final Node node;
-  const EditorParams(this.node);
-
-  @override
-  bool operator ==(Object other) =>
-      other is EditorParams && other.node.id == node.id;
-
-  @override
-  int get hashCode => node.id.hashCode;
-}
-
 class ResolveConfigNotifier extends Notifier<ResolveConfig> {
   final String id;
   ResolveConfigNotifier(this.id);

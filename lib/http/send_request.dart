@@ -52,13 +52,15 @@ Map<String, VariableValue> resolveVariableValues(
   return resolveVariableValues(resolved, depth - 1);
 }
 
+final _variableRegExp = RegExp(r'{{\s*([a-zA-Z0-9_-]+)\s*}}');
+// final _variableRegExp = RegExp(r'{{\s*([^{}\s]+)\s*}}');
 String resolveVariables(String text, Map<String, VariableValue> values) {
   // Match all {{variable}} patterns
-  final regex = RegExp(r'{{\s*([a-zA-Z0-9_]+)\s*}}');
-
-  return text.replaceAllMapped(regex, (match) {
+  debugPrint("Resolving variables in text: $text");
+  return text.replaceAllMapped(_variableRegExp, (match) {
     final key = match.group(1);
     if (key != null && values.containsKey(key)) {
+      debugPrint("Resolving variable: $key");
       return values[key]!.value; // Replace with value
     }
     return match.group(0)!; // leave as is if no value found
@@ -74,18 +76,15 @@ Future<RawHttpResponse> run(ResolveConfig config) async {
 
   /// handle variable injection
 
-  final resolvedVariables = resolveVariableValues(
-    config.allVariables ?? {},
-    99,
-  );
-  final resolvedUrl = resolveVariables(node.url, resolvedVariables);
+  final variables = resolveVariableValues(config.allVariables ?? {}, 99);
+  final resolvedUrl = resolveVariables(node.url, variables);
   final uri = Uri.parse(resolvedUrl);
   // for headers
   headers = [
     for (var header in headers)
       [
-        resolveVariables(header[0], resolvedVariables),
-        resolveVariables(header[1], resolvedVariables),
+        resolveVariables(header[0], variables),
+        resolveVariables(header[1], variables),
       ],
   ];
   // for query parameters
