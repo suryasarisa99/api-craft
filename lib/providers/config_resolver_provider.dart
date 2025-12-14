@@ -94,8 +94,9 @@ class ResolveConfigNotifier extends Notifier<ResolveConfig> {
 
     _resolveAuth();
 
+    _mergeVariables();
+
     if (node is RequestNode) {
-      _mergeVariables();
       await loadHistory();
     }
   }
