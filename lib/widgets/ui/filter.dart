@@ -8,13 +8,13 @@ import 'package:flutter/services.dart';
 //   'userName',
 //   'token',
 // ];
-final List<String> urls = [
-  'https://api.example.com',
-  'https://google.com',
-  'http://localhost:3000',
-  'https://test/{{token}}',
-  'https://test/{{token}}/magictext',
-];
+// final List<String> urls = [
+//   'https://api.example.com',
+//   'https://google.com',
+//   'http://localhost:3000',
+//   'https://test/{{token}}',
+//   'https://test/{{token}}/magictext',
+// ];
 final List<String> functions = [
   'getData',
   'postData',
@@ -117,7 +117,8 @@ class FuzzySearch {
 
 class FilterService {
   final List<String> variables;
-  FilterService({required this.variables});
+  final List<String> urls;
+  FilterService({required this.variables, required this.urls});
   static bool _isWordBoundary(String char) {
     return char == ' ' ||
         char == '\n' ||

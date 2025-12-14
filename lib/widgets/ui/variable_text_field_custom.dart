@@ -192,7 +192,7 @@ class _VariableTextFieldCustomState
       text: newText,
       selection: TextSelection.collapsed(offset: cursorPos),
     );
-
+    widget.onChanged?.call(newText);
     _hideOverlay();
     _focusNode.requestFocus();
   }
@@ -256,13 +256,13 @@ class _VariableTextFieldCustomState
         child: ListView.separated(
           padding: const EdgeInsets.all(4),
           itemCount: _options.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 4),
+          separatorBuilder: (_, _) => const SizedBox(height: 4),
           itemBuilder: (context, index) {
             final option = _options[index];
             final isHighlighted = index == _highlightedIndex;
 
             return InkWell(
-              onTap: () => _selectOption(option),
+              onTapDown: (_) => _selectOption(option),
               child: _buildOptionTile(option, isHighlighted),
             );
           },

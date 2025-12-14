@@ -113,6 +113,7 @@ class _RequestUrlState extends ConsumerState<RequestUrl> {
                 ),
               ),
               onChanged: (v) {
+                debugPrint("URL changed: $v");
                 notifier.updateUrl(v);
               },
               onSubmitted: (_) {
