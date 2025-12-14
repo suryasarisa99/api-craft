@@ -69,6 +69,7 @@ class _RequestUrlState extends ConsumerState<RequestUrl> {
           Expanded(
             child: VariableTextFieldCustom(
               controller: _controller,
+              enableUrlSuggestions: true,
               id: widget.id,
               decoration: InputDecoration(
                 prefixIconConstraints: BoxConstraints(maxWidth: 80),

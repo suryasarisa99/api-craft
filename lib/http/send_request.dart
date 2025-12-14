@@ -25,6 +25,33 @@ List<List<String>> headersHandle(
   ];
 }
 
+// we need to handle variable values,itself uses another variables
+Map<String, VariableValue> resolveVariableValues(
+  Map<String, VariableValue> vars,
+  int depth,
+) {
+  if (depth <= 0) return vars; // prevent infinite loop
+
+  final resolved = <String, VariableValue>{};
+
+  for (var entry in vars.entries) {
+    final key = entry.key;
+    final value = entry.value.value;
+
+    if (value is String) {
+      final resolvedValue = resolveVariables(
+        value,
+        vars,
+      ); // recursive resolution
+      resolved[key] = VariableValue(entry.value.sourceId, resolvedValue);
+    } else {
+      resolved[key] = entry.value; // non-string values remain unchanged
+    }
+  }
+
+  return resolveVariableValues(resolved, depth - 1);
+}
+
 String resolveVariables(String text, Map<String, VariableValue> values) {
   // Match all {{variable}} patterns
   final regex = RegExp(r'{{\s*([a-zA-Z0-9_]+)\s*}}');
@@ -47,15 +74,18 @@ Future<RawHttpResponse> run(ResolveConfig config) async {
 
   /// handle variable injection
 
-  // for url
-  final resolvedUrl = resolveVariables(node.url, config.allVariables ?? {});
+  final resolvedVariables = resolveVariableValues(
+    config.allVariables ?? {},
+    99,
+  );
+  final resolvedUrl = resolveVariables(node.url, resolvedVariables);
   final uri = Uri.parse(resolvedUrl);
   // for headers
   headers = [
     for (var header in headers)
       [
-        resolveVariables(header[0], config.allVariables ?? {}),
-        resolveVariables(header[1], config.allVariables ?? {}),
+        resolveVariables(header[0], resolvedVariables),
+        resolveVariables(header[1], resolvedVariables),
       ],
   ];
   // for query parameters

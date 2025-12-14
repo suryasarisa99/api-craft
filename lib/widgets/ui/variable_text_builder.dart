@@ -25,7 +25,7 @@ class VariableText extends SpecialText {
     final didReplace = regex.hasMatch(variableName);
     late final String result;
     if (didReplace) {
-      debugPrint("Variable name with parameters detected: $variableName");
+      // debugPrint("Variable name with parameters detected: $variableName");
       result = variableName.replaceAll(regex, '(...)');
     } else {
       result = variableName;
@@ -61,7 +61,6 @@ class VariableText extends SpecialText {
           ),
           child: GestureDetector(
             onTap: () {
-              debugPrint("tapped a variable: $variableName");
               customOnTap?.call(variableName);
             },
             child: Text(
@@ -97,8 +96,6 @@ class VariableTextBuilder extends SpecialTextSpanBuilder {
 
     if (isStart(flag, VariableText.startKey)) {
       final start = index - (VariableText.startKey.length - 1);
-      debugPrint('flag: $flag (${flag.length})at index: $index');
-      debugPrint("Creating VariableText at position: $start");
       return VariableText(
         start: start,
         textStyle: builderTextStyle ?? textStyle,

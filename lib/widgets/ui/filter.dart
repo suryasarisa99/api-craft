@@ -118,14 +118,16 @@ class FuzzySearch {
 class FilterService {
   final List<String> variables;
   final List<String> urls;
+
   FilterService({required this.variables, required this.urls});
+
   static bool _isWordBoundary(String char) {
     return char == ' ' ||
         char == '\n' ||
         char == '\t' ||
         char == ',' ||
         char == ';' ||
-        char == '/'; // Added / as word boundary
+        char == '/';
   }
 
   static bool _isAlpha(String char) {
@@ -134,7 +136,6 @@ class FilterService {
     return (code >= 65 && code <= 90) || (code >= 97 && code <= 122);
   }
 
-  /// Detect what user is typing based on cursor position
   static Map<String, dynamic> detectTypingContext(TextEditingValue value) {
     final text = value.text;
     final cursorPos = value.selection.baseOffset;
@@ -147,21 +148,14 @@ class FilterService {
     int braceStart = -1;
     int braceEnd = -1;
 
-    // Find surrounding braces (looking backwards from cursor)
     for (int i = cursorPos - 1; i >= 1; i--) {
-      // If we hit a closing brace '}}' while looking backwards, it means
-      // we are likely outside of any open block (e.g. {{prev}}/cur|rent)
-      if (text[i] == '}' && text[i - 1] == '}') {
-        break;
-      }
-
+      if (text[i] == '}' && text[i - 1] == '}') break;
       if (text[i - 1] == '{' && text[i] == '{') {
         braceStart = i - 1;
         break;
       }
     }
 
-    // Find closing braces (looking forwards from cursor)
     for (int i = cursorPos; i < text.length - 1; i++) {
       if (text[i] == '}' && text[i + 1] == '}') {
         braceEnd = i + 2;
@@ -169,13 +163,12 @@ class FilterService {
       }
     }
 
-    // Inside braces
+    // Inside braces logic
     if (braceStart != -1 && (braceEnd == -1 || braceEnd > cursorPos)) {
       final contentStart = braceStart + 2;
       final contentEnd = braceEnd != -1 ? braceEnd - 2 : cursorPos;
       final content = text.substring(contentStart, contentEnd);
 
-      // Check if it's a function (contains '(')
       if (content.contains('(')) {
         final funcName = content.substring(0, content.indexOf('('));
         return {
@@ -196,7 +189,7 @@ class FilterService {
       }
     }
 
-    // Check for partial braces {{
+    // Partial braces logic
     if (cursorPos >= 2 && text.substring(cursorPos - 2, cursorPos) == '{{') {
       return {
         'type': 'variable',
@@ -207,7 +200,7 @@ class FilterService {
       };
     }
 
-    // Not in braces - find current word being typed
+    // Standard word logic
     int wordStart = cursorPos;
     while (wordStart > 0 && !_isWordBoundary(text[wordStart - 1])) {
       wordStart--;
@@ -218,33 +211,25 @@ class FilterService {
       wordEnd++;
     }
 
-    // --- SMART URL EXPANSION START ---
-    // If the word boundary that stopped us was a '/', check if it's part of a protocol (e.g., https://)
+    // Smart URL expansion (looks for http:// etc)
     if (wordStart > 0 && text[wordStart - 1] == '/') {
       int expansionStart = wordStart;
-
-      // Look back for '//' and possibly ':'
       while (expansionStart > 0 &&
           (text[expansionStart - 1] == '/' ||
               text[expansionStart - 1] == ':')) {
         expansionStart--;
       }
-
-      // If we found '://' or similar, check if a protocol precedes it
       if (expansionStart < wordStart) {
         int protocolStart = expansionStart;
         while (protocolStart > 0 && _isAlpha(text[protocolStart - 1])) {
           protocolStart--;
         }
-
         final potentialProtocol = text.substring(protocolStart, expansionStart);
         if (potentialProtocol == 'http' || potentialProtocol == 'https') {
-          // It is a valid URL protocol, expand the word start to include it
           wordStart = protocolStart;
         }
       }
     }
-    // --- SMART URL EXPANSION END ---
 
     final word = text.substring(wordStart, wordEnd);
 
@@ -252,7 +237,7 @@ class FilterService {
       return {'type': 'none', 'query': '', 'start': 0, 'end': 0};
     }
 
-    // Check if it looks like a URL (prioritize URL detection)
+    // If word looks like URL
     if (word.contains('://') ||
         word.startsWith('http') ||
         word.startsWith('www')) {
@@ -265,7 +250,6 @@ class FilterService {
       };
     }
 
-    // Check if word contains parentheses (function without braces)
     if (word.contains('(')) {
       final funcName = word.substring(0, word.indexOf('('));
       return {
@@ -277,10 +261,8 @@ class FilterService {
       };
     }
 
-    // Try to match against all types and return the best match
-    // This allows "google" to match URLs and "base" to match variables
     return {
-      'type': 'multi', // Special type that will check all categories
+      'type': 'multi',
       'query': word,
       'start': wordStart,
       'end': wordEnd,
@@ -288,30 +270,39 @@ class FilterService {
     };
   }
 
-  List<FillOptions> getOptions(TextEditingValue value) {
+  List<FillOptions> getOptions(
+    TextEditingValue value, {
+
+    bool enableUrlSuggestions = false,
+  }) {
     final context = detectTypingContext(value);
     final String type = context['type'];
     final String query = context['query'];
     final int start = context['start'];
     final int end = context['end'];
-    final bool insideBraces = context['insideBraces'] ?? false;
 
     if (type == 'none') {
       return [];
     }
 
     List<FillOptions> options = [];
-    debugPrint("multi-type detection: $type for query '$query'");
-    // Handle multi-type matching (check all categories)
-    if (type == 'multi') {
-      // Try URLs first
-      final urlMatches = FuzzySearch.searchList(urls, query);
+
+    // Helper to add URL options
+    // 2. We use [0, text.length] as the range to trigger "Replace All" behavior
+    void addUrlOptions() {
+      if (!enableUrlSuggestions) return; // Check global toggle
+      debugPrint("url suggestion enabled, searching URLs for query: $query");
+      final urlMatches = FuzzySearch.searchList(urls, value.text);
       for (var match in urlMatches) {
+        // Optional: Skip exact match if you don't want to suggest what is already typed
+        if (match.text == query) continue;
+
         options.add(
           FillOptions(
             type: 'url',
             ranges: [
-              [start, end],
+              // CRITICAL FIX: Replace the WHOLE string, not just the token
+              [0, value.text.length],
             ],
             label: match.text,
             value: match.text,
@@ -319,15 +310,17 @@ class FilterService {
           ),
         );
       }
+    }
 
-      // Try variables
+    // Helper to add Variable options
+    void addVariableOptions() {
       final variableMatches = FuzzySearch.searchList(variables, query);
       for (var match in variableMatches) {
         options.add(
           FillOptions(
             type: 'variable',
             ranges: [
-              [start, end],
+              [start, end], // Variables still replace only the current word
             ],
             label: match.text,
             value: '{{${match.text}}}',
@@ -335,15 +328,17 @@ class FilterService {
           ),
         );
       }
+    }
 
-      // Try functions
+    // Helper to add Function options
+    void addFunctionOptions() {
       final functionMatches = FuzzySearch.searchList(functions, query);
       for (var match in functionMatches) {
         options.add(
           FillOptions(
             type: 'function',
             ranges: [
-              [start, end],
+              [start, end], // Functions still replace only the current word
             ],
             label: '${match.text}()',
             value: '{{${match.text}()}}',
@@ -351,75 +346,25 @@ class FilterService {
           ),
         );
       }
+    }
 
-      // Sort all options by fuzzy match score
+    if (type == 'multi') {
+      addUrlOptions();
+      addVariableOptions();
+      addFunctionOptions();
+
+      // Sort combined results by score
       options.sort((a, b) {
         final aScore = a.fuzzyMatch?.score ?? 0;
         final bScore = b.fuzzyMatch?.score ?? 0;
         return bScore.compareTo(aScore);
       });
-
-      return options;
-    }
-
-    // Handle specific type matching
-    if (type == 'url') {
-      final matches = FuzzySearch.searchList(urls, query);
-      for (var match in matches) {
-        // Don't show suggestion if it matches exactly what user typed
-        if (match.text == query) {
-          continue;
-        }
-
-        options.add(
-          FillOptions(
-            type: 'url',
-            ranges: [
-              [start, end],
-            ],
-            label: match.text,
-            value: match.text,
-            fuzzyMatch: match,
-          ),
-        );
-      }
+    } else if (type == 'url') {
+      addUrlOptions();
     } else if (type == 'variable') {
-      final matches = FuzzySearch.searchList(variables, query);
-      for (var match in matches) {
-        // Since detectTypingContext returns the range starting at {{ for variables,
-        // we MUST include the braces in the replacement value, otherwise they get stripped.
-        // E.g., replacing '{{base' with 'baseUrl' results in 'test/baseUrl' instead of 'test/{{baseUrl}}'.
-        final wrappedValue = '{{${match.text}}}';
-
-        options.add(
-          FillOptions(
-            type: 'variable',
-            ranges: [
-              [start, end],
-            ],
-            label: match.text,
-            value: wrappedValue,
-            fuzzyMatch: match,
-          ),
-        );
-      }
+      addVariableOptions();
     } else if (type == 'function') {
-      final matches = FuzzySearch.searchList(functions, query);
-      for (var match in matches) {
-        final wrappedValue = '{{${match.text}()}}';
-
-        options.add(
-          FillOptions(
-            type: 'function',
-            ranges: [
-              [start, end],
-            ],
-            label: '${match.text}()',
-            value: wrappedValue,
-            fuzzyMatch: match,
-          ),
-        );
-      }
+      addFunctionOptions();
     }
 
     return options;

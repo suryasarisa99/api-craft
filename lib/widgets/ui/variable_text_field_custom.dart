@@ -24,6 +24,7 @@ class VariableTextFieldCustom extends ConsumerStatefulWidget {
   final InputDecoration? decoration;
   final String? placeHolder;
   final KeyEventResult Function(FocusNode, KeyEvent)? onKeyEvent;
+  final bool enableUrlSuggestions;
 
   const VariableTextFieldCustom({
     super.key,
@@ -36,6 +37,7 @@ class VariableTextFieldCustom extends ConsumerStatefulWidget {
     this.placeHolder,
     this.onKeyEvent,
     this.onSubmitted,
+    this.enableUrlSuggestions = false,
   });
 
   @override
@@ -163,7 +165,10 @@ class _VariableTextFieldCustomState
       return;
     }
 
-    final results = _filterService.getOptions(_controller.value);
+    final results = _filterService.getOptions(
+      _controller.value,
+      enableUrlSuggestions: widget.enableUrlSuggestions,
+    );
     // TextEditingValue(text: text, selection: _controller.selection),
 
     if (results.isEmpty) {
