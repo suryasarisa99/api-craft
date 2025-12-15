@@ -22,7 +22,7 @@ class _ResponseTAbState extends ConsumerState<ResponseTAb> {
       return const Center(child: Text("No Active Request"));
     }
     final response = ref.watch(
-      resolveConfigProvider(id).select((d) => d.history?.firstOrNull),
+      reqComposeProvider(id).select((d) => d.history?.firstOrNull),
     );
     if (response == null) {
       return const Center(child: Text("No Response Available"));

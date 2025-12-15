@@ -42,7 +42,7 @@ class AuthTabHeader extends ConsumerStatefulWidget {
 
 class _AuthTabHeaderState extends ConsumerState<AuthTabHeader> {
   // helpers
-  late final provider = resolveConfigProvider(widget.id);
+  late final provider = reqComposeProvider(widget.id);
   late final notifier = ref.read(provider.notifier);
   final popupKey = GlobalKey<CustomPopupState>();
   late bool isTabActive = widget.isTabActive ?? widget.controller?.index == 3;
@@ -81,9 +81,7 @@ class _AuthTabHeaderState extends ConsumerState<AuthTabHeader> {
     );
     Node? authSource;
     if (authType == AuthType.inherit) {
-      authSource = ref.watch(
-        provider.select((value) => value.effectiveAuthSource),
-      );
+      authSource = ref.watch(provider.select((value) => value.authSource));
     }
     final style = TextStyle(color: widget.color);
     return Tab(
@@ -148,7 +146,7 @@ class _AuthTabHeaderState extends ConsumerState<AuthTabHeader> {
       value: type.name,
       onTap: (v) {
         final auth = ref
-            .read(resolveConfigProvider(widget.id))
+            .read(reqComposeProvider(widget.id))
             .node
             .config
             .auth
@@ -163,17 +161,17 @@ class AuthTab extends ConsumerWidget {
   final String id;
   const AuthTab({required this.id, super.key});
 
-  ResolveConfigNotifier notifier(WidgetRef ref) =>
-      ref.read(resolveConfigProvider(id).notifier);
+  ReqComposeNotifier notifier(WidgetRef ref) =>
+      ref.read(reqComposeProvider(id).notifier);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final auth = ref.watch(
-      resolveConfigProvider(id).select((value) => value.node.config.auth),
+      reqComposeProvider(id).select((value) => value.node.config.auth),
     );
     final node = ref.read(fileTreeProvider).nodeMap[id]!;
     final authSource = ref.watch(
-      resolveConfigProvider(id).select((value) => value.effectiveAuthSource),
+      reqComposeProvider(id).select((value) => value.authSource),
     );
     return Column(
       children: [

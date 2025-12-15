@@ -10,7 +10,7 @@ final filterServiceProvider = Provider.autoDispose.family<FilterService, String>
 ) {
   // watch variables
   final List<String> variables = ref.watch(
-    resolveConfigProvider(id).select((d) => d.allVariables!.keys.toList()),
+    reqComposeProvider(id).select((d) => d.allVariables!.keys.toList()),
   );
 
   // urls, uses read, instead of watch (because single editor,no way to change urls of other requests)

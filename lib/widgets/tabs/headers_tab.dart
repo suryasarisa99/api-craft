@@ -18,7 +18,7 @@ class HeadersTab extends StatelessWidget {
           Consumer(
             builder: (context, ref, child) {
               final inheritedHeaders = ref.watch(
-                resolveConfigProvider(
+                reqComposeProvider(
                   id,
                 ).select((value) => value.inheritedHeaders),
               );
@@ -120,7 +120,7 @@ class HeadersTab extends StatelessWidget {
           Consumer(
             builder: (context, ref, _) {
               final headers = ref.watch(
-                resolveConfigProvider(
+                reqComposeProvider(
                   id,
                 ).select((value) => value.node.config.headers),
               );
@@ -133,7 +133,7 @@ class HeadersTab extends StatelessWidget {
                   ), // Pass copy to allow local reordering
                   onChanged: (newItems) {
                     ref
-                        .read(resolveConfigProvider(id).notifier)
+                        .read(reqComposeProvider(id).notifier)
                         .updateHeaders(newItems);
                   },
                 ),

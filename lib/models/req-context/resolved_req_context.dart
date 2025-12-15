@@ -1,0 +1,17 @@
+import 'package:api_craft/models/models.dart';
+
+class ResolvedRequestContext {
+  final RequestNode request;
+  final Uri uri;
+  final List<List<String>> headers;
+  final AuthData auth;
+  final Map<String, VariableValue> variables;
+
+  ResolvedRequestContext({
+    required this.request,
+    required this.uri,
+    required this.headers,
+    required this.auth,
+    required this.variables,
+  });
+}

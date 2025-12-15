@@ -45,7 +45,7 @@ class _RequestTabState extends ConsumerState<RequestTab>
     vsync: this,
   );
 
-  late final _provider = resolveConfigProvider(widget.node.id);
+  late final _provider = reqComposeProvider(widget.node.id);
   late final _repo = ref.read(repositoryProvider);
   final debouncer = DebouncerFlush(Duration(milliseconds: 800));
 

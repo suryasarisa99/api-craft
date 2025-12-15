@@ -86,7 +86,7 @@ class _VariableTextFieldCustomState
   void handleVariableTap(dynamic variableName) {
     debugPrint("Variable clicked in UI: $variableName");
     final variableValue = ref
-        .read(resolveConfigProvider(widget.id))
+        .read(reqComposeProvider(widget.id))
         .allVariables?[variableName];
     if (variableValue != null) {
       debugPrint(

@@ -1,6 +1,6 @@
-import 'package:api_craft/http/send_request.dart';
 import 'package:api_craft/models/models.dart';
 import 'package:api_craft/providers/config_resolver_provider.dart';
+import 'package:api_craft/providers/utils/req_executor.dart';
 import 'package:api_craft/widgets/ui/custom_menu.dart';
 import 'package:flutter_popup/flutter_popup.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -42,21 +42,24 @@ const Map<String, Color> methodsColorsMap = {
 
 class _RequestUrlState extends ConsumerState<RequestUrl> {
   late final TextEditingController _controller;
-  late final notifier = ref.read(resolveConfigProvider(widget.id).notifier);
+  late final notifier = ref.read(reqComposeProvider(widget.id).notifier);
   final popupKey = GlobalKey<CustomPopupState>();
   @override
   void initState() {
     super.initState();
     final initialUrl =
-        (ref.read(resolveConfigProvider(widget.id)).node as RequestNode).url;
+        (ref.read(reqComposeProvider(widget.id)).node as RequestNode).url;
     _controller = TextEditingController(text: initialUrl);
   }
 
   void sendReq() async {
-    final response = await run(ref.read(resolveConfigProvider(widget.id)));
-    ref
-        .read(resolveConfigProvider(widget.id).notifier)
-        .addHistoryEntry(response);
+    // final response = await run(ref.read(reqComposeProvider(widget.id)));
+
+    final response = await ref.read(requestExecutorProvider).runById(widget.id);
+    debugPrint(
+      "response received, adding to history, status: ${response.statusCode}",
+    );
+    ref.read(reqComposeProvider(widget.id).notifier).addHistoryEntry(response);
   }
 
   @override
@@ -78,7 +81,7 @@ class _RequestUrlState extends ConsumerState<RequestUrl> {
                   child: Consumer(
                     builder: (context, ref, child) {
                       final method = ref.watch(
-                        resolveConfigProvider(
+                        reqComposeProvider(
                           widget.id,
                         ).select((d) => (d.node as RequestNode).method),
                       );

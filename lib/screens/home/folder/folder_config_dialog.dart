@@ -18,8 +18,8 @@ class FolderConfigDialog extends ConsumerStatefulWidget {
 }
 
 class _FolderConfigDialogState extends ConsumerState<FolderConfigDialog> {
-  late final ResolveConfigNotifier resolveConfigProviderNotifier;
-  late final notifier = ref.read(resolveConfigProvider(widget.id).notifier);
+  late final ReqComposeNotifier resolveConfigProviderNotifier;
+  late final notifier = ref.read(reqComposeProvider(widget.id).notifier);
   final debouncer = Debouncer(Duration(milliseconds: 1000));
   static const useLazyMode = true;
   bool hasChanges = true;
@@ -30,7 +30,7 @@ class _FolderConfigDialogState extends ConsumerState<FolderConfigDialog> {
   void initState() {
     super.initState();
     subscription = ref.listenManual(
-      resolveConfigProvider(widget.id).select((d) => d.node),
+      reqComposeProvider(widget.id).select((d) => d.node),
       (_, n) {
         debugPrint(
           "folder-dialog:: detected node change: ${n.name}, headers len: ${n.config.headers.length}",
@@ -66,7 +66,7 @@ class _FolderConfigDialogState extends ConsumerState<FolderConfigDialog> {
             .setLastUpdatedFolder(widget.id);
         debugPrint("Popping FolderConfigDialog for node ${widget.id}");
         if (useLazyMode && hasChanges) {
-          final currentState = ref.read(resolveConfigProvider(widget.id));
+          final currentState = ref.read(reqComposeProvider(widget.id));
           ref.read(repositoryProvider).updateNode(currentState.node);
         }
       },
@@ -97,7 +97,7 @@ class _FolderConfigDialogState extends ConsumerState<FolderConfigDialog> {
           Consumer(
             builder: (context, ref, child) {
               final title = ref.watch(
-                resolveConfigProvider(
+                reqComposeProvider(
                   widget.id,
                 ).select((value) => value.node.name),
               );
@@ -224,14 +224,14 @@ class _GeneralTab extends ConsumerStatefulWidget {
   final String id;
   const _GeneralTab({required this.id});
 
-  ResolveConfigNotifier notifier(WidgetRef ref) =>
-      ref.read(resolveConfigProvider(id).notifier);
+  ReqComposeNotifier notifier(WidgetRef ref) =>
+      ref.read(reqComposeProvider(id).notifier);
   @override
   ConsumerState<_GeneralTab> createState() => __GeneralTabState();
 }
 
 class __GeneralTabState extends ConsumerState<_GeneralTab> {
-  late final provider = resolveConfigProvider(widget.id);
+  late final provider = reqComposeProvider(widget.id);
   // for description  this value is null sometimes, due to lazyload of config
   // thats we we use listener to update text controller
   late final descriptionController = TextEditingController(
@@ -241,8 +241,8 @@ class __GeneralTabState extends ConsumerState<_GeneralTab> {
     provider.select((value) => value.node.name),
   );
 
-  late final ResolveConfigNotifier notifier = ref.read(
-    resolveConfigProvider(widget.id).notifier,
+  late final ReqComposeNotifier notifier = ref.read(
+    reqComposeProvider(widget.id).notifier,
   );
 
   @override

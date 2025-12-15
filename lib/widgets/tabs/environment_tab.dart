@@ -11,7 +11,7 @@ class EnvironmentTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final variables = ref.watch(
-      resolveConfigProvider(
+      reqComposeProvider(
         id,
       ).select((value) => (value.node as FolderNode).config.variables),
     );
@@ -27,7 +27,7 @@ class EnvironmentTab extends ConsumerWidget {
                 variables,
               ), // Pass copy to allow local reordering
               onChanged: (newItems) => ref
-                  .read(resolveConfigProvider(id).notifier)
+                  .read(reqComposeProvider(id).notifier)
                   .updateVariables(newItems),
             ),
           ),

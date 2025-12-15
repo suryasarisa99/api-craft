@@ -11,7 +11,7 @@ class QueryParamsTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final queryParams = ref.watch(
-      resolveConfigProvider(
+      reqComposeProvider(
         id,
       ).select((value) => (value.node as RequestNode).config.queryParameters),
     );
@@ -27,7 +27,7 @@ class QueryParamsTab extends ConsumerWidget {
                 queryParams,
               ), // Pass copy to allow local reordering
               onChanged: (newItems) => ref
-                  .read(resolveConfigProvider(id).notifier)
+                  .read(reqComposeProvider(id).notifier)
                   .updateQueryParameters(newItems),
             ),
           ),

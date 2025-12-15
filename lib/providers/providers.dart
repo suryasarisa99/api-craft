@@ -9,3 +9,7 @@ export 'repository_provider.dart';
 export 'config_resolver_provider.dart';
 export 'node_update_trigger_provider.dart';
 export 'visual_node_provider.dart';
+
+//utils
+export 'utils/request_hydrator.dart';
+export 'utils/req_resolver.dart';

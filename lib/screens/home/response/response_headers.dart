@@ -10,7 +10,7 @@ class ResponseHeaders extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final headers = ref.watch(
-      resolveConfigProvider(id).select((d) => d.history?.firstOrNull?.headers),
+      reqComposeProvider(id).select((d) => d.history?.firstOrNull?.headers),
     );
     if (headers == null) {
       return const Center(child: Text("No response headers"));
