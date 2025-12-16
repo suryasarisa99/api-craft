@@ -11,7 +11,6 @@ final responseBody = TemplateFunction(
   description: 'Access a field of the response body using JsonPath or XPath',
   args: [
     requestArgs,
-    requestArgs,
     behaviorArgs,
     returnFormatHstak,
     FormInputText(
@@ -34,16 +33,21 @@ final responseBody = TemplateFunction(
     ),
   ],
   onRender: (ctx, args) async {
-    if (args.values['request'] != null || args.values['path'] != null) {
+    debugPrint("Rendering response.body.path with args: ${args.values}");
+    if (args.values['request'] == null || args.values['path'] == null) {
+      debugPrint("request or path is null, cannot proceed");
       return null;
     }
+
     final response = await getResponse(
       ctx,
-      purpose: args.purpose,
+      // purpose: args.purpose.name,
+      purpose: 'preview',
       requestId: args.values['request'],
       behavior: args.values['behavior'],
       ttl: args.values['ttl'],
     );
+    debugPrint("Got response: $response");
     if (response == null) return null;
     try {
       return filterJsonPath(response.body, args.values['path'], 'first');
@@ -56,23 +60,27 @@ final responseBody = TemplateFunction(
 
 Future<RawHttpResponse?> getResponse(
   WContext ctx, {
-  required Purpose purpose,
-  Behavior? behavior,
+  required String purpose,
+  String? behavior,
   required String requestId,
   String? ttl,
 }) async {
   var response = await ctx.read(httpRequestProvider).getResById(requestId);
 
-  if (behavior == Behavior.never && response == null) {
+  if (behavior == Behavior.never.name && response == null) {
     return null;
   }
   final finalBehavior =
-      behavior == Behavior.always && purpose == Purpose.preview
-      ? Behavior.smart
+      behavior == Behavior.always.name && purpose == Purpose.preview.name
+      ? Behavior.smart.name
       : behavior;
-  if ((finalBehavior == Behavior.smart && response != null) ||
-      finalBehavior == Behavior.always ||
-      (finalBehavior == Behavior.ttl && shouldSendExpired(response, ttl))) {
+  debugPrint(
+    "Final behavior: $finalBehavior, response is null: ${response == null}",
+  );
+  if ((finalBehavior == Behavior.smart.name && response == null) ||
+      finalBehavior == Behavior.always.name ||
+      (finalBehavior == Behavior.ttl.name &&
+          shouldSendExpired(response, ttl))) {
     response = await ctx.read(httpRequestProvider).runById(requestId);
   }
   return response;
@@ -87,6 +95,7 @@ bool shouldSendExpired(RawHttpResponse? response, String? ttl) {
     Duration(milliseconds: response.durationMs),
   );
   final expiryDate = requestDate.add(expiryDuration);
+  debugPrint("expiryDate: $expiryDate, now: ${DateTime.now()}");
   return DateTime.now().isAfter(expiryDate);
 }
 
@@ -97,6 +106,7 @@ String? filterJsonPath(
   String join = ', ',
 }) {
   final parsed = jsonDecode(body);
+  debugPrint("Parsed body: $parsed");
   var items = JsonPath(path).read(parsed);
   if (returnFormat == Return.first.name) {
     if (items.isNotEmpty) {

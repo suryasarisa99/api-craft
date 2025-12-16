@@ -54,8 +54,4 @@ final behaviorArgs = FormInputHStack(
   ],
 );
 
-final requestArgs = FormInputText(
-  name: 'http_request',
-  label: 'Request',
-  defaultValue: 'last',
-);
+final requestArgs = FormInputHttpRequest(name: 'request', label: 'Request');

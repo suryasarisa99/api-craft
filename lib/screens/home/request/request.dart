@@ -34,18 +34,7 @@ class _RequestTabState extends ConsumerState<RequestTab>
     with SingleTickerProviderStateMixin {
   /// tabs
   late final List<Widget> children = [
-    Center(
-      child: FilledButton(
-        onPressed: () {
-          showDialog(
-            context: context,
-            builder: (context) => const FormPopupWidget(),
-          );
-        },
-        child: Text("fn popup"),
-      ),
-    ),
-    // Center(child: Text("Body Tab")),
+    Center(child: Text("Body Tab")),
     QueryParamsTab(id: widget.node.id),
     HeadersTab(id: widget.node.id),
     AuthTab(id: widget.node.id),

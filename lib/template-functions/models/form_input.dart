@@ -4,7 +4,7 @@ import 'dart:ui';
 import 'package:api_craft/models/models.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-typedef WContext = Ref;
+typedef WContext = WidgetRef;
 // dynamic?: (ctx, args) => Promise<Partial<FormInputEditor>>;
 typedef DynamicFn =
     FutureOr<dynamic> Function(WidgetRef ctx, CallTemplateFunctionArgs args);

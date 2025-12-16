@@ -1,8 +1,11 @@
 import 'dart:math';
 
+import 'package:api_craft/models/models.dart';
 import 'package:api_craft/providers/config_resolver_provider.dart';
 import 'package:api_craft/providers/filter_provider.dart';
 import 'package:api_craft/screens/home/sidebar/context_menu.dart';
+import 'package:api_craft/template-functions/parsers/parse.dart';
+import 'package:api_craft/template-functions/widget/form_popup_widget.dart';
 import 'package:api_craft/widgets/ui/filter.dart';
 import 'package:api_craft/widgets/ui/variable_text_builder.dart';
 import 'package:extended_text_field/extended_text_field.dart';
@@ -83,25 +86,41 @@ class _VariableTextFieldCustomState
     });
   }
 
-  void handleVariableTap(dynamic variableName) {
-    debugPrint("Variable clicked in UI: $variableName");
-    final variableValue = ref
-        .read(reqComposeProvider(widget.id))
-        .allVariables?[variableName];
-    if (variableValue != null) {
-      debugPrint(
-        "Variable source ID: ${variableValue.sourceId}, value: ${variableValue.value}",
-      );
-      showFolderConfigDialog(
-        context: context,
-        ref: ref,
-        id: variableValue.sourceId,
-        tabIndex: 3,
-      );
+  void handleVariableTap({
+    required bool isVariable,
+    required String name,
+    required String rawContent,
+    required int from,
+    required int to,
+  }) {
+    debugPrint("Variable clicked in UI: $name");
+    if (isVariable) {
+      final variableValue = ref
+          .read(reqComposeProvider(widget.id))
+          .allVariables?[name];
+      if (variableValue != null) {
+        debugPrint(
+          "Variable source ID: ${variableValue.sourceId}, value: ${variableValue.value}",
+        );
+        showFolderConfigDialog(
+          context: context,
+          ref: ref,
+          id: variableValue.sourceId,
+          tabIndex: 3,
+        );
+      } else {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('variable: $name not found')));
+      }
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('variable: $variableName not found')),
-      );
+      // function
+      debugPrint("Function clicked in UI: $name,from: $from, to: $to");
+      final fnPlaceholder =
+          TemplateParser.parseContent(rawContent, start: from, end: to)
+              as TemplateFnPlaceholder;
+
+      showFunctionPopup(context, fnPlaceholder, id: widget.id);
     }
   }
 

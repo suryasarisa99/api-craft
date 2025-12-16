@@ -31,12 +31,10 @@ class HttpRequestContext {
       useProxy: true,
       requestId: req.request.id,
     );
-    final body = jsonDecode(response.body);
-    final token = body['token'].toString();
     debugPrint(
-      'Response status: ${response.statusCode}: ${response.durationMs} ms, ${token.substring(token.length - 8)}',
+      'Response status: ${response.statusCode}: ${response.durationMs} ms',
     );
-
+    ref.read(repositoryProvider).addHistoryEntry(response);
     return response;
   }
 

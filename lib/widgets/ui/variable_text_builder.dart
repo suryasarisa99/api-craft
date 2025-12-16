@@ -2,25 +2,33 @@ import 'package:extended_text_field/extended_text_field.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
+typedef TemplateTap =
+    void Function({
+      required bool isVariable,
+      required String name,
+      required String rawContent,
+      required int from,
+      required int to,
+    });
+
 class VariableText extends SpecialText {
   static const String startKey = "{{";
   static const String endKey = "}}";
   final int start; // <--- 2. Add this property
 
-  SpecialTextGestureTapCallback? customOnTap;
+  TemplateTap? customOnTap;
 
   VariableText({
     TextStyle? textStyle,
     this.customOnTap,
-    SpecialTextGestureTapCallback? onTap,
     required this.start, // <--- 1. Add this parameter
-  }) : super(startKey, endKey, textStyle, onTap: onTap);
+  }) : super(startKey, endKey, textStyle);
 
   @override
   InlineSpan finishText() {
     final String variableName = getContent();
 
-    // finad open and close brackets: ( and ), ignore any content inbetween
+    // find open and close brackets: ( and ), ignore any content in between
     final regex = RegExp(r'\([^)]*\)');
     final didReplace = regex.hasMatch(variableName);
     late final String result;
@@ -60,8 +68,24 @@ class VariableText extends SpecialText {
             border: Border.all(color: const Color(0x66857383), width: 1),
           ),
           child: GestureDetector(
+            // onTap: () {
+            //   customOnTap?.call(variableName);
+            // },
             onTap: () {
-              customOnTap?.call(variableName);
+              final content = getContent().trim();
+              final isFn = content.contains('(');
+
+              final name = isFn
+                  ? content.substring(0, content.indexOf('(')).trim()
+                  : content;
+
+              customOnTap?.call(
+                isVariable: !isFn,
+                name: name,
+                rawContent: content,
+                from: start,
+                to: start + toString().length,
+              );
             },
             child: Text(
               result,
@@ -80,7 +104,7 @@ class VariableText extends SpecialText {
 
 class VariableTextBuilder extends SpecialTextSpanBuilder {
   // Define your custom properties here
-  final SpecialTextGestureTapCallback? builderOnTap;
+  final TemplateTap? builderOnTap;
   final TextStyle? builderTextStyle;
 
   VariableTextBuilder({this.builderOnTap, this.builderTextStyle});
@@ -89,7 +113,7 @@ class VariableTextBuilder extends SpecialTextSpanBuilder {
   SpecialText? createSpecialText(
     String flag, {
     TextStyle? textStyle,
-    SpecialTextGestureTapCallback? onTap,
+    SpecialTextGestureTapCallback? onTap, // not using
     required int index,
   }) {
     if (flag == '') return null;
@@ -100,7 +124,7 @@ class VariableTextBuilder extends SpecialTextSpanBuilder {
         start: start,
         textStyle: builderTextStyle ?? textStyle,
         customOnTap: builderOnTap,
-        onTap: onTap,
+        // onTap: onTap,
       );
     }
     return null;
