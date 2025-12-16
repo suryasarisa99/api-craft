@@ -55,7 +55,7 @@ class _RequestUrlState extends ConsumerState<RequestUrl> {
   void sendReq() async {
     // final response = await run(ref.read(reqComposeProvider(widget.id)));
 
-    final response = await ref.read(requestExecutorProvider).runById(widget.id);
+    final response = await ref.read(httpRequestProvider).runById(widget.id);
     debugPrint(
       "response received, adding to history, status: ${response.statusCode}",
     );

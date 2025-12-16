@@ -306,7 +306,7 @@ class FolderStorageRepository implements StorageRepository {
   }
 
   @override
-  Future<List<RawHttpResponse>> getHistory(String requestId) {
+  Future<List<RawHttpResponse>> getHistory(String requestId, {int limit = 10}) {
     throw UnimplementedError();
   }
 

@@ -7,3 +7,7 @@ export 'auth_model.dart';
 export 'http_response.dart';
 export 'req-context/ui_req_context.dart';
 export 'req-context/resolved_req_context.dart';
+
+export 'package:api_craft/template-functions/models/enums.dart';
+export 'package:api_craft/template-functions/models/form_input.dart';
+export 'package:api_craft/template-functions/models/template_functions.dart';

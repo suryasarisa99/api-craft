@@ -9,27 +9,27 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 // this actually does not store any state
 // but made this provider because it uses RequestResolver which requires Ref,
 //but we need to use reqExecutor in ui it is WidgetRef, so we can't pass WidgetRef to RequestResolver directly
-final requestExecutorProvider = Provider<RequestExecutor>((ref) {
-  return RequestExecutor(ref);
+final httpRequestProvider = Provider<HttpRequestContext>((ref) {
+  return HttpRequestContext(ref);
 });
 
-class RequestExecutor {
+class HttpRequestContext {
   final Ref ref;
-  RequestExecutor(this.ref);
+  HttpRequestContext(this.ref);
 
   Future<RawHttpResponse> runById(String requestId) async {
     final resolver = RequestResolver(ref);
-    final ctx = await resolver.resolveForExecution(requestId);
-    debugPrint('Executing request to URL: ${ctx.uri}');
+    final req = await resolver.resolveForExecution(requestId);
+    debugPrint('Executing request to URL: ${req.uri}');
 
     final response = await sendRawHttp(
-      method: ctx.request.method,
-      url: ctx.uri,
-      headers: ctx.headers,
+      method: req.request.method,
+      url: req.uri,
+      headers: req.headers,
       // body: ctx.request.config.body,
       body: _bodies[0],
       useProxy: true,
-      requestId: ctx.request.id,
+      requestId: req.request.id,
     );
     final body = jsonDecode(response.body);
     final token = body['token'].toString();
@@ -38,6 +38,15 @@ class RequestExecutor {
     );
 
     return response;
+  }
+
+  Future<RawHttpResponse?> getResById(String requestId) async {
+    final repo = ref.read(repositoryProvider);
+    final responses = await repo.getHistory(requestId, limit: 1);
+    if (responses.isNotEmpty) {
+      return responses.first;
+    }
+    return null;
   }
 }
 

@@ -45,6 +45,6 @@ abstract class StorageRepository {
 
   ///
   Future<void> addHistoryEntry(RawHttpResponse entry, {int limit = 10});
-  Future<List<RawHttpResponse>> getHistory(String requestId);
+  Future<List<RawHttpResponse>> getHistory(String requestId, {int limit = 10});
   Future<void> clearHistory(String requestId);
 }

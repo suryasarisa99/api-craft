@@ -261,13 +261,17 @@ class DbStorageRepository implements StorageRepository {
 
   /// Get history for a specific request tab
   @override
-  Future<List<RawHttpResponse>> getHistory(String requestId) async {
+  Future<List<RawHttpResponse>> getHistory(
+    String requestId, {
+    int limit = 10,
+  }) async {
     final db = await _db;
     final res = await db.query(
       'request_history',
       where: 'request_id = ?',
       whereArgs: [requestId],
       orderBy: 'executed_at DESC', // Newest first
+      limit: limit,
     );
     debugPrint("db::get-history for $requestId: $res");
     return res.map((e) => RawHttpResponse.fromMap(e)).toList();

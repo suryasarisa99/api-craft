@@ -2,10 +2,10 @@ import 'package:api_craft/models/models.dart';
 import 'package:api_craft/providers/providers.dart';
 import 'package:api_craft/screens/home/request/request_url.dart';
 import 'package:api_craft/utils/debouncer.dart';
+import 'package:api_craft/template-functions/widget/form_popup_widget.dart';
 import 'package:api_craft/widgets/tabs/auth_tab.dart';
 import 'package:api_craft/widgets/tabs/headers_tab.dart';
 import 'package:api_craft/widgets/tabs/query_params.dart';
-import 'package:api_craft/widgets/ui/variable_text_field.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -34,7 +34,18 @@ class _RequestTabState extends ConsumerState<RequestTab>
     with SingleTickerProviderStateMixin {
   /// tabs
   late final List<Widget> children = [
-    Center(child: Text("Body Tab")),
+    Center(
+      child: FilledButton(
+        onPressed: () {
+          showDialog(
+            context: context,
+            builder: (context) => const FormPopupWidget(),
+          );
+        },
+        child: Text("fn popup"),
+      ),
+    ),
+    // Center(child: Text("Body Tab")),
     QueryParamsTab(id: widget.node.id),
     HeadersTab(id: widget.node.id),
     AuthTab(id: widget.node.id),
