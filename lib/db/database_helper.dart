@@ -10,6 +10,8 @@ class Tables {
   static const String collections = 'collections';
   static const String nodes = 'nodes';
   static const String history = 'request_history';
+  static const String environments = 'environments';
+  static const String cookieJars = 'cookie_jars';
 
   static const queries = (
     collections:
@@ -49,8 +51,7 @@ class Tables {
     status_code INTEGER
       )
     ''',
-    history:
-        '''CREATE TABLE $history (
+    history: '''CREATE TABLE $history (
   id TEXT PRIMARY KEY,
   request_id TEXT NOT NULL,
   status_code INTEGER,
@@ -66,18 +67,43 @@ class Tables {
   --  response_size INTEGER,
   FOREIGN KEY(request_id) REFERENCES nodes(id) ON DELETE CASCADE
 );
-
--- Index for faster lookups/sorting
--- CREATE INDEX idx_history_req_date ON $history(request_id, executed_at DESC);
 ''',
+    environments:
+        '''
+      CREATE TABLE $environments (
+        id TEXT PRIMARY KEY,
+        collection_id TEXT NOT NULL,
+        name TEXT NOT NULL,
+        color INTEGER,
+        variables TEXT, -- JSON: List of {key, val, enabled}
+        is_shared INTEGER DEFAULT 0
+      )
+    ''',
+    cookieJars:
+        '''
+      CREATE TABLE $cookieJars (
+        id TEXT PRIMARY KEY,
+        collection_id TEXT NOT NULL,
+        name TEXT NOT NULL,
+        cookies TEXT -- JSON: List of CookieDef
+      )
+    ''',
   );
 
   static List<String> queriesList = [
     queries.collections,
     queries.nodes,
     queries.history,
+    queries.environments,
+    queries.cookieJars,
   ];
-  static List<String> tableNames = [collections, nodes, history];
+  static List<String> tableNames = [
+    collections,
+    nodes,
+    history,
+    environments,
+    cookieJars,
+  ];
 
   static Future<void> createAllTables(Database db) async {
     for (var query in queriesList) {

@@ -13,3 +13,4 @@ export 'visual_node_provider.dart';
 //utils
 export 'utils/request_hydrator.dart';
 export 'utils/req_resolver.dart';
+export 'environment_provider.dart';

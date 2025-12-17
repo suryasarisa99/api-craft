@@ -5,6 +5,8 @@ export 'resolve_config_model.dart';
 export 'visual_model.dart';
 export 'auth_model.dart';
 export 'http_response.dart';
+export 'environment_model.dart';
+export 'cookie_jar_model.dart';
 export 'req-context/ui_req_context.dart';
 export 'req-context/resolved_req_context.dart';
 

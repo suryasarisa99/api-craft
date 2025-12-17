@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:api_craft/http/raw/raw_http_req.dart';
 import 'package:api_craft/models/models.dart';
 import 'package:api_craft/providers/providers.dart';
@@ -32,7 +33,50 @@ class HttpRequestContext {
     debugPrint(
       'Response status: ${response.statusCode}: ${response.durationMs} ms',
     );
-    ref.read(repositoryProvider).addHistoryEntry(response);
+
+    // store into history
+    final activeReqId = ref.read(activeReqIdProvider);
+    if (activeReqId == requestId) {
+      ref
+          .read(reqComposeProvider(requestId).notifier)
+          .addHistoryEntry(response);
+    } else {
+      ref.read(repositoryProvider).addHistoryEntry(response);
+    }
+
+    // Extract & Save Cookies
+    final cookieJarId = ref.read(environmentProvider).selectedCookieJarId;
+    if (cookieJarId != null) {
+      final newCookies = <CookieDef>[];
+      for (final h in response.headers) {
+        if (h[0].toLowerCase() == 'set-cookie') {
+          try {
+            final c = Cookie.fromSetCookieValue(h[1]);
+
+            var domain = c.domain ?? req.uri.host;
+
+            newCookies.add(
+              CookieDef(
+                key: c.name,
+                value: c.value,
+                domain: domain,
+                path: c.path ?? '/',
+                expires: c.expires,
+                isSecure: c.secure,
+                isHttpOnly: c.httpOnly,
+              ),
+            );
+          } catch (e) {
+            debugPrint("Failed to parse cookie: ${h[1]}");
+          }
+        }
+      }
+      if (newCookies.isNotEmpty) {
+        ref
+            .read(environmentProvider.notifier)
+            .saveCookiesToJar(cookieJarId, newCookies);
+      }
+    }
     return response;
   }
 

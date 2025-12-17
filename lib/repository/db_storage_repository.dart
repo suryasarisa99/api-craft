@@ -287,4 +287,82 @@ class DbStorageRepository implements StorageRepository {
       whereArgs: [requestId],
     );
   }
+
+  // --- Environments ---
+  @override
+  Future<List<Environment>> getEnvironments(String collectionId) async {
+    final db = await _db;
+    final res = await db.query(
+      'environments',
+      where: 'collection_id = ?',
+      whereArgs: [collectionId],
+    );
+    return res.map((e) => Environment.fromMap(e)).toList();
+  }
+
+  @override
+  Future<void> createEnvironment(Environment env) async {
+    final db = await _db;
+    await db.insert(
+      'environments',
+      env.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  @override
+  Future<void> updateEnvironment(Environment env) async {
+    final db = await _db;
+    await db.update(
+      'environments',
+      env.toMap(),
+      where: 'id = ?',
+      whereArgs: [env.id],
+    );
+  }
+
+  @override
+  Future<void> deleteEnvironment(String id) async {
+    final db = await _db;
+    await db.delete('environments', where: 'id = ?', whereArgs: [id]);
+  }
+
+  // --- Cookie Jars ---
+  @override
+  Future<List<CookieJarModel>> getCookieJars(String collectionId) async {
+    final db = await _db;
+    final res = await db.query(
+      'cookie_jars',
+      where: 'collection_id = ?',
+      whereArgs: [collectionId],
+    );
+    return res.map((e) => CookieJarModel.fromMap(e)).toList();
+  }
+
+  @override
+  Future<void> createCookieJar(CookieJarModel jar) async {
+    final db = await _db;
+    await db.insert(
+      'cookie_jars',
+      jar.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  @override
+  Future<void> updateCookieJar(CookieJarModel jar) async {
+    final db = await _db;
+    await db.update(
+      'cookie_jars',
+      jar.toMap(),
+      where: 'id = ?',
+      whereArgs: [jar.id],
+    );
+  }
+
+  @override
+  Future<void> deleteCookieJar(String id) async {
+    final db = await _db;
+    await db.delete('cookie_jars', where: 'id = ?', whereArgs: [id]);
+  }
 }

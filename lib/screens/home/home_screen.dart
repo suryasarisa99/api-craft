@@ -1,4 +1,5 @@
 import 'package:api_craft/providers/providers.dart';
+import 'package:api_craft/screens/home/environment/environment_picker.dart';
 import 'package:api_craft/screens/home/request/request.dart';
 import 'package:api_craft/screens/home/response/response_tab.dart';
 import 'package:api_craft/screens/home/sidebar/sidebar.dart';
@@ -121,6 +122,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                 ),
               ),
               CollectionPicker(),
+              // > indicator?
+              const Text(" > ", style: TextStyle(color: Colors.grey)),
+              const EnvironmentPicker(),
             ],
           ),
           // Expanded(child: MultiSplitView(controller: _controller)),

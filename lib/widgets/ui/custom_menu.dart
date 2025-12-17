@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_popup/flutter_popup.dart';
 
+const menuDivider = Padding(
+  padding: EdgeInsets.symmetric(vertical: 4),
+  child: Divider(height: 1),
+);
+
 class MyCustomMenu extends StatelessWidget {
   final Widget child;
   final Widget content;
@@ -109,18 +114,33 @@ class MyCustomMenu extends StatelessWidget {
 //         ),
 //       )
 
-class CustomMenuTickItem extends StatelessWidget {
-  final bool checked;
+class CustomMenuIconItem extends StatelessWidget {
   final Widget title;
   final String value;
   final void Function(String value)? onTap;
-  const CustomMenuTickItem({
+  final Widget? icon;
+
+  const CustomMenuIconItem({
     super.key,
-    required this.checked,
     required this.title,
     required this.value,
     this.onTap,
+    this.icon,
   });
+
+  const CustomMenuIconItem.tick({
+    super.key,
+    required this.title,
+    required this.value,
+    this.onTap,
+    bool checked = false,
+  }) : icon = checked == true
+           ? const Icon(
+               Icons.check,
+               color: Color.fromARGB(255, 120, 120, 120),
+               size: 16,
+             )
+           : null;
 
   @override
   Widget build(BuildContext context) {
@@ -133,18 +153,11 @@ class CustomMenuTickItem extends StatelessWidget {
           Navigator.of(context).pop(value);
         },
         child: Ink(
-          padding: const EdgeInsets.symmetric(vertical: 3, horizontal: 4),
+          padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
           width: double.infinity,
           child: Row(
             children: [
-              if (checked)
-                Icon(
-                  Icons.check,
-                  color: const Color.fromARGB(255, 120, 120, 120),
-                  size: 16,
-                )
-              else
-                SizedBox(width: 16),
+              if (icon != null) icon! else SizedBox(width: 16),
               SizedBox(width: 8),
               title,
             ],

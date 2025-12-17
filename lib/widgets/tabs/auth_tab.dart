@@ -106,7 +106,7 @@ class _AuthTabHeaderState extends ConsumerState<AuthTabHeader> {
               ..._authsTypes.map(
                 (type) => _buildAuthOption(type, checked: authType == type),
               ),
-              SizedBox(child: Divider(height: 12, thickness: 1)),
+              menuDivider,
               _buildAuthOption(
                 AuthType.noAuth,
                 checked: authType == AuthType.noAuth,
@@ -140,7 +140,7 @@ class _AuthTabHeaderState extends ConsumerState<AuthTabHeader> {
 
   Widget _buildAuthOption(AuthType type, {bool checked = false}) {
     final n = type.title[0].toUpperCase() + type.title.substring(1);
-    return CustomMenuTickItem(
+    return CustomMenuIconItem.tick(
       checked: checked,
       title: Text(n),
       value: type.name,

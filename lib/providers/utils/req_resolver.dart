@@ -74,6 +74,40 @@ class RequestResolver {
       ];
     }).toList();
 
+    // Inject Cookies
+    final envState = ref.read(environmentProvider);
+    final jar = envState.selectedCookieJar;
+    if (jar != null) {
+      final relevantCookies = jar.cookies.where((c) {
+        debugPrint(
+          "cookie: ${c.key} enabled: ${c.isEnabled}, domain: ${c.domain}",
+        );
+        if (!c.isEnabled) return false;
+        if (!domainMatches(uri, c)) return false;
+        if (!pathMatches(uri, c)) return false;
+        if (c.isSecure && uri.scheme != 'https') return false;
+        return true;
+      });
+      debugPrint("relevantCookies: ${relevantCookies.length}");
+
+      if (relevantCookies.isNotEmpty) {
+        final cookieHeaderVal = relevantCookies
+            .map((c) => '${c.key}=${c.value}')
+            .join('; ');
+        bool found = false;
+        for (var h in headers) {
+          if (h[0].toLowerCase() == 'cookie') {
+            h[1] = '${h[1]}; $cookieHeaderVal';
+            found = true;
+            break;
+          }
+        }
+        if (!found) {
+          headers.add(['Cookie', cookieHeaderVal]);
+        }
+      }
+    }
+
     return ResolvedRequestContext(
       request: node,
       uri: fullUri,
@@ -81,6 +115,24 @@ class RequestResolver {
       auth: auth,
       variables: resolvedVars,
     );
+  }
+
+  bool domainMatches(Uri uri, CookieDef c) {
+    if (c.domain.isEmpty) return true;
+
+    // Host-only vs domain cookie
+    if (!c.domain.startsWith('.')) {
+      return uri.host == c.domain;
+    }
+    return uri.host == c.domain.substring(1) || uri.host.endsWith(c.domain);
+  }
+
+  bool pathMatches(Uri uri, CookieDef c) {
+    final cookiePath = c.path.isEmpty ? '/' : c.path;
+    return uri.path == cookiePath ||
+        uri.path.startsWith(
+          cookiePath.endsWith('/') ? cookiePath : '$cookiePath/',
+        );
   }
 
   /// ---------- HELPERS ----------
@@ -125,6 +177,18 @@ class RequestResolver {
       ptr = _parentOf(ptr);
     }
 
+    // 1. Start with Global Environment Variables
+    final envState = ref.read(environmentProvider);
+    final env = envState.selectedEnvironment;
+    if (env != null) {
+      for (final v in env.variables) {
+        if (v.isEnabled) {
+          result[v.key] = VariableValue(env.id, v.value);
+        }
+      }
+    }
+
+    // 2. Overlay Folder Chain Variables (Overrides Global)
     for (final folder in chain) {
       for (final v in folder.config.variables) {
         if (v.isEnabled) {

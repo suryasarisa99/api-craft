@@ -59,7 +59,6 @@ class _RequestUrlState extends ConsumerState<RequestUrl> {
     debugPrint(
       "response received, adding to history, status: ${response.statusCode}",
     );
-    ref.read(reqComposeProvider(widget.id).notifier).addHistoryEntry(response);
   }
 
   @override
@@ -142,7 +141,7 @@ class _RequestUrlState extends ConsumerState<RequestUrl> {
     return methods.map((m) {
       return SizedBox(
         width: 150,
-        child: CustomMenuTickItem(
+        child: CustomMenuIconItem.tick(
           checked: m == checkedValue,
           onTap: (val) {
             notifier.updateMethod(m);

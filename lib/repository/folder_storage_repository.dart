@@ -314,4 +314,46 @@ class FolderStorageRepository implements StorageRepository {
   Future<void> clearHistory(String requestId) {
     throw UnimplementedError();
   }
+
+  // --- Environments ---
+  @override
+  Future<List<Environment>> getEnvironments(String collectionId) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> createEnvironment(Environment env) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> updateEnvironment(Environment env) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> deleteEnvironment(String id) {
+    throw UnimplementedError();
+  }
+
+  // --- Cookie Jars ---
+  @override
+  Future<List<CookieJarModel>> getCookieJars(String collectionId) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> createCookieJar(CookieJarModel jar) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> updateCookieJar(CookieJarModel jar) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> deleteCookieJar(String id) {
+    throw UnimplementedError();
+  }
 }

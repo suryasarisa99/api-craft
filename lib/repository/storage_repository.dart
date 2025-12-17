@@ -1,4 +1,3 @@
-import 'package:api_craft/http/raw/raw_http_req.dart';
 import 'package:api_craft/models/models.dart';
 
 export 'folder_storage_repository.dart';
@@ -47,4 +46,16 @@ abstract class StorageRepository {
   Future<void> addHistoryEntry(RawHttpResponse entry, {int limit = 10});
   Future<List<RawHttpResponse>> getHistory(String requestId, {int limit = 10});
   Future<void> clearHistory(String requestId);
+
+  // --- Environments ---
+  Future<List<Environment>> getEnvironments(String collectionId);
+  Future<void> createEnvironment(Environment env);
+  Future<void> updateEnvironment(Environment env);
+  Future<void> deleteEnvironment(String id);
+
+  // --- Cookie Jars ---
+  Future<List<CookieJarModel>> getCookieJars(String collectionId);
+  Future<void> createCookieJar(CookieJarModel jar);
+  Future<void> updateCookieJar(CookieJarModel jar);
+  Future<void> deleteCookieJar(String id);
 }
