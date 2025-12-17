@@ -8,6 +8,7 @@ class TemplateFunction {
   final Future<dynamic> Function(WContext ctx, CallTemplateFunctionArgs args)
   onRender;
   // Todo : need to complete other parameters
+  // previewArgs,aliases
 
   const TemplateFunction({
     required this.name,

@@ -2,7 +2,7 @@ import 'package:api_craft/models/models.dart';
 import 'package:api_craft/providers/config_resolver_provider.dart';
 import 'package:api_craft/template-functions/functions/template-function-request/request_body_path.dart';
 import 'package:api_craft/template-functions/functions/template-function-response/response_body_path.dart';
-import 'package:api_craft/template-functions/parsers/get_default_state.dart';
+import 'package:api_craft/template-functions/parsers/utils.dart';
 import 'package:api_craft/template-functions/parsers/parse.dart';
 import 'package:api_craft/template-functions/widget/form_input_widget.dart';
 import 'package:api_craft/utils/debouncer.dart';
@@ -48,10 +48,8 @@ class FormPopupWidget extends ConsumerStatefulWidget {
 }
 
 class _FormPopupWidgetState extends ConsumerState<FormPopupWidget> {
-  late final fnState = getState(
-    getTemplateFunctionByName(widget.fnPlaceholder.name),
-    widget.fnPlaceholder.args,
-  );
+  late final templateFn = getTemplateFunctionByName(widget.fnPlaceholder.name);
+  late final fnState = getFnState(templateFn, widget.fnPlaceholder.args);
   String? renderedValue;
   final debouncer = Debouncer(Duration(milliseconds: 500));
 
@@ -82,7 +80,7 @@ class _FormPopupWidgetState extends ConsumerState<FormPopupWidget> {
   }
 
   void renderPreview() async {
-    responseBody
+    templateFn
         .onRender(
           ref,
           CallTemplateFunctionArgs(values: fnState, purpose: Purpose.preview),
@@ -109,15 +107,25 @@ class _FormPopupWidgetState extends ConsumerState<FormPopupWidget> {
         height: 600,
         padding: const EdgeInsets.all(16.0),
         child: Column(
+          crossAxisAlignment: .start,
           children: [
-            Text(
-              "Function: ${widget.fnPlaceholder.name}",
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            Container(
+              padding: .symmetric(vertical: 1, horizontal: 8),
+              decoration: BoxDecoration(
+                color: const Color.fromARGB(255, 59, 61, 62),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                "${widget.fnPlaceholder.name}(...)",
+                style: const TextStyle(fontSize: 17, fontWeight: .w600),
+              ),
             ),
+            const SizedBox(height: 10),
+            Text(templateFn.description),
             const SizedBox(height: 16),
             Expanded(
               child: FormInputWidget(
-                inputs: responseBody.args,
+                inputs: templateFn.args,
                 data: fnState,
                 onChanged: (key, value) {
                   debugPrint("Input changed: $key -> $value");
@@ -133,7 +141,7 @@ class _FormPopupWidgetState extends ConsumerState<FormPopupWidget> {
             Row(
               children: [
                 Expanded(child: Text(renderedValue ?? "")),
-                const SizedBox(width: 16),
+                const SizedBox(width: 20),
                 IconButton(
                   onPressed: renderPreview,
                   icon: const Icon(Icons.refresh),

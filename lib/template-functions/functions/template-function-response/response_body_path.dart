@@ -3,10 +3,11 @@ import 'dart:convert';
 import 'package:api_craft/models/models.dart';
 import 'package:api_craft/providers/utils/req_executor.dart';
 import 'package:api_craft/template-functions/functions/temple_common_args.dart';
+import 'package:collection/collection.dart';
 import 'package:flutter/widgets.dart';
 import 'package:json_path/json_path.dart';
 
-final responseBody = TemplateFunction(
+final responseBodyPath = TemplateFunction(
   name: "response.body.path",
   description: 'Access a field of the response body using JsonPath or XPath',
   args: [
@@ -41,8 +42,7 @@ final responseBody = TemplateFunction(
 
     final response = await getResponse(
       ctx,
-      // purpose: args.purpose.name,
-      purpose: 'preview',
+      purpose: args.purpose.name,
       requestId: args.values['request'],
       behavior: args.values['behavior'],
       ttl: args.values['ttl'],
@@ -58,6 +58,63 @@ final responseBody = TemplateFunction(
   },
 );
 
+final responseHeader = TemplateFunction(
+  name: 'response.header',
+  description: 'Read the value of a response header, by name',
+  args: [
+    requestArgs,
+    behaviorArgs,
+    FormInputText(
+      name: 'header',
+      label: 'Header Name',
+      dynamicFn: (ctx, args) async {},
+    ),
+  ],
+  onRender: (ctx, args) async {
+    if (args.values['request'] == null || args.values['header'] == null) {
+      return null;
+    }
+    final h = (args.values['header'] as String).toLowerCase();
+    final response = await getResponse(
+      ctx,
+      purpose: args.purpose.name,
+      requestId: args.values['request'],
+      behavior: args.values['behavior'],
+      ttl: args.values['ttl'],
+    );
+    if (response == null) return null;
+
+    final header = response.headers.firstWhereOrNull(
+      (header) => header[0].toLowerCase() == h,
+    );
+    return header != null ? header[1] : null;
+  },
+);
+
+final responseBodyRaw = TemplateFunction(
+  name: 'response.body.raw',
+  description: 'Access the entire response body, as text',
+  args: [requestArgs, behaviorArgs],
+
+  onRender: (ctx, args) async {
+    if (args.values['request'] == null) {
+      return null;
+    }
+
+    final response = await getResponse(
+      ctx,
+      purpose: args.purpose.name,
+      requestId: args.values['request'],
+      behavior: args.values['behavior'],
+      ttl: args.values['ttl'],
+    );
+    if (response == null) return null;
+
+    return response.body;
+  },
+);
+
+/// Helpers
 Future<RawHttpResponse?> getResponse(
   WContext ctx, {
   required String purpose,

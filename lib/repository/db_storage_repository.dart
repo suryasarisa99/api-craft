@@ -45,7 +45,7 @@ class DbStorageRepository implements StorageRepository {
       whereArgs: [collectionId],
       orderBy: 'sort_order ASC',
     );
-    debugPrint("db::get-contents ${maps}");
+    // debugPrint("db::get-contents ${maps}");
 
     return maps.map((m) => Node.fromMap(m)).toList();
   }
@@ -90,7 +90,7 @@ class DbStorageRepository implements StorageRepository {
       where: 'id = ?',
       whereArgs: [id],
     );
-    debugPrint("db::get-node-details $id: $res");
+    // debugPrint("db::get-node-details $id: $res");
     if (res.isEmpty) return {};
     return res.first;
   }
@@ -98,7 +98,7 @@ class DbStorageRepository implements StorageRepository {
   @override
   Future<void> updateNode(Node node) async {
     final db = await _db;
-    debugPrint("db::update-node ${node.id}: ${node.toMap()}");
+    // debugPrint("db::update-node ${node.id}: ${node.toMap()}");
     await db.update(
       'nodes',
       node.toMap(),
@@ -220,7 +220,7 @@ class DbStorageRepository implements StorageRepository {
   Future<void> createOne(Node node) async {
     final db = await _db;
     final map = node.toMap();
-    debugPrint('db::create-one-node ${node.id}: $map');
+    // debugPrint('db::create-one-node ${node.id}: $map');
     map['collection_id'] = collectionId;
     await db.insert('nodes', map);
   }

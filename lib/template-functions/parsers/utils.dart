@@ -19,7 +19,7 @@ Map<String, dynamic> getDefaultTemplateFunctionState(TemplateFunction fn) {
 }
 
 // merges default values and provided state
-Map<String, dynamic> getState(
+Map<String, dynamic> getFnState(
   TemplateFunction fn,
   Map<String, dynamic>? providedState,
 ) {
@@ -32,6 +32,18 @@ Map<String, dynamic> getState(
   return mergedState;
 }
 
+final templates = [responseBodyPath, responseBodyRaw, responseHeader];
+
+Map<String, TemplateFunction> get templateFunctionRegistry {
+  final Map<String, TemplateFunction> registry = {};
+  for (final fn in templates) {
+    registry[fn.name] = fn;
+  }
+  return registry;
+}
+
+final Map<String, TemplateFunction> _templateFunctionRegistry =
+    templateFunctionRegistry;
 TemplateFunction getTemplateFunctionByName(String name) {
-  return responseBody;
+  return _templateFunctionRegistry[name]!;
 }

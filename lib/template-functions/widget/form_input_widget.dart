@@ -30,6 +30,9 @@ class FormInputWidget extends StatelessWidget {
 
   List<Widget> _buildInputWidgets() {
     return inputs.map((input) {
+      if (input is FormInputBase && input.hidden == true) {
+        return SizedBox.shrink();
+      }
       return switch (input) {
         FormInputSelect selectInput => FormWidgetSelect(
           selectInput: selectInput,
@@ -184,6 +187,7 @@ class FormWidgetHttpRequest extends ConsumerStatefulWidget {
 
 class _FormWidgetHttpRequestState extends ConsumerState<FormWidgetHttpRequest> {
   late List<RequestNode> requestNodes;
+  late final String? initialValue;
   @override
   void initState() {
     super.initState();
@@ -194,6 +198,15 @@ class _FormWidgetHttpRequestState extends ConsumerState<FormWidgetHttpRequest> {
         .whereType<RequestNode>()
         .toList();
     debugPrint("ids: ${requestNodes.map((e) => e.id).toList()}");
+    initialValue =
+        widget.value ??
+        widget.input.defaultValue ??
+        (requestNodes.isNotEmpty ? requestNodes.first.id : null);
+    if (initialValue != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        widget.onChanged?.call(initialValue);
+      });
+    }
   }
 
   @override
@@ -204,8 +217,7 @@ class _FormWidgetHttpRequestState extends ConsumerState<FormWidgetHttpRequest> {
     // show picker
     return DropdownButtonFormField<String>(
       decoration: InputDecoration(labelText: widget.input.label),
-      initialValue:
-          widget.value ?? widget.input.defaultValue ?? requestNodes.first.id,
+      initialValue: initialValue,
       items: requestNodes
           .map(
             (node) => DropdownMenuItem<String>(

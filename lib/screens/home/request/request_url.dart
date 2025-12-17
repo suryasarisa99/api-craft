@@ -64,6 +64,15 @@ class _RequestUrlState extends ConsumerState<RequestUrl> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(
+      reqComposeProvider(widget.id).select((d) => (d.node as RequestNode).url),
+      (previous, next) {
+        if (_controller.text != next) {
+          _controller.text = next;
+          debugPrint("URL updated from provider: $next");
+        }
+      },
+    );
     return Padding(
       padding: const EdgeInsets.only(top: 8.0, left: 8, right: 8),
       child: Row(
@@ -117,7 +126,6 @@ class _RequestUrlState extends ConsumerState<RequestUrl> {
                 ),
               ),
               onChanged: (v) {
-                debugPrint("URL changed: $v");
                 notifier.updateUrl(v);
               },
               onSubmitted: (_) {

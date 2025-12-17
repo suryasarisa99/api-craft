@@ -415,9 +415,7 @@ class ReqComposeNotifier extends Notifier<UiRequestContext> {
     state = state.copyWith(history: updatedHistory);
 
     // update node last status code
-    updateNode(
-      (getNode as RequestNode).copyWith(lastStatusCode: entry.statusCode),
-    );
+    updateNode((getNode as RequestNode).copyWith(statusCode: entry.statusCode));
     _repo.addHistoryEntry(entry);
   }
 

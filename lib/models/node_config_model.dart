@@ -58,6 +58,7 @@ class FolderNodeConfig extends NodeConfig {
     );
   }
 
+  @override
   FolderNodeConfig clone() {
     return FolderNodeConfig(
       headers: List<KeyValueItem>.from(headers),

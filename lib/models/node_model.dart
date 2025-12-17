@@ -250,14 +250,11 @@ class RequestNode extends Node<RequestNodeConfig> {
     RequestType? requestType,
     String? method,
     String? url,
-    int? lastStatusCode,
+    int? statusCode,
   }) {
-    debugPrint(
-      "copy with method; actual: $method, this.method: ${this.method}",
-    );
     return RequestNode(
       id: id ?? this.id,
-      statusCode: lastStatusCode ?? this.statusCode,
+      statusCode: statusCode ?? this.statusCode,
       parentId: forceNullParent ? null : (parentId ?? this.parentId),
       name: name ?? this.name,
       config: config ?? reqConfig,
