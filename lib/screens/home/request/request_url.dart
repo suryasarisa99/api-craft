@@ -74,7 +74,7 @@ class _RequestUrlState extends ConsumerState<RequestUrl> {
       },
     );
     return Padding(
-      padding: const EdgeInsets.only(top: 8.0, left: 8, right: 8),
+      padding: const EdgeInsets.only(top: 10.0, left: 8, right: 8),
       child: Row(
         children: [
           // menu

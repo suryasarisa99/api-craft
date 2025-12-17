@@ -231,7 +231,7 @@ class _KeyValueEditorState extends State<KeyValueEditor> {
                               ),
 
                             // 4. Key input field
-                            SizedBox(width: 150, child: buildInput(i, true)),
+                            SizedBox(width: 180, child: buildInput(i, true)),
                             const SizedBox(width: 12),
 
                             // 5. Value input field

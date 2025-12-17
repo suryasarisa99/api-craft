@@ -70,7 +70,7 @@ class _RequestTabState extends ConsumerState<RequestTab>
       child: Column(
         children: [
           RequestUrl(id: widget.node.id),
-          SizedBox(height: 4),
+          SizedBox(height: 8),
           SizedBox(
             height: 32,
             child: TabBar(
@@ -115,6 +115,7 @@ class _RequestTabState extends ConsumerState<RequestTab>
               ],
             ),
           ),
+          SizedBox(height: 12),
           Expanded(
             child: TabBarView(controller: _tabController, children: children),
           ),

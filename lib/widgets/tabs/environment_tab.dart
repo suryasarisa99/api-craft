@@ -15,24 +15,19 @@ class EnvironmentTab extends ConsumerWidget {
         id,
       ).select((value) => (value.node as FolderNode).config.variables),
     );
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        children: [
-          Expanded(
-            child: KeyValueEditor(
-              id: id,
-              mode: KeyValueEditorMode.variables,
-              items: List.from(
-                variables,
-              ), // Pass copy to allow local reordering
-              onChanged: (newItems) => ref
-                  .read(reqComposeProvider(id).notifier)
-                  .updateVariables(newItems),
-            ),
+    return Column(
+      children: [
+        Expanded(
+          child: KeyValueEditor(
+            id: id,
+            mode: KeyValueEditorMode.variables,
+            items: List.from(variables), // Pass copy to allow local reordering
+            onChanged: (newItems) => ref
+                .read(reqComposeProvider(id).notifier)
+                .updateVariables(newItems),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

@@ -134,61 +134,64 @@ class _FolderConfigDialogState extends ConsumerState<FolderConfigDialog> {
             child: Row(
               children: [
                 const SizedBox(width: 16),
-                Column(
-                  children: [
-                    for (final (index, tab) in tabs.indexed)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 2.0),
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(4),
-                          onTap: () {
-                            setState(() {
-                              tabIndex = index;
-                            });
-                          },
-                          child: Container(
-                            width: 150,
-                            decoration: BoxDecoration(
-                              color: tabIndex == index
-                                  ? const Color(
-                                      0xFFEC21F3,
-                                    ).withValues(alpha: 0.1)
-                                  : Colors.transparent,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            padding: EdgeInsets.symmetric(
-                              vertical: index == 2 ? 0 : 6,
-                              horizontal: 8,
-                            ),
+                SizedBox(
+                  width: 140,
+                  child: Column(
+                    children: [
+                      for (final (index, tab) in tabs.indexed)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 2.0),
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(4),
+                            onTap: () {
+                              setState(() {
+                                tabIndex = index;
+                              });
+                            },
+                            child: Container(
+                              width: 150,
+                              decoration: BoxDecoration(
+                                color: tabIndex == index
+                                    ? const Color(
+                                        0xFFEC21F3,
+                                      ).withValues(alpha: 0.1)
+                                    : Colors.transparent,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              padding: EdgeInsets.symmetric(
+                                vertical: index == 2 ? 0 : 6,
+                                horizontal: 8,
+                              ),
 
-                            child: index == 2
-                                ? SizedBox(
-                                    height: 32,
-                                    child: AuthTabHeader(
-                                      color: tabIndex == index
-                                          ? const Color(0xFFE17FF0)
-                                          : Colors.grey,
-                                      widget.id,
-                                      isTabActive: tabIndex == index,
-                                      handleSetTab: () {
-                                        setState(() {
-                                          tabIndex = index;
-                                        });
-                                      },
+                              child: index == 2
+                                  ? SizedBox(
+                                      height: 32,
+                                      child: AuthTabHeader(
+                                        color: tabIndex == index
+                                            ? const Color(0xFFE17FF0)
+                                            : Colors.grey,
+                                        widget.id,
+                                        isTabActive: tabIndex == index,
+                                        handleSetTab: () {
+                                          setState(() {
+                                            tabIndex = index;
+                                          });
+                                        },
+                                      ),
+                                    )
+                                  : Text(
+                                      tab,
+                                      style: TextStyle(
+                                        color: tabIndex == index
+                                            ? const Color(0xFFE17FF0)
+                                            : Colors.grey,
+                                      ),
                                     ),
-                                  )
-                                : Text(
-                                    tab,
-                                    style: TextStyle(
-                                      color: tabIndex == index
-                                          ? const Color(0xFFE17FF0)
-                                          : Colors.grey,
-                                    ),
-                                  ),
+                            ),
                           ),
                         ),
-                      ),
-                  ],
+                    ],
+                  ),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
@@ -266,7 +269,7 @@ class __GeneralTabState extends ConsumerState<_GeneralTab> {
     });
 
     return Padding(
-      padding: const EdgeInsets.all(24.0),
+      padding: const EdgeInsets.symmetric(horizontal: 24.0),
       child: Column(
         children: [
           TextFormField(
@@ -278,16 +281,24 @@ class __GeneralTabState extends ConsumerState<_GeneralTab> {
             onChanged: notifier.updateName,
           ),
           const SizedBox(height: 24),
-          TextFormField(
-            // initialValue: description,
-            controller: descriptionController,
-            maxLines: 4,
-            decoration: const InputDecoration(
-              labelText: "Description",
-              border: OutlineInputBorder(),
+          Expanded(
+            child: TextFormField(
+              keyboardType: TextInputType.multiline,
+              textAlign: TextAlign.start,
+              textAlignVertical: TextAlignVertical.top,
+              // initialValue: description,
+              controller: descriptionController,
+              expands: true,
+              maxLines: null,
+              minLines: null,
+              decoration: const InputDecoration(
+                labelText: "Description",
+                border: OutlineInputBorder(),
+              ),
+              onChanged: notifier.updateDescription,
             ),
-            onChanged: notifier.updateDescription,
           ),
+          SizedBox(height: 24),
         ],
       ),
     );

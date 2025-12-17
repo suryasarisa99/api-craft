@@ -95,7 +95,7 @@ class MainApp extends StatelessWidget {
           contentPadding: EdgeInsets.symmetric(horizontal: 6, vertical: 9),
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(6.0)),
           enabledBorder: OutlineInputBorder(
-            borderSide: BorderSide(color: Color.fromARGB(255, 80, 80, 80)),
+            borderSide: BorderSide(color: Color.fromARGB(255, 66, 66, 66)),
           ),
           focusedBorder: OutlineInputBorder(
             borderSide: BorderSide(
