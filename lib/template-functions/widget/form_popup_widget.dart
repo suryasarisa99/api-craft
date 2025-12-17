@@ -59,10 +59,21 @@ class _FormPopupWidgetState extends ConsumerState<FormPopupWidget> {
   late final fnState = getFnState(templateFn, widget.fnPlaceholder.args);
   String? renderedValue;
   final debouncer = Debouncer(Duration(milliseconds: 500));
+  final _formKey = GlobalKey<FormState>();
+
+  @override
+  void initState() {
+    super.initState();
+    renderPreview();
+  }
 
   void handleSubmit() {
     debugPrint("Function confirmed with state: $fnState");
     // save state
+    if (!_formKey.currentState!.validate()) {
+      debugPrint("Form is not valid");
+      return;
+    }
 
     // update url
     // replace node url placeholder
@@ -126,18 +137,21 @@ class _FormPopupWidgetState extends ConsumerState<FormPopupWidget> {
             Text(templateFn.description),
             const SizedBox(height: 16),
             Expanded(
-              child: FormInputWidget(
-                inputs: templateFn.args,
-                data: fnState,
-                onChanged: (key, value) {
-                  debugPrint("Input changed: $key -> $value");
-                  setState(() {
-                    fnState[key] = value;
-                  });
-                  debouncer.run(() {
-                    renderPreview();
-                  });
-                },
+              child: Form(
+                key: _formKey,
+                child: FormInputWidget(
+                  inputs: templateFn.args,
+                  data: fnState,
+                  onChanged: (key, value) {
+                    debugPrint("Input changed: $key -> $value");
+                    setState(() {
+                      fnState[key] = value;
+                    });
+                    debouncer.run(() {
+                      renderPreview();
+                    });
+                  },
+                ),
               ),
             ),
             Row(

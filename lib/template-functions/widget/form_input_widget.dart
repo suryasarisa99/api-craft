@@ -81,6 +81,14 @@ class FormWidgetSelect extends StatelessWidget {
     return DropdownButtonFormField<String>(
       decoration: InputDecoration(labelText: selectInput.label),
       initialValue: value ?? selectInput.defaultValue,
+      validator: (selectInput.optional != true)
+          ? (value) {
+              if (value == null || value.isEmpty) {
+                return 'This field is required';
+              }
+              return null;
+            }
+          : null,
       items: selectInput.options
           .map(
             (option) => DropdownMenuItem<String>(
@@ -187,7 +195,8 @@ class FormWidgetHttpRequest extends ConsumerStatefulWidget {
 
 class _FormWidgetHttpRequestState extends ConsumerState<FormWidgetHttpRequest> {
   late List<RequestNode> requestNodes;
-  late final String? initialValue;
+  late final String? initialValue = widget.value ?? widget.input.defaultValue;
+
   @override
   void initState() {
     super.initState();
@@ -198,15 +207,6 @@ class _FormWidgetHttpRequestState extends ConsumerState<FormWidgetHttpRequest> {
         .whereType<RequestNode>()
         .toList();
     debugPrint("ids: ${requestNodes.map((e) => e.id).toList()}");
-    initialValue =
-        widget.value ??
-        widget.input.defaultValue ??
-        (requestNodes.isNotEmpty ? requestNodes.first.id : null);
-    if (initialValue != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        widget.onChanged?.call(initialValue);
-      });
-    }
   }
 
   @override
@@ -218,6 +218,14 @@ class _FormWidgetHttpRequestState extends ConsumerState<FormWidgetHttpRequest> {
     return DropdownButtonFormField<String>(
       decoration: InputDecoration(labelText: widget.input.label),
       initialValue: initialValue,
+      validator: (widget.input.optional != true)
+          ? (value) {
+              if (value == null || value.isEmpty) {
+                return 'This field is required';
+              }
+              return null;
+            }
+          : null,
       items: requestNodes
           .map(
             (node) => DropdownMenuItem<String>(
