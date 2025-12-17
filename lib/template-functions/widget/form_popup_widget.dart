@@ -26,21 +26,28 @@ void showFunctionPopup(
   TemplateFnPlaceholder fnPlaceholder, {
 
   required String id,
+  required void Function(String Function(String val) fn) updateField,
 }) {
   showDialog(
     context: context,
-    builder: (context) => FormPopupWidget(fnPlaceholder: fnPlaceholder, id: id),
+    builder: (context) => FormPopupWidget(
+      fnPlaceholder: fnPlaceholder,
+      id: id,
+      updateField: updateField,
+    ),
   );
 }
 
 class FormPopupWidget extends ConsumerStatefulWidget {
   final TemplateFnPlaceholder fnPlaceholder;
+  final void Function(String Function(String val) fn) updateField;
   final String id;
 
   const FormPopupWidget({
     super.key,
     required this.fnPlaceholder,
     required this.id,
+    required this.updateField,
   });
 
   @override
@@ -58,25 +65,20 @@ class _FormPopupWidgetState extends ConsumerState<FormPopupWidget> {
     // save state
 
     // update url
-    final node = ref.read(reqComposeProvider(widget.id)).node;
-    if (node is RequestNode) {
-      final url = node.url;
-      // replace node url placeholder
-      final fnStr = serializePlaceholder(
-        widget.fnPlaceholder.copyWithArgs(fnState),
-      );
-      final fnStrWithPlaceholders = "{{$fnStr}}";
-      debugPrint("Serialized function string: $fnStrWithPlaceholders");
-      // replace from,to index in fnPlaceholder
-      final newUrl = url.replaceRange(
+    // replace node url placeholder
+    final fnStr = serializePlaceholder(
+      widget.fnPlaceholder.copyWithArgs(fnState),
+    );
+    final fnStrWithPlaceholders = "{{$fnStr}}";
+    debugPrint("Serialized function string: $fnStrWithPlaceholders");
+    widget.updateField((val) {
+      return val.replaceRange(
         widget.fnPlaceholder.start,
         widget.fnPlaceholder.end,
         fnStrWithPlaceholders,
       );
-      ref.read(reqComposeProvider(widget.id).notifier).updateUrl(newUrl);
-      debugPrint("Updated URL: $newUrl");
-      Navigator.of(context).pop();
-    }
+    });
+    Navigator.of(context).pop();
   }
 
   void renderPreview() async {

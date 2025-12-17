@@ -95,7 +95,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         children: [
           // const HomeTopBar(),
           TopBar(
-            items: [
+            right: [],
+            left: [
               IconButton(
                 onPressed: () {
                   final smallWindow = windowWidth < sidebarThresholdWidth;

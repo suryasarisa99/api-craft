@@ -120,12 +120,23 @@ class _VariableTextFieldCustomState
           TemplateParser.parseContent(rawContent, start: from, end: to)
               as TemplateFnPlaceholder;
 
-      showFunctionPopup(context, fnPlaceholder, id: widget.id);
+      showFunctionPopup(
+        context,
+        fnPlaceholder,
+        id: widget.id,
+        updateField: updateField,
+      );
     }
   }
 
   FilterService get _filterService {
     return ref.read(filterServiceProvider(widget.id));
+  }
+
+  updateField(String Function(String val) fn) {
+    final val = fn(widget.controller?.text ?? '');
+    widget.controller?.text = val;
+    widget.onChanged?.call(val);
   }
 
   // ─────────────────────────────────────────────────────────────
