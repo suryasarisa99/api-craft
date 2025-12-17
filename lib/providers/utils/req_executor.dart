@@ -53,17 +53,20 @@ class HttpRequestContext {
           try {
             final c = Cookie.fromSetCookieValue(h[1]);
 
-            var domain = c.domain ?? req.uri.host;
+            final isHostOnly = c.domain == null;
+            final domain = (c.domain ?? req.uri.host).toLowerCase();
+            final path = c.path ?? _defaultPath(req.uri.path);
 
             newCookies.add(
               CookieDef(
                 key: c.name,
                 value: c.value,
                 domain: domain,
-                path: c.path ?? '/',
+                path: path,
                 expires: c.expires,
                 isSecure: c.secure,
                 isHttpOnly: c.httpOnly,
+                isHostOnly: isHostOnly,
               ),
             );
           } catch (e) {
@@ -87,6 +90,12 @@ class HttpRequestContext {
       return responses.first;
     }
     return null;
+  }
+
+  String _defaultPath(String reqPath) {
+    if (!reqPath.startsWith('/') || reqPath == '/') return '/';
+    final i = reqPath.lastIndexOf('/');
+    return i == 0 ? '/' : reqPath.substring(0, i);
   }
 }
 

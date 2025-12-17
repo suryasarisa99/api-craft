@@ -286,33 +286,31 @@ class ReqComposeNotifier extends Notifier<UiRequestContext> {
 
   @override
   build() {
-    final node = ref.read(
-      fileTreeProvider.select((treeData) => treeData.nodeMap[id]!),
-    );
-    if (node is RequestNode) {
-      // handles all non immediate parent position changes
-      // handles ancestor folder updates
-      ref.listen(nodeUpdateTriggerProvider, (_, event) {
-        debugPrint("received trigger event");
-        if (event != null &&
-            _isAncestor(ref.read(fileTreeProvider).nodeMap[event.id]!)) {
-          debugPrint(
-            "ancestor updated (changes in parent/parents position changes)",
-          );
-          _load();
-        }
-      });
-      // only handles immediate parent position changes
-      ref.listen(
-        fileTreeProvider.select((tree) => tree.nodeMap[id]!.parentId),
-        (old, newId) {
-          if (old != newId) {
-            debugPrint("active request parent changed");
-            _load();
-          }
-        },
-      );
-    }
+    final treeState = ref.read(fileTreeProvider);
+    // if (treeState.isLoading) {
+    //   return null;
+    // }
+    final node = treeState.nodeMap[id] as RequestNode;
+    ref.listen(nodeUpdateTriggerProvider, (_, event) {
+      debugPrint("received trigger event");
+      if (event != null &&
+          _isAncestor(ref.read(fileTreeProvider).nodeMap[event.id]!)) {
+        debugPrint(
+          "ancestor updated (changes in parent/parents position changes)",
+        );
+        _load();
+      }
+    });
+    // only handles immediate parent position changes
+    ref.listen(fileTreeProvider.select((tree) => tree.nodeMap[id]!.parentId), (
+      old,
+      newId,
+    ) {
+      if (old != newId) {
+        debugPrint("active request parent changed");
+        _load();
+      }
+    });
     _load();
     return UiRequestContext.empty(node);
   }

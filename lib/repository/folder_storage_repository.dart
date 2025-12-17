@@ -315,6 +315,11 @@ class FolderStorageRepository implements StorageRepository {
     throw UnimplementedError();
   }
 
+  @override
+  Future<void> clearHistoryForCollection() {
+    throw UnimplementedError();
+  }
+
   // --- Environments ---
   @override
   Future<List<Environment>> getEnvironments(String collectionId) {

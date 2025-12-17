@@ -56,6 +56,26 @@ class CollectionsNotifier extends AsyncNotifier<List<CollectionModel>> {
     // Auto-select the new collection?
     ref.read(selectedCollectionProvider.notifier).select(newCollection);
   }
+
+  Future<void> deleteCollection(String id) async {
+    final db = await ref.read(databaseProvider);
+    await db.delete('collections', where: 'id = ?', whereArgs: [id]);
+
+    // Refresh list
+    ref.invalidateSelf();
+
+    // If deleted collection was selected, switch to default
+    final selected = ref.read(selectedCollectionProvider);
+    if (selected != null && selected.id == id) {
+      final list = await future;
+      // list might still contain the deleted one if we haven't awaited the invalidate fully
+      // but db delete is done.
+      // safest is to select 'default_api_craft' or first available
+      ref
+          .read(selectedCollectionProvider.notifier)
+          .select(list.firstWhere((e) => e.id != id, orElse: () => list.first));
+    }
+  }
 }
 
 /// use shared preferences to store collections instead of database

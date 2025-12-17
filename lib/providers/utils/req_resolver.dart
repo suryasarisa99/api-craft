@@ -118,21 +118,24 @@ class RequestResolver {
   }
 
   bool domainMatches(Uri uri, CookieDef c) {
-    if (c.domain.isEmpty) return true;
-
-    // Host-only vs domain cookie
-    if (!c.domain.startsWith('.')) {
+    if (c.isHostOnly) {
       return uri.host == c.domain;
     }
-    return uri.host == c.domain.substring(1) || uri.host.endsWith(c.domain);
+    return uri.host == c.domain || uri.host.endsWith('.${c.domain}');
   }
 
   bool pathMatches(Uri uri, CookieDef c) {
-    final cookiePath = c.path.isEmpty ? '/' : c.path;
-    return uri.path == cookiePath ||
-        uri.path.startsWith(
-          cookiePath.endsWith('/') ? cookiePath : '$cookiePath/',
-        );
+    final cookiePath = c.path;
+    final reqPath = uri.path.isEmpty ? '/' : uri.path;
+
+    if (cookiePath == '/' || reqPath == cookiePath) return true;
+
+    if (reqPath.startsWith(cookiePath)) {
+      if (cookiePath.endsWith('/')) return true;
+      if (reqPath[cookiePath.length] == '/') return true;
+    }
+
+    return false;
   }
 
   /// ---------- HELPERS ----------

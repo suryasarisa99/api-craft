@@ -1,4 +1,7 @@
+import 'package:api_craft/models/models.dart';
 import 'package:api_craft/providers/providers.dart';
+import 'package:api_craft/widgets/ui/custom_menu.dart';
+import 'package:flutter_popup/flutter_popup.dart';
 import 'package:api_craft/screens/home/environment/environment_picker.dart';
 import 'package:api_craft/screens/home/request/request.dart';
 import 'package:api_craft/screens/home/response/response_tab.dart';
@@ -167,26 +170,153 @@ class CollectionPicker extends ConsumerStatefulWidget {
   const CollectionPicker({super.key});
 
   @override
-  ConsumerState<ConsumerStatefulWidget> createState() => _HomeTopBarState();
+  ConsumerState<CollectionPicker> createState() => _CollectionPickerState();
 }
 
-class _HomeTopBarState extends ConsumerState<CollectionPicker> {
+class _CollectionPickerState extends ConsumerState<CollectionPicker> {
+  final GlobalKey<CustomPopupState> _popupKey = GlobalKey<CustomPopupState>();
+
   @override
   Widget build(BuildContext context) {
     final selectedCollection = ref.watch(selectedCollectionProvider);
-    // return Text(
-    //   selectedCollection != null
-    //       ? '${selectedCollection.name}'
-    //       : 'No Collection Selected',
-    //   style: Theme.of(context).textTheme.titleMedium,
-    // );
-    return TextButton(
-      onPressed: () {},
-      child: Text(
-        selectedCollection != null
-            ? selectedCollection.name
-            : 'No Collection Selected',
-        style: Theme.of(context).textTheme.bodyMedium,
+    final collections = ref.watch(collectionsProvider).asData?.value ?? [];
+
+    return MyCustomMenu.contentColumn(
+      popupKey: _popupKey,
+      width: 200,
+      items: [
+        const Padding(
+          padding: EdgeInsets.all(8.0),
+          child: Text(
+            "Collections",
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+        ),
+        menuDivider,
+        ...collections.map((c) {
+          final isSelected = c.id == selectedCollection?.id;
+          return CustomMenuIconItem.tick(
+            title: Text(c.name),
+            value: c.id,
+            checked: isSelected,
+            onTap: (_) {
+              ref.read(selectedCollectionProvider.notifier).select(c);
+            },
+          );
+        }),
+        menuDivider,
+        CustomMenuIconItem(
+          icon: const Icon(Icons.add, size: 18),
+          title: const Text("Create New..."),
+          value: 'create',
+          onTap: (_) {
+            // Delay to allow popup to close before showing dialog
+            Future.microtask(() => _showCreateDialog(context));
+          },
+        ),
+
+        if (selectedCollection != null) ...[
+          menuDivider,
+          // menuDivider, // Optional divider before clear history
+          CustomMenuIconItem(
+            icon: const Icon(Icons.history, size: 18),
+            title: const Text("Clear History"),
+            value: 'clear_history',
+            onTap: (_) {
+              ref.read(repositoryProvider).clearHistoryForCollection();
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(const SnackBar(content: Text("History cleared")));
+            },
+          ),
+        ],
+        if (selectedCollection != null &&
+            selectedCollection.id != 'default_api_craft')
+          CustomMenuIconItem(
+            icon: const Icon(Icons.delete, size: 18, color: Colors.red),
+            title: const Text(
+              "Delete Collection",
+              style: TextStyle(color: Colors.red),
+            ),
+            value: 'delete',
+            onTap: (_) {
+              Future.microtask(
+                () => _showDeleteDialog(context, selectedCollection),
+              );
+            },
+          ),
+      ],
+      child: TextButton(
+        onPressed: () {
+          _popupKey.currentState?.show();
+        },
+        child: Text(
+          selectedCollection != null
+              ? selectedCollection.name
+              : 'Select Collection',
+          style: Theme.of(context).textTheme.bodyMedium,
+        ),
+      ),
+    );
+  }
+
+  void _showCreateDialog(BuildContext context) {
+    final controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("New Collection"),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(labelText: "Collection Name"),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel"),
+          ),
+          TextButton(
+            onPressed: () {
+              final name = controller.text.trim();
+              if (name.isNotEmpty) {
+                ref
+                    .read(collectionsProvider.notifier)
+                    .createCollection(name, type: CollectionType.database);
+                Navigator.pop(context);
+              }
+            },
+            child: const Text("Create"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteDialog(BuildContext context, CollectionModel collection) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text("Delete '${collection.name}'?"),
+        content: const Text(
+          "This will permanently delete this collection and all its requests, history, and environments.",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel"),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            onPressed: () {
+              ref
+                  .read(collectionsProvider.notifier)
+                  .deleteCollection(collection.id);
+              Navigator.pop(context);
+            },
+            child: const Text("Delete"),
+          ),
+        ],
       ),
     );
   }

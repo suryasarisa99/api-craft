@@ -21,6 +21,7 @@ class DbStorageRepository implements StorageRepository {
 
   Future<void> createDefaultCollection() async {
     final db = await _db;
+    debugPrint("db::create-default-collection ${kDefaultCollection}");
     await db.insert('collections', kDefaultCollection.toMap());
   }
 
@@ -228,6 +229,7 @@ class DbStorageRepository implements StorageRepository {
   // ... inside StorageRepository
 
   /// Adds a history entry and enforces the limit (e.g., max 10)
+  @override
   Future<void> addHistoryEntry(RawHttpResponse entry, {int limit = 10}) async {
     final db = await _db;
 
@@ -285,6 +287,20 @@ class DbStorageRepository implements StorageRepository {
       'request_history',
       where: 'request_id = ?',
       whereArgs: [requestId],
+    );
+  }
+
+  @override
+  Future<void> clearHistoryForCollection() async {
+    final db = await _db;
+    await db.rawDelete(
+      '''
+      DELETE FROM request_history
+      WHERE request_id IN (
+        SELECT id FROM nodes WHERE collection_id = ?
+      )
+      ''',
+      [collectionId],
     );
   }
 

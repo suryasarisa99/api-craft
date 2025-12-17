@@ -18,23 +18,31 @@ final activeReqProvider = Provider<RequestNode?>((ref) {
 });
 
 class ActiveReqIdNotifier extends Notifier<String?> {
-  static const _prefKey = 'active_request_id';
+  String _getPrefKey(String? collectionId) => collectionId == null
+      ? 'active_request_id'
+      : 'active_request_id_$collectionId';
+
   @override
   String? build() {
-    return getFromPrefs();
+    final collection = ref.watch(selectedCollectionProvider);
+    return getFromPrefs(collection?.id);
   }
 
   void setActiveNode(String? nodeId) {
     state = nodeId;
+    final collectionId = ref.read(selectedCollectionProvider)?.id;
+    final key = _getPrefKey(collectionId);
+
     if (nodeId != null) {
-      prefs.setString(_prefKey, nodeId);
+      prefs.setString(key, nodeId);
     } else {
-      prefs.remove(_prefKey);
+      prefs.remove(key);
     }
   }
 
-  String? getFromPrefs() {
-    final id = prefs.getString(_prefKey);
+  String? getFromPrefs(String? collectionId) {
+    final key = _getPrefKey(collectionId);
+    final id = prefs.getString(key);
     if (id == null) return null;
     return id;
   }

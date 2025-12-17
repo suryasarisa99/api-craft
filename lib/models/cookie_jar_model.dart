@@ -7,6 +7,7 @@ class CookieDef {
   final String value;
   final bool isSecure;
   final bool isHttpOnly;
+  final bool isHostOnly;
   final DateTime? expires;
   final bool isEnabled;
 
@@ -17,6 +18,7 @@ class CookieDef {
     required this.value,
     this.isSecure = false,
     this.isHttpOnly = false,
+    this.isHostOnly = false,
     this.expires,
     this.isEnabled = true,
   });
@@ -29,6 +31,7 @@ class CookieDef {
       'value': value,
       'isSecure': isSecure,
       'isHttpOnly': isHttpOnly,
+      'isHostOnly': isHostOnly,
       'expires': expires?.toIso8601String(),
       'isEnabled': isEnabled,
     };
@@ -42,6 +45,7 @@ class CookieDef {
       value: map['value'] ?? '',
       isSecure: map['isSecure'] ?? false,
       isHttpOnly: map['isHttpOnly'] ?? false,
+      isHostOnly: map['isHostOnly'] ?? false,
       expires: map['expires'] != null ? DateTime.parse(map['expires']) : null,
       isEnabled: map['isEnabled'] ?? true,
     );
@@ -54,6 +58,7 @@ class CookieDef {
     String? value,
     bool? isSecure,
     bool? isHttpOnly,
+    bool? isHostOnly,
     DateTime? expires,
     bool? isEnabled,
   }) {
@@ -64,6 +69,7 @@ class CookieDef {
       value: value ?? this.value,
       isSecure: isSecure ?? this.isSecure,
       isHttpOnly: isHttpOnly ?? this.isHttpOnly,
+      isHostOnly: isHostOnly ?? this.isHostOnly,
       expires: expires ?? this.expires,
       isEnabled: isEnabled ?? this.isEnabled,
     );

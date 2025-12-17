@@ -1,4 +1,5 @@
 // database_helper.dart
+import 'package:api_craft/globals.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
@@ -125,7 +126,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 2,
+      version: 1,
       onCreate: (db, version) async {
         Tables.createAllTables(db);
       },
@@ -133,11 +134,13 @@ class DatabaseHelper {
         // for development only
         await Tables.dropAllTables(db);
         Tables.createAllTables(db);
+        prefs.clear();
       },
       onDowngrade: (db, oldVersion, newVersion) async {
         // for development only
         await Tables.dropAllTables(db);
         Tables.createAllTables(db);
+        prefs.clear();
       },
     );
   }
