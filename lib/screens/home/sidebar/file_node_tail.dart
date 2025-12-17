@@ -230,7 +230,7 @@ class _FileTreeTileState extends ConsumerState<FileNodeTile>
         : theme.textTheme.bodyMedium?.color ?? Colors.grey;
 
     final Color? backgroundColor = isActive
-        ? cs.secondary.withValues(alpha: 0.15)
+        ? cs.secondaryContainer.withValues(alpha: 0.6)
         : isSelected
         ? cs.secondary.withValues(alpha: 0.10)
         : null;
@@ -246,10 +246,11 @@ class _FileTreeTileState extends ConsumerState<FileNodeTile>
           SizedBox(
             height: tileHeight,
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
+              padding: .only(right: 4, left: 4),
               child: Material(
                 borderRadius: BorderRadius.circular(4),
                 color: backgroundColor ?? Colors.transparent,
+                // color: Colors.transparent,
                 child: _contextMenuWrapper(
                   vNode: vNode,
                   isDirectory: isFolder,
@@ -258,21 +259,25 @@ class _FileTreeTileState extends ConsumerState<FileNodeTile>
                     vNode: vNode,
                     child: Builder(
                       builder: (context) {
-                        final isFocused = Focus.of(context).hasFocus;
-                        return Ink(
-                          color: isFocused
-                              ? cs.primary.withValues(alpha: 0.08)
-                              : null,
-                          child: InkWell(
-                            canRequestFocus: false,
-                            autofocus: false,
-                            onTap: () => _handleTap(vNode),
-                            hoverColor: theme.colorScheme.onSurface.withValues(
-                              alpha: 0.05,
+                        // final isFocused = Fd
+                        // ocus.of(context).hasFocus;
+                        return InkWell(
+                          borderRadius: BorderRadius.circular(4),
+                          canRequestFocus: false,
+                          autofocus: false,
+                          onTap: () => _handleTap(vNode),
+                          hoverColor: theme.colorScheme.onSurface.withValues(
+                            alpha: 0.05,
+                          ),
+                          child: Ink(
+                            padding: .only(
+                              left: (widget.depth == 0
+                                  ? 0
+                                  : (widget.depth * (_kIndentation + 6))),
                             ),
                             child: Row(
                               children: [
-                                SizedBox(width: _kIndentation),
+                                // SizedBox(width: _kIndentation),
                                 // A. ARROW
                                 if (isFolder)
                                   RotationTransition(
@@ -356,33 +361,55 @@ class _FileTreeTileState extends ConsumerState<FileNodeTile>
               child: SizeTransition(
                 sizeFactor: _heightFactor,
                 axisAlignment: -1.0,
-                child: Container(
-                  decoration: BoxDecoration(
-                    border: Border(
-                      left: BorderSide(
-                        color: theme.dividerColor.withValues(alpha: 0.2),
-                        width: 1.0,
+                child: Stack(
+                  children: [
+                    // vertical divider at left for children
+                    Positioned.fill(
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: Container(
+                          margin: EdgeInsets.only(
+                            left: widget.depth == 0
+                                ? 2 + (_kIconSize / 2) + 2
+                                : (widget.depth * (_kIndentation + 6.5)) +
+                                      (_kIconSize / 2) +
+                                      2,
+                          ),
+                          width: 1,
+                          color: theme.dividerColor.withValues(alpha: 0.25),
+                        ),
                       ),
                     ),
-                  ),
-                  margin: EdgeInsets.only(
-                    left: (_kIndentation) + (_kIconSize / 2) + 4,
-                  ),
-                  child: Builder(
-                    builder: (context) {
-                      final childIds = vNode.children;
-                      return Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: childIds.map((childId) {
-                          return FileNodeTile(
-                            key: ValueKey(childId),
-                            nodeId: childId,
-                            depth: widget.depth + 1,
+
+                    Container(
+                      // decoration: BoxDecoration(
+                      //   border: Border(
+                      //     left: BorderSide(
+                      //       color: theme.dividerColor.withValues(alpha: 0.2),
+                      //       width: 1.0,
+                      //     ),
+                      //   ),
+                      // ),
+                      // margin: EdgeInsets.only(
+                      //   left: (_kIndentation) + (_kIconSize / 2) + 4,
+                      // ),
+                      child: Builder(
+                        builder: (context) {
+                          final childIds = vNode.children;
+                          return Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: childIds.map((childId) {
+                              return FileNodeTile(
+                                key: ValueKey(childId),
+                                nodeId: childId,
+                                depth: widget.depth + 1,
+                              );
+                            }).toList(),
                           );
-                        }).toList(),
-                      );
-                    },
-                  ),
+                        },
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),

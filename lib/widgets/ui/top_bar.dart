@@ -12,34 +12,24 @@ class TopBar extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     const topBarColor = Color.fromARGB(255, 27, 27, 27);
     const topBarHeight = 35.0;
-    if (Platform.isMacOS) {
-      return Container(
+
+    return GestureDetector(
+      onPanStart: (details) {
+        windowManager.startDragging();
+      },
+      onDoubleTap: () async {
+        if (await windowManager.isMaximized()) {
+          await windowManager.unmaximize();
+        } else {
+          await windowManager.maximize();
+        }
+      },
+      child: Container(
         height: topBarHeight,
-        decoration: BoxDecoration(
-          color: topBarColor,
-          border: Border(bottom: BorderSide(color: const Color(0xFF3D3D3D))),
-        ),
-        child: Row(children: [SizedBox(width: 70), ...items, const Spacer()]),
-      );
-    } else {
-      return GestureDetector(
-        onPanStart: (details) {
-          windowManager.startDragging();
-        },
-        onDoubleTap: () async {
-          if (await windowManager.isMaximized()) {
-            await windowManager.unmaximize();
-          } else {
-            await windowManager.maximize();
-          }
-        },
-        child: Container(
-          height: topBarHeight,
-          color: topBarColor,
-          child: Row(children: items),
-        ),
-      );
-    }
+        color: topBarColor,
+        child: Row(children: [SizedBox(width: 70), ...items]),
+      ),
+    );
   }
 }
 
