@@ -226,7 +226,8 @@ class _EnvironmentEditorDialogState
                               selectedEnv.copyWith(variables: items),
                             );
                       },
-                      id: selectedEnv.id,
+                      // id: selectedEnv.id,
+                      id: null,
                       mode: KeyValueEditorMode.variables,
                       isVariable: true,
                     ),

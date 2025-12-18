@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:api_craft/models/models.dart';
 import 'package:api_craft/providers/config_resolver_provider.dart';
 import 'package:api_craft/providers/filter_provider.dart';
+import 'package:api_craft/providers/providers.dart';
 import 'package:api_craft/screens/home/environment/environment_editor_dialog.dart';
 import 'package:api_craft/screens/home/sidebar/context_menu.dart';
 import 'package:api_craft/template-functions/parsers/parse.dart';
@@ -14,13 +15,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/*
-  need listen for consumer variables.
-
-*/
 class VariableTextFieldCustom extends ConsumerStatefulWidget {
   final String? initialValue;
-  final String id;
+  // null id for global variables.
+  final String? id;
   final TextEditingController? controller;
   final ValueChanged<String>? onChanged;
   final ValueChanged<String>? onSubmitted;
@@ -87,6 +85,19 @@ class _VariableTextFieldCustomState
     });
   }
 
+  (String? variable, String? source) getVariable(String name) {
+    if (widget.id != null) {
+      final x = ref.read(reqComposeProvider(widget.id!)).allVariables[name];
+      return (x?.value, x?.sourceId);
+    }
+    final x = ref
+        .read(environmentProvider)
+        .selectedEnvironment
+        ?.variables
+        .firstWhere((e) => e.key == name);
+    return (x?.value, null);
+  }
+
   void handleVariableTap({
     required bool isVariable,
     required String name,
@@ -95,15 +106,21 @@ class _VariableTextFieldCustomState
     required int to,
   }) {
     debugPrint("Variable clicked in UI: $name");
+
     if (isVariable) {
-      final variable = ref
-          .read(reqComposeProvider(widget.id))
-          .allVariables[name];
+      final (variable, source) = getVariable(name);
+      final isGlobalEnv = widget.id == null;
+      /*
+      source null means the variable is global variable
+      widget.id null means the text field is from keyvalue editor of global environment
+      */
+
       if (variable != null) {
-        debugPrint(
-          "Variable source ID: ${variable.sourceId}, value: ${variable.value}",
-        );
-        if (variable.sourceId == null) {
+        debugPrint("Variable source ID: $source, value: $variable");
+        if (source == null) {
+          if (isGlobalEnv) {
+            return;
+          }
           showDialog(
             context: context,
             builder: (_) => const EnvironmentEditorDialog(),
@@ -112,7 +129,7 @@ class _VariableTextFieldCustomState
           showFolderConfigDialog(
             context: context,
             ref: ref,
-            id: variable.sourceId!,
+            id: source,
             tabIndex: 3,
           );
         }
@@ -131,7 +148,7 @@ class _VariableTextFieldCustomState
       showFunctionPopup(
         context,
         fnPlaceholder,
-        id: widget.id,
+        id: widget.id!,
         updateField: updateField,
       );
     }
@@ -202,7 +219,6 @@ class _VariableTextFieldCustomState
       _hideOverlay();
       return;
     }
-
     final results = _filterService.getOptions(
       _controller.value,
       enableUrlSuggestions: widget.enableUrlSuggestions,

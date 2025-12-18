@@ -6,21 +6,35 @@ import 'package:api_craft/widgets/ui/filter.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-final filterServiceProvider = Provider.autoDispose.family<FilterService, String>((
+final filterServiceProvider = Provider.autoDispose.family<FilterService, String?>((
   ref,
   id,
 ) {
+  debugPrint("filterServiceProvider: $id");
   // watch variables
-  final Set<String> variables = ref.watch(
-    reqComposeProvider(id).select((d) => d.allVariables.keys.toSet()),
-  );
-  final List<String> globalEnvVariables = ref.watch(
-    environmentProvider.select(
-      (d) => d.selectedEnvironment?.variables.map((e) => e.key).toList() ?? [],
-    ),
-  );
-  debugPrint("Global Env Variables: $globalEnvVariables");
-  variables.addAll(globalEnvVariables);
+  Set<String> variables;
+  if (id != null) {
+    // for requests and folders
+    variables = ref.watch(
+      reqComposeProvider(id).select((d) => d.allVariables.keys.toSet()),
+    );
+  } else {
+    // for global
+
+    // this causes always changes,because we are using this when editing global variables.
+    variables = ref.watch(
+      environmentProvider.select(
+        (d) => d.selectedEnvironment?.variables.map((e) => e.key).toSet() ?? {},
+      ),
+    );
+  }
+  // final List<String> globalEnvVariables = ref.watch(
+  //   environmentProvider.select(
+  //     (d) => d.selectedEnvironment?.variables.map((e) => e.key).toList() ?? [],
+  //   ),
+  // );
+  // debugPrint("Global Env Variables: $globalEnvVariables");
+  // variables.addAll(globalEnvVariables);
 
   // urls, uses read, instead of watch (because single editor,no way to change urls of other requests)
   final urlsList = ref

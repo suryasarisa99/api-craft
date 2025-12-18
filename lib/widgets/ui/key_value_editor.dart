@@ -20,7 +20,7 @@ class KeyValueEditor extends StatefulWidget {
   final bool isVariable;
   final bool hideValuesGlobal;
   final KeyValueEditorMode mode;
-  final String id;
+  final String? id;
 
   const KeyValueEditor({
     required this.items,
@@ -90,6 +90,7 @@ class _KeyValueEditorState extends State<KeyValueEditor> {
   @override
   Widget build(BuildContext context) {
     debugPrint("rebuilding: InputItems");
+    debugPrint("item ids: ${widget.items.map((e) => e.id).toList()}");
     const itemHeight = 38.0;
     // 15+10+4
     return Padding(

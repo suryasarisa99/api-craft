@@ -5,7 +5,7 @@ import 'package:flutter/services.dart';
 
 class CustomInput extends StatefulWidget {
   final Function()? onTap;
-  final String id;
+  final String? id;
   final Function(String)? onFieldSubmitted;
   final Function(String)? onUpdate;
   final Function(String)? onChanged;

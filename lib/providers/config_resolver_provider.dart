@@ -292,6 +292,15 @@ class ReqComposeNotifier extends Notifier<UiRequestContext> {
     // }
     final node = treeState.nodeMap[id]!;
     if (node is RequestNode) {
+      ref.listen(environmentProvider.select((s) => s.selectedEnvironment), (
+        old,
+        newEnv,
+      ) {
+        if (old != newEnv) {
+          debugPrint("environment changed");
+          _load();
+        }
+      });
       ref.listen(nodeUpdateTriggerProvider, (_, event) {
         debugPrint("received trigger event");
         if (event != null &&
