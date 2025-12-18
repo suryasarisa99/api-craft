@@ -12,7 +12,7 @@ final filterServiceProvider = Provider.autoDispose.family<FilterService, String>
 ) {
   // watch variables
   final Set<String> variables = ref.watch(
-    reqComposeProvider(id).select((d) => d.allVariables!.keys.toSet()),
+    reqComposeProvider(id).select((d) => d.allVariables.keys.toSet()),
   );
   final List<String> globalEnvVariables = ref.watch(
     environmentProvider.select(

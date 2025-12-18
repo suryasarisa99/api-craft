@@ -4,7 +4,6 @@ import 'package:bitsdojo_window/bitsdojo_window.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:flutter/material.dart';
-import 'package:window_manager/window_manager.dart';
 
 class TopBar extends ConsumerWidget {
   const TopBar({super.key, required this.left, required this.right});

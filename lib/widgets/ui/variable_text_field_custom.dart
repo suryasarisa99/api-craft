@@ -141,7 +141,7 @@ class _VariableTextFieldCustomState
     return ref.read(filterServiceProvider(widget.id));
   }
 
-  updateField(String Function(String val) fn) {
+  void updateField(String Function(String val) fn) {
     final val = fn(widget.controller?.text ?? '');
     widget.controller?.text = val;
     widget.onChanged?.call(val);

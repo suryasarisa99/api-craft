@@ -1,4 +1,3 @@
-import 'package:api_craft/models/models.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// This is a provider to store the the last updated folder

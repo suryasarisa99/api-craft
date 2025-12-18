@@ -179,8 +179,9 @@ bool _containsDoubleCrlf(Uint8List bytes) {
     if (bytes[i] == 13 &&
         bytes[i + 1] == 10 &&
         bytes[i + 2] == 13 &&
-        bytes[i + 3] == 10)
+        bytes[i + 3] == 10) {
       return true;
+    }
   }
   return false;
 }

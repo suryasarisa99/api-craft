@@ -106,6 +106,7 @@ class RequestNodeConfig extends NodeConfig {
     );
   }
 
+  @override
   RequestNodeConfig clone() {
     return RequestNodeConfig(
       headers: List<KeyValueItem>.from(headers),

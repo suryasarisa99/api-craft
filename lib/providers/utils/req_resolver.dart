@@ -284,34 +284,34 @@ class RequestResolver {
         : url;
   }
 
-  Uri _handleUri2(Uri url, List<List<String>> params) {
-    final buffer = StringBuffer();
+  // Uri _handleUri2(Uri url, List<List<String>> params) {
+  //   final buffer = StringBuffer();
 
-    // 1️⃣ Existing query from URL (as-is, but normalized)
-    if (url.hasQuery) {
-      final existing = url.query.split('&').where((e) => e.isNotEmpty);
-      for (final q in existing) {
-        if (buffer.isNotEmpty) buffer.write('&');
-        buffer.write(q);
-      }
-    }
+  //   // 1️⃣ Existing query from URL (as-is, but normalized)
+  //   if (url.hasQuery) {
+  //     final existing = url.query.split('&').where((e) => e.isNotEmpty);
+  //     for (final q in existing) {
+  //       if (buffer.isNotEmpty) buffer.write('&');
+  //       buffer.write(q);
+  //     }
+  //   }
 
-    // 2️⃣ Append KV params (duplicates allowed)
-    for (final p in params) {
-      if (p.length != 2) continue;
+  //   // 2️⃣ Append KV params (duplicates allowed)
+  //   for (final p in params) {
+  //     if (p.length != 2) continue;
 
-      final key = p[0];
-      if (key.isEmpty) continue;
+  //     final key = p[0];
+  //     if (key.isEmpty) continue;
 
-      final value = p[1];
+  //     final value = p[1];
 
-      if (buffer.isNotEmpty) buffer.write('&');
-      buffer.write(
-        '${Uri.encodeQueryComponent(key)}=${Uri.encodeQueryComponent(value)}',
-      );
-    }
+  //     if (buffer.isNotEmpty) buffer.write('&');
+  //     buffer.write(
+  //       '${Uri.encodeQueryComponent(key)}=${Uri.encodeQueryComponent(value)}',
+  //     );
+  //   }
 
-    // 3️⃣ Replace query
-    return buffer.isEmpty ? url : url.replace(query: buffer.toString());
-  }
+  //   // 3️⃣ Replace query
+  //   return buffer.isEmpty ? url : url.replace(query: buffer.toString());
+  // }
 }

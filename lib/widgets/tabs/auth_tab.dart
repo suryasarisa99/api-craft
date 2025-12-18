@@ -1,4 +1,3 @@
-// --- AUTH TAB ---
 import 'package:api_craft/models/models.dart';
 import 'package:api_craft/providers/providers.dart';
 import 'package:api_craft/screens/home/sidebar/context_menu.dart';
@@ -217,7 +216,6 @@ class AuthTab extends ConsumerWidget {
                     onChanged: (v) =>
                         notifier(ref).updateAuth(auth.copyWith(token: v)),
                   ),
-                // Add Basic Auth fields...
               ],
             ),
           ),

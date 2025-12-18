@@ -125,9 +125,6 @@ class _EnvironmentEditorDialogState
                             MenuAction(
                               title: "Rename",
                               callback: () {
-                                // TODO: Show rename dialog or inline edit?
-                                // User said "inplace at left if possible if not popup".
-                                // Let's use simple popup for renaming for now to be safe.
                                 _showRenameDialog(env);
                               },
                             ),

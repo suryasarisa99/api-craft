@@ -2,7 +2,6 @@ import 'package:api_craft/models/models.dart';
 import 'package:api_craft/providers/providers.dart';
 import 'package:api_craft/screens/home/request/request_url.dart';
 import 'package:api_craft/utils/debouncer.dart';
-import 'package:api_craft/template-functions/widget/form_popup_widget.dart';
 import 'package:api_craft/widgets/tabs/auth_tab.dart';
 import 'package:api_craft/widgets/tabs/headers_tab.dart';
 import 'package:api_craft/widgets/tabs/query_params.dart';
@@ -102,7 +101,7 @@ class _RequestTabState extends ConsumerState<RequestTab>
                       _provider.select(
                         (value) =>
                             value.node.config.headers.length +
-                            (value.inheritedHeaders?.length ?? 0),
+                            (value.inheritedHeaders.length ?? 0),
                       ),
                     );
                     return Tab(

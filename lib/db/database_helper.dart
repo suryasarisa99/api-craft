@@ -1,6 +1,5 @@
 // database_helper.dart
 import 'package:api_craft/globals.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';

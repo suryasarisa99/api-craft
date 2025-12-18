@@ -1,7 +1,4 @@
 import 'package:api_craft/models/models.dart';
-import 'package:api_craft/providers/config_resolver_provider.dart';
-import 'package:api_craft/template-functions/functions/template-function-request/request_body_path.dart';
-import 'package:api_craft/template-functions/functions/template-function-response/response_body_path.dart';
 import 'package:api_craft/template-functions/parsers/utils.dart';
 import 'package:api_craft/template-functions/parsers/parse.dart';
 import 'package:api_craft/template-functions/widget/form_input_widget.dart';
