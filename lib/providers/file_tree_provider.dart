@@ -39,7 +39,7 @@ class FileTreeNotifier extends Notifier<TreeData> {
 
   @override
   TreeData build() {
-    ref.watch(repositoryProvider);
+    ref.watch(selectedCollectionProvider);
     _loadInitialData();
 
     // 2. Return initial state: empty map, isLoading: true

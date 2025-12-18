@@ -11,7 +11,7 @@ class Environment {
   final List<KeyValueItem> variables;
   final bool isShared;
 
-  Environment({
+  const Environment({
     required this.id,
     required this.collectionId,
     required this.name,

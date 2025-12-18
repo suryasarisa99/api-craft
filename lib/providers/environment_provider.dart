@@ -70,7 +70,6 @@ class EnvironmentNotifier extends Notifier<EnvironmentState> {
 
   Future<void> loadData(String collectionId) async {
     state = state.copyWith(isLoading: true);
-    await ref.read(databaseProvider);
     debugPrint("env::load-data $collectionId");
     final repo = ref.read(repositoryProvider);
 
@@ -78,27 +77,7 @@ class EnvironmentNotifier extends Notifier<EnvironmentState> {
       var envs = await repo.getEnvironments(collectionId);
       var jars = await repo.getCookieJars(collectionId);
 
-      // Ensure defaults
-      if (envs.isEmpty) {
-        final defaultEnv = Environment(
-          id: _uuid.v4(),
-          collectionId: collectionId,
-          name: 'Default',
-          color: null,
-        );
-        await repo.createEnvironment(defaultEnv);
-        envs = [defaultEnv];
-      }
-
-      if (jars.isEmpty) {
-        final defaultJar = CookieJarModel(
-          id: _uuid.v4(),
-          collectionId: collectionId,
-          name: 'Default',
-        );
-        await repo.createCookieJar(defaultJar);
-        jars = [defaultJar];
-      }
+      // Defaults are now guaranteed by DBHelper or CollectionsProvider creation
 
       // Keep selection or select first/default
       String? selEnv = state.selectedEnvironmentId;
@@ -182,8 +161,12 @@ class EnvironmentNotifier extends Notifier<EnvironmentState> {
       state = state.copyWith(selectedEnvironmentId: null);
     }
     // Reload
+    // Safety check: if env was deleted, we need to know the collectionId to reload.
+    // We can get it from the state before deletion if needed, but here we used state.environments (which might assume existence).
+    // Better to pass collectionId or fetch from state before logic.
+    // Existing logic assumes we can find it in state.
     final collectionId = state.environments
-        .firstWhere((e) => e.id == id)
+        .firstWhere((e) => e.id == id, orElse: () => state.environments.first)
         .collectionId;
     await loadData(collectionId);
   }
@@ -210,6 +193,23 @@ class EnvironmentNotifier extends Notifier<EnvironmentState> {
     final jar = state.cookieJars.firstWhere((j) => j.id == id);
     final updated = jar.copyWith(name: newName);
     await updateCookieJar(updated);
+  }
+
+  Future<void> deleteCookieJar(String id) async {
+    final repo = ref.read(repositoryProvider);
+    // Needed for reloading
+    final collectionId = state.cookieJars
+        .firstWhere((j) => j.id == id)
+        .collectionId;
+
+    await repo.deleteCookieJar(id);
+
+    // If deleted jar was selected, selection logic in loadData will handle selecting another one
+    if (state.selectedCookieJarId == id) {
+      state = state.copyWith(selectedCookieJarId: null);
+    }
+
+    await loadData(collectionId);
   }
 
   Future<void> saveCookiesToJar(

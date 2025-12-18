@@ -82,7 +82,7 @@ class CookieJarModel {
   final String name;
   final List<CookieDef> cookies;
 
-  CookieJarModel({
+  const CookieJarModel({
     required this.id,
     required this.collectionId,
     required this.name,

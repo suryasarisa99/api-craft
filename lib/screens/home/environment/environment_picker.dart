@@ -125,6 +125,26 @@ class EnvironmentPicker extends ConsumerWidget {
                 }
               },
             ),
+            if (state.cookieJars.length > 1) ...[
+              CustomMenuIconItem(
+                icon: Icon(Icons.delete, size: 16, color: Colors.red),
+                title: const Text(
+                  "Delete Cookie Jar",
+                  style: TextStyle(color: Colors.red),
+                ),
+                value: 'delete',
+                onTap: (_) {
+                  final jar = state.selectedCookieJar;
+                  if (jar != null) {
+                    Future.delayed(const Duration(milliseconds: 100), () {
+                      if (context.mounted) {
+                        _showDeleteConfirmation(context, ref, jar.id, jar.name);
+                      }
+                    });
+                  }
+                },
+              ),
+            ],
             menuDivider,
             CustomMenuIconItem(
               icon: Icon(Icons.add, size: 16),
@@ -228,6 +248,35 @@ class EnvironmentPicker extends ConsumerWidget {
               }
             },
             child: const Text("Save"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteConfirmation(
+    BuildContext context,
+    WidgetRef ref,
+    String id,
+    String jarName,
+  ) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("Delete Cookie Jar"),
+        content: Text("Are you sure you want to delete '$jarName'?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text("Cancel"),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            onPressed: () {
+              ref.read(environmentProvider.notifier).deleteCookieJar(id);
+              Navigator.pop(ctx);
+            },
+            child: const Text("Delete"),
           ),
         ],
       ),

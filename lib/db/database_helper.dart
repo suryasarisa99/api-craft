@@ -123,24 +123,68 @@ class DatabaseHelper {
     final docsDir = await getApplicationDocumentsDirectory();
     final path = join(docsDir.path, 'api_craft_meta.db');
 
-    return await openDatabase(
+    final db = await openDatabase(
       path,
-      version: 2,
+      version: 1,
       onCreate: (db, version) async {
-        Tables.createAllTables(db);
+        await Tables.createAllTables(db);
+        await _ensureDefaults(db);
       },
       onUpgrade: (db, oldVersion, newVersion) async {
         // for development only
         await Tables.dropAllTables(db);
-        Tables.createAllTables(db);
+        await Tables.createAllTables(db);
+        await _ensureDefaults(db);
         prefs.clear();
       },
       onDowngrade: (db, oldVersion, newVersion) async {
         // for development only
         await Tables.dropAllTables(db);
-        Tables.createAllTables(db);
+        await Tables.createAllTables(db);
+        await _ensureDefaults(db);
         prefs.clear();
       },
+      onOpen: (db) async {
+        // Ensure defaults exist even if DB already exists (for migration)
+        await _ensureDefaults(db);
+      },
     );
+    return db;
+  }
+
+  static Future<void> _ensureDefaults(Database db) async {
+    // 1. Ensure Default Collection
+    final collectionResult = await db.query(
+      Tables.collections,
+      where: 'id = ?',
+      whereArgs: [kDefaultCollection.id],
+    );
+
+    if (collectionResult.isEmpty) {
+      await db.insert(Tables.collections, kDefaultCollection.toMap());
+    }
+
+    // 2. Ensure Default Environment exists for Default Collection
+    final envResult = await db.query(
+      Tables.environments,
+      where: 'collection_id = ?',
+      whereArgs: [kDefaultCollection.id],
+    );
+
+    if (envResult.isEmpty) {
+      // If no environment exists for default collection, add the default one
+      await db.insert(Tables.environments, kDefaultEnvironment.toMap());
+    }
+
+    // 3. Ensure Default Cookie Jar exists for Default Collection
+    final jarResult = await db.query(
+      Tables.cookieJars,
+      where: 'collection_id = ?',
+      whereArgs: [kDefaultCollection.id],
+    );
+
+    if (jarResult.isEmpty) {
+      await db.insert(Tables.cookieJars, kDefaultCookieJar.toMap());
+    }
   }
 }
