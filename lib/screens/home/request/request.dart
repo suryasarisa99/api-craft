@@ -101,7 +101,7 @@ class _RequestTabState extends ConsumerState<RequestTab>
                       _provider.select(
                         (value) =>
                             value.node.config.headers.length +
-                            (value.inheritedHeaders.length ?? 0),
+                            (value.inheritedHeaders.length),
                       ),
                     );
                     return Tab(
