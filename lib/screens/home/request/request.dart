@@ -49,11 +49,19 @@ class _RequestTabState extends ConsumerState<RequestTab>
   final debouncer = DebouncerFlush(Duration(milliseconds: 800));
 
   @override
+  void dispose() {
+    debouncer.dispose();
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
   void initState() {
     super.initState();
     debugPrint("Initializing Request Tab for ${widget.node.name}");
     ref.listenManual(_provider.select((d) => d.node), (_, v) {
       debouncer.run(() {
+        if (!mounted) return;
         debugPrint("req-tab:: debounce ${v.name} ");
         _repo.updateNode(v);
       });

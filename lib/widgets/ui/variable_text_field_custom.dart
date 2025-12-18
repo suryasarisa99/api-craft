@@ -7,6 +7,7 @@ import 'package:api_craft/providers/providers.dart';
 import 'package:api_craft/screens/home/environment/environment_editor_dialog.dart';
 import 'package:api_craft/screens/home/sidebar/context_menu.dart';
 import 'package:api_craft/template-functions/parsers/parse.dart';
+import 'package:api_craft/template-functions/parsers/utils.dart';
 import 'package:api_craft/template-functions/widget/form_popup_widget.dart';
 import 'package:api_craft/widgets/ui/filter.dart';
 import 'package:api_craft/widgets/ui/variable_text_builder.dart';
@@ -141,15 +142,24 @@ class _VariableTextFieldCustomState
     } else {
       // function
       debugPrint("Function clicked in UI: $name,from: $from, to: $to");
+      final templateFn = getTemplateFunctionByName(name);
+      if (templateFn == null) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('function: $name not found')));
+        return;
+      }
       final fnPlaceholder =
           TemplateParser.parseContent(rawContent, start: from, end: to)
               as TemplateFnPlaceholder;
-
-      showFunctionPopup(
-        context,
-        fnPlaceholder,
-        id: widget.id!,
-        updateField: updateField,
+      showDialog(
+        context: context,
+        builder: (context) => FormPopupWidget(
+          fnPlaceholder: fnPlaceholder,
+          templateFn: templateFn,
+          id: widget.id,
+          updateField: updateField,
+        ),
       );
     }
   }

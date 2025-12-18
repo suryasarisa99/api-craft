@@ -1,11 +1,14 @@
 import 'package:api_craft/http/header_utils.dart';
 import 'package:api_craft/models/models.dart';
 import 'package:api_craft/providers/providers.dart';
+import 'package:api_craft/template-functions/parsers/parse.dart';
+import 'package:api_craft/template-functions/parsers/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:api_craft/template-functions/models/template_context.dart';
 
 class RequestResolver {
-  final Ref ref;
+  final TemplateContext ref;
   late final RequestHydrator _hydrator = RequestHydrator(ref);
 
   RequestResolver(this.ref);
@@ -48,31 +51,32 @@ class RequestResolver {
     final inheritedHeaders = _collectInheritedHeaders(node);
     final auth = _resolveAuth(node).$1;
     final mergedVars = _mergeVariables(node);
-    final resolvedVars = _resolveVariableValues(mergedVars, 50);
+    final resolvedVars = await _resolveVariableValues(mergedVars, 50);
 
-    final resolvedUrl = _resolveVariables(node.url, resolvedVars);
+    final resolvedUrl = await _resolveVariables(node.url, resolvedVars);
     final uri = Uri.parse(resolvedUrl);
 
-    final queryParams =
-        cleanKeyValueItems(
-          node.config.queryParameters,
-          removeEmptyKeys: false,
-        ).map((p) {
-          return [
-            _resolveVariables(p[0], resolvedVars),
-            _resolveVariables(p[1], resolvedVars),
-          ];
-        }).toList();
+    final queryParams = await Future.wait(
+      cleanKeyValueItems(
+        node.config.queryParameters,
+        removeEmptyKeys: false,
+      ).map((p) async {
+        return [
+          await _resolveVariables(p[0], resolvedVars),
+          await _resolveVariables(p[1], resolvedVars),
+        ];
+      }).toList(),
+    );
     final fullUri = _handleUri(uri, queryParams);
 
-    final headers = _handleHeaders(node.config.headers, inheritedHeaders).map((
-      h,
-    ) {
-      return [
-        _resolveVariables(h[0], resolvedVars),
-        _resolveVariables(h[1], resolvedVars),
-      ];
-    }).toList();
+    final headers = await Future.wait(
+      _handleHeaders(node.config.headers, inheritedHeaders).map((h) async {
+        return [
+          await _resolveVariables(h[0], resolvedVars),
+          await _resolveVariables(h[1], resolvedVars),
+        ];
+      }).toList(),
+    );
 
     // Inject Cookies
     final envState = ref.read(environmentProvider);
@@ -204,10 +208,10 @@ class RequestResolver {
     return result;
   }
 
-  Map<String, VariableValue> _resolveVariableValues(
+  Future<Map<String, VariableValue>> _resolveVariableValues(
     Map<String, VariableValue> vars,
     int depth,
-  ) {
+  ) async {
     var current = vars;
 
     for (int i = 0; i < depth; i++) {
@@ -217,7 +221,7 @@ class RequestResolver {
       for (final e in current.entries) {
         final value = e.value.value;
         if (value is String) {
-          final resolved = _resolveVariables(value, current);
+          final resolved = await _resolveVariables(value, current);
           if (resolved != value) changed = true;
           next[e.key] = VariableValue(e.value.sourceId, resolved);
         } else {
@@ -231,17 +235,51 @@ class RequestResolver {
     return current;
   }
 
-  final _variableRegExp = RegExp(r'{{\s*([a-zA-Z0-9_-]+)\s*}}');
+  /// Old way only handles variables
+  // final _variableRegExp = RegExp(r'{{\s*([a-zA-Z0-9_-]+)\s*}}');
   // final _variableRegExp = RegExp(r'{{\s*([^{}\s]+)\s*}}');
-  String _resolveVariables(String text, Map<String, VariableValue> values) {
-    // Match all {{variable}} patterns
-    return text.replaceAllMapped(_variableRegExp, (match) {
-      final key = match.group(1);
-      if (key != null && values.containsKey(key)) {
-        return values[key]!.value; // Replace with value
+  // String _resolveVariables(String text, Map<String, VariableValue> values) {
+  //   // Match all {{variable}} patterns
+  //   return text.replaceAllMapped(_variableRegExp, (match) {
+  //     final key = match.group(1);
+  //     if (key != null && values.containsKey(key)) {
+  //       return values[key]!.value; // Replace with value
+  //     }
+  //     return match.group(0)!; // leave as is if no value found
+  //   });
+  // }
+
+  /// New way handles variables and functions
+  Future<String> _resolveVariables(
+    String text,
+    Map<String, VariableValue> values,
+  ) async {
+    final placeholders = TemplateParser.parseAll(text)
+      ..sort((a, b) => b.start.compareTo(a.start));
+
+    for (final placeholder in placeholders) {
+      if (placeholder is TemplateFnPlaceholder) {
+        final fn = getTemplateFunctionByName(placeholder.name);
+        final String fnValue = await fn?.onRender(
+          ref,
+          CallTemplateFunctionArgs(
+            values: placeholder.args!,
+            purpose: Purpose.send,
+          ),
+        );
+        text = text.replaceRange(placeholder.start, placeholder.end, fnValue);
+      } else {
+        final key = placeholder.name;
+        if (values.containsKey(key)) {
+          text = text.replaceRange(
+            placeholder.start,
+            placeholder.end,
+            values[key]!.value,
+          );
+        }
       }
-      return match.group(0)!; // leave as is if no value found
-    });
+    }
+    return text;
   }
 
   List<List<String>> cleanKeyValueItems(

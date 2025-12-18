@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:api_craft/models/models.dart';
 import 'package:api_craft/providers/utils/req_executor.dart';
 import 'package:api_craft/template-functions/functions/temple_common_args.dart';
+import 'package:api_craft/template-functions/models/template_context.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/widgets.dart';
 import 'package:json_path/json_path.dart';
@@ -116,13 +117,13 @@ final responseBodyRaw = TemplateFunction(
 
 /// Helpers
 Future<RawHttpResponse?> getResponse(
-  WContext ctx, {
+  TemplateContext ctx, {
   required String purpose,
   String? behavior,
   required String requestId,
   String? ttl,
 }) async {
-  var response = await ctx.read(httpRequestProvider).getResById(requestId);
+  var response = await ctx.read(httpRequestProvider).getResById(ctx, requestId);
 
   if (behavior == Behavior.never.name && response == null) {
     return null;
@@ -138,7 +139,7 @@ Future<RawHttpResponse?> getResponse(
       finalBehavior == Behavior.always.name ||
       (finalBehavior == Behavior.ttl.name &&
           shouldSendExpired(response, ttl))) {
-    response = await ctx.read(httpRequestProvider).runById(requestId);
+    response = await ctx.read(httpRequestProvider).runById(ctx, requestId);
   }
   return response;
 }

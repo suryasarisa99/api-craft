@@ -44,6 +44,6 @@ Map<String, TemplateFunction> get templateFunctionRegistry {
 
 final Map<String, TemplateFunction> _templateFunctionRegistry =
     templateFunctionRegistry;
-TemplateFunction getTemplateFunctionByName(String name) {
-  return _templateFunctionRegistry[name]!;
+TemplateFunction? getTemplateFunctionByName(String name) {
+  return _templateFunctionRegistry[name];
 }

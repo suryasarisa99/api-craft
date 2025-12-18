@@ -274,7 +274,8 @@ class DbStorageRepository implements StorageRepository {
       orderBy: 'executed_at DESC', // Newest first
       limit: limit,
     );
-    debugPrint("db::get-history for $requestId: $res");
+    // debugPrint("db::get-history for $requestId: $res");
+    debugPrint("db::get-history for $requestId");
     return res.map((e) => RawHttpResponse.fromMap(e)).toList();
   }
 

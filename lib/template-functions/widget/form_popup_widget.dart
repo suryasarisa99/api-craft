@@ -1,4 +1,5 @@
 import 'package:api_craft/models/models.dart';
+import 'package:api_craft/template-functions/models/template_context.dart';
 import 'package:api_craft/template-functions/parsers/utils.dart';
 import 'package:api_craft/template-functions/parsers/parse.dart';
 import 'package:api_craft/template-functions/widget/form_input_widget.dart';
@@ -6,43 +7,16 @@ import 'package:api_craft/utils/debouncer.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
 
-// Center(
-//       child: FilledButton(
-//         onPressed: () {
-//           showDialog(
-//             context: context,
-//             builder: (context) => const FormPopupWidget(),
-//           );
-//         },
-//         child: Text("fn popup"),
-//       ),
-//     ),
-
-void showFunctionPopup(
-  BuildContext context,
-  TemplateFnPlaceholder fnPlaceholder, {
-
-  required String id,
-  required void Function(String Function(String val) fn) updateField,
-}) {
-  showDialog(
-    context: context,
-    builder: (context) => FormPopupWidget(
-      fnPlaceholder: fnPlaceholder,
-      id: id,
-      updateField: updateField,
-    ),
-  );
-}
-
 class FormPopupWidget extends ConsumerStatefulWidget {
   final TemplateFnPlaceholder fnPlaceholder;
+  final TemplateFunction templateFn;
   final void Function(String Function(String val) fn) updateField;
-  final String id;
+  final String? id;
 
   const FormPopupWidget({
     super.key,
     required this.fnPlaceholder,
+    required this.templateFn,
     required this.id,
     required this.updateField,
   });
@@ -52,8 +26,7 @@ class FormPopupWidget extends ConsumerStatefulWidget {
 }
 
 class _FormPopupWidgetState extends ConsumerState<FormPopupWidget> {
-  late final templateFn = getTemplateFunctionByName(widget.fnPlaceholder.name);
-  late final fnState = getFnState(templateFn, widget.fnPlaceholder.args);
+  late final fnState = getFnState(widget.templateFn, widget.fnPlaceholder.args);
   String? renderedValue;
   final debouncer = Debouncer(Duration(milliseconds: 500));
   final _formKey = GlobalKey<FormState>();
@@ -90,9 +63,9 @@ class _FormPopupWidgetState extends ConsumerState<FormPopupWidget> {
   }
 
   void renderPreview() async {
-    templateFn
+    widget.templateFn
         .onRender(
-          ref,
+          WidgetRefTemplateContext(ref),
           CallTemplateFunctionArgs(values: fnState, purpose: Purpose.preview),
         )
         .then((value) {
@@ -131,13 +104,13 @@ class _FormPopupWidgetState extends ConsumerState<FormPopupWidget> {
               ),
             ),
             const SizedBox(height: 10),
-            Text(templateFn.description),
+            Text(widget.templateFn.description),
             const SizedBox(height: 16),
             Expanded(
               child: Form(
                 key: _formKey,
                 child: FormInputWidget(
-                  inputs: templateFn.args,
+                  inputs: widget.templateFn.args,
                   data: fnState,
                   onChanged: (key, value) {
                     debugPrint("Input changed: $key -> $value");

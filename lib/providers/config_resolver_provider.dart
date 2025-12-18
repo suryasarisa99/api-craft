@@ -269,6 +269,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:api_craft/models/models.dart';
 import 'package:api_craft/providers/providers.dart';
+import 'package:api_craft/template-functions/models/template_context.dart';
 
 final reqComposeProvider = NotifierProvider.autoDispose
     .family<ReqComposeNotifier, UiRequestContext, String>(
@@ -327,7 +328,7 @@ class ReqComposeNotifier extends Notifier<UiRequestContext> {
   }
 
   Future<void> _load() async {
-    final resolver = RequestResolver(ref);
+    final resolver = RequestResolver(RefTemplateContext(ref));
     final ctx = await resolver.resolveForUi(id);
     state = ctx;
 

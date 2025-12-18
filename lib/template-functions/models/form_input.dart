@@ -2,12 +2,15 @@ import 'dart:async';
 import 'dart:ui';
 
 import 'package:api_craft/models/models.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-typedef WContext = WidgetRef;
+import 'package:api_craft/template-functions/models/template_context.dart';
+
 // dynamic?: (ctx, args) => Promise<Partial<FormInputEditor>>;
 typedef DynamicFn =
-    FutureOr<dynamic> Function(WidgetRef ctx, CallTemplateFunctionArgs args);
+    FutureOr<dynamic> Function(
+      TemplateContext ctx,
+      CallTemplateFunctionArgs args,
+    );
 
 abstract class FormInput {
   final ArgumentType type;
