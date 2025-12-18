@@ -135,7 +135,7 @@ class _FileTreeTileState extends ConsumerState<FileNodeTile>
         }
       });
     } else {
-      ref.read(activeReqIdProvider.notifier).setActiveNode(vNode.id);
+      ref.read(activeReqIdProvider.notifier).setActiveId(vNode.id);
       ref.read(selectedNodesProvider.notifier).clear();
     }
   }

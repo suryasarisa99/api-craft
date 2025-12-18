@@ -1,3 +1,4 @@
+import 'package:api_craft/globals.dart';
 import 'package:api_craft/models/models.dart';
 import 'package:api_craft/providers/providers.dart';
 import 'package:api_craft/widgets/ui/custom_menu.dart';
@@ -201,6 +202,8 @@ class _CollectionPickerState extends ConsumerState<CollectionPicker> {
             checked: isSelected,
             onTap: (_) {
               ref.read(selectedCollectionProvider.notifier).select(c);
+              // change active request
+              // ref.read(activeReqIdProvider.notifier).setActiveId(null);
             },
           );
         }),
@@ -231,7 +234,7 @@ class _CollectionPickerState extends ConsumerState<CollectionPicker> {
           ),
         ],
         if (selectedCollection != null &&
-            selectedCollection.id != 'default_api_craft')
+            selectedCollection.id != kDefaultCollection.id)
           CustomMenuIconItem(
             icon: const Icon(Icons.delete, size: 18, color: Colors.red),
             title: const Text(

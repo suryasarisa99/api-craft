@@ -186,7 +186,8 @@ class RequestResolver {
     if (env != null) {
       for (final v in env.variables) {
         if (v.isEnabled) {
-          result[v.key] = VariableValue(env.id, v.value);
+          // result[v.key] = VariableValue(env.id, v.value);
+          result[v.key] = VariableValue(null, v.value);
         }
       }
     }
@@ -199,7 +200,7 @@ class RequestResolver {
         }
       }
     }
-
+    debugPrint("merged variables: ${result.length}");
     return result;
   }
 

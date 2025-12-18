@@ -20,9 +20,9 @@ class DbStorageRepository implements StorageRepository {
   }
 
   Future<void> createDefaultCollection() async {
-    final db = await _db;
-    debugPrint("db::create-default-collection ${kDefaultCollection}");
-    await db.insert('collections', kDefaultCollection.toMap());
+    // final db = await _db;
+    // debugPrint("db::create-default-collection ${kDefaultCollection}");
+    // await db.insert('collections', kDefaultCollection.toMap());
   }
 
   @override

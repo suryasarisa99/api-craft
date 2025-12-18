@@ -1,8 +1,7 @@
+import 'package:api_craft/providers/providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:api_craft/models/models.dart';
-import 'package:api_craft/providers/selected_collection_provider.dart';
-import 'package:api_craft/providers/repository_provider.dart';
 import 'package:uuid/uuid.dart';
 
 class EnvironmentState {
@@ -71,6 +70,8 @@ class EnvironmentNotifier extends Notifier<EnvironmentState> {
 
   Future<void> loadData(String collectionId) async {
     state = state.copyWith(isLoading: true);
+    await ref.read(databaseProvider);
+    debugPrint("env::load-data $collectionId");
     final repo = ref.read(repositoryProvider);
 
     try {

@@ -58,6 +58,8 @@ class MainApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       darkTheme: ThemeData(
+        visualDensity: VisualDensity.compact,
+        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
         colorScheme: colorSchema,
         useMaterial3: true,
         scaffoldBackgroundColor: const Color.fromARGB(255, 33, 33, 33),
@@ -65,7 +67,7 @@ class MainApp extends StatelessWidget {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8.0),
           ),
-          backgroundColor: const Color(0xFF201F20),
+          backgroundColor: const Color.fromARGB(255, 33, 33, 33),
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(

@@ -290,27 +290,29 @@ class ReqComposeNotifier extends Notifier<UiRequestContext> {
     // if (treeState.isLoading) {
     //   return null;
     // }
-    final node = treeState.nodeMap[id] as RequestNode;
-    ref.listen(nodeUpdateTriggerProvider, (_, event) {
-      debugPrint("received trigger event");
-      if (event != null &&
-          _isAncestor(ref.read(fileTreeProvider).nodeMap[event.id]!)) {
-        debugPrint(
-          "ancestor updated (changes in parent/parents position changes)",
-        );
-        _load();
-      }
-    });
-    // only handles immediate parent position changes
-    ref.listen(fileTreeProvider.select((tree) => tree.nodeMap[id]!.parentId), (
-      old,
-      newId,
-    ) {
-      if (old != newId) {
-        debugPrint("active request parent changed");
-        _load();
-      }
-    });
+    final node = treeState.nodeMap[id]!;
+    if (node is RequestNode) {
+      ref.listen(nodeUpdateTriggerProvider, (_, event) {
+        debugPrint("received trigger event");
+        if (event != null &&
+            _isAncestor(ref.read(fileTreeProvider).nodeMap[event.id]!)) {
+          debugPrint(
+            "ancestor updated (changes in parent/parents position changes)",
+          );
+          _load();
+        }
+      });
+      // only handles immediate parent position changes
+      ref.listen(
+        fileTreeProvider.select((tree) => tree.nodeMap[id]?.parentId),
+        (old, newId) {
+          if (old != newId) {
+            debugPrint("active request parent changed");
+            _load();
+          }
+        },
+      );
+    }
     _load();
     return UiRequestContext.empty(node);
   }

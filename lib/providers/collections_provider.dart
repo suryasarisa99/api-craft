@@ -1,3 +1,4 @@
+import 'package:api_craft/globals.dart';
 import 'package:api_craft/models/models.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -21,15 +22,8 @@ class CollectionsNotifier extends AsyncNotifier<List<CollectionModel>> {
     if (maps.isNotEmpty) {
       return maps.map((e) => CollectionModel.fromMap(e)).toList();
     } else {
-      // DEFAULT LOGIC: If empty, create default 'api_craft' DB collection
-      final defaultCollection = CollectionModel(
-        id: 'default_api_craft',
-        name: 'API Craft',
-        type: CollectionType.database,
-      );
-
-      await db.insert('collections', defaultCollection.toMap());
-      return [defaultCollection];
+      await db.insert('collections', kDefaultCollection.toMap());
+      return [kDefaultCollection];
     }
   }
 

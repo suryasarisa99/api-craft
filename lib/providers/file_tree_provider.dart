@@ -146,7 +146,7 @@ class FileTreeNotifier extends Notifier<TreeData> {
     _addItem(newItem);
     // check if we need to set active request
     if (type == NodeType.request) {
-      _activeReqNotifier.setActiveNode(id);
+      _activeReqNotifier.setActiveId(id);
     }
   }
 
@@ -264,7 +264,7 @@ class FileTreeNotifier extends Notifier<TreeData> {
     // 3. Clear active request if needed
     final activeId = ref.read(activeReqIdProvider);
     if (activeId != null && activeId == node.id) {
-      _activeReqNotifier.setActiveNode(null);
+      _activeReqNotifier.setActiveId(null);
     }
   }
 

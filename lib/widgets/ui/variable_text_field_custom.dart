@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:api_craft/models/models.dart';
 import 'package:api_craft/providers/config_resolver_provider.dart';
 import 'package:api_craft/providers/filter_provider.dart';
+import 'package:api_craft/screens/home/environment/environment_editor_dialog.dart';
 import 'package:api_craft/screens/home/sidebar/context_menu.dart';
 import 'package:api_craft/template-functions/parsers/parse.dart';
 import 'package:api_craft/template-functions/widget/form_popup_widget.dart';
@@ -95,19 +96,26 @@ class _VariableTextFieldCustomState
   }) {
     debugPrint("Variable clicked in UI: $name");
     if (isVariable) {
-      final variableValue = ref
+      final variable = ref
           .read(reqComposeProvider(widget.id))
-          .allVariables?[name];
-      if (variableValue != null) {
+          .allVariables[name];
+      if (variable != null) {
         debugPrint(
-          "Variable source ID: ${variableValue.sourceId}, value: ${variableValue.value}",
+          "Variable source ID: ${variable.sourceId}, value: ${variable.value}",
         );
-        showFolderConfigDialog(
-          context: context,
-          ref: ref,
-          id: variableValue.sourceId,
-          tabIndex: 3,
-        );
+        if (variable.sourceId == null) {
+          showDialog(
+            context: context,
+            builder: (_) => const EnvironmentEditorDialog(),
+          );
+        } else {
+          showFolderConfigDialog(
+            context: context,
+            ref: ref,
+            id: variable.sourceId!,
+            tabIndex: 3,
+          );
+        }
       } else {
         ScaffoldMessenger.of(
           context,

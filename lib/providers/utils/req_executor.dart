@@ -27,7 +27,7 @@ class HttpRequestContext {
       headers: req.headers,
       // body: ctx.request.config.body,
       body: _bodies[0],
-      useProxy: true,
+      useProxy: false,
       requestId: req.request.id,
     );
     debugPrint(

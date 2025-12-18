@@ -28,7 +28,7 @@ class ActiveReqIdNotifier extends Notifier<String?> {
     return getFromPrefs(collection?.id);
   }
 
-  void setActiveNode(String? nodeId) {
+  void setActiveId(String? nodeId) {
     state = nodeId;
     final collectionId = ref.read(selectedCollectionProvider)?.id;
     final key = _getPrefKey(collectionId);

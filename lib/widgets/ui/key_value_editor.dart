@@ -181,9 +181,6 @@ class _KeyValueEditorState extends State<KeyValueEditor> {
                                           ),
                                         );
                                       },
-                                      materialTapTargetSize:
-                                          MaterialTapTargetSize.shrinkWrap,
-                                      visualDensity: VisualDensity.compact,
                                     ),
                                   ),
                                 ),
