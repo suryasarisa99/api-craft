@@ -1,5 +1,5 @@
-import 'package:api_craft/globals.dart';
-import 'package:api_craft/screens/home/home_screen.dart';
+import 'package:api_craft/core/constants/globals.dart';
+import 'package:api_craft/core/screens/home_screen.dart';
 import 'package:bitsdojo_window/bitsdojo_window.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
