@@ -1,7 +1,6 @@
 import 'package:api_craft/providers/providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:api_craft/models/models.dart';
-import 'package:api_craft/template-functions/models/template_context.dart';
 import 'package:flutter/material.dart';
 
 class FormInputWidget extends StatelessWidget {
@@ -130,7 +129,7 @@ class _FormWidgetTextState extends ConsumerState<FormWidgetText> {
   void runDynamicFn(WidgetRef ref) async {
     if (widget.input.dynamicFn != null) {
       final result = await widget.input.dynamicFn!.call(
-        WidgetRefTemplateContext(ref),
+        ref,
         CallTemplateFunctionArgs(values: {}, purpose: Purpose.preview),
       );
       setState(() {

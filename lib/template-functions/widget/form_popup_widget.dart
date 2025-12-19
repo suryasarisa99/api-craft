@@ -1,5 +1,5 @@
 import 'package:api_craft/models/models.dart';
-import 'package:api_craft/template-functions/models/template_context.dart';
+import 'package:api_craft/providers/ref_provider.dart';
 import 'package:api_craft/template-functions/parsers/utils.dart';
 import 'package:api_craft/template-functions/parsers/parse.dart';
 import 'package:api_craft/template-functions/widget/form_input_widget.dart';
@@ -63,9 +63,10 @@ class _FormPopupWidgetState extends ConsumerState<FormPopupWidget> {
   }
 
   void renderPreview() async {
+    final r = ref.read(refProvider);
     widget.templateFn
         .onRender(
-          WidgetRefTemplateContext(ref),
+          r,
           CallTemplateFunctionArgs(values: fnState, purpose: Purpose.preview),
         )
         .then((value) {

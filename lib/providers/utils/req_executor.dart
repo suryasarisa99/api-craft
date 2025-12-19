@@ -2,7 +2,6 @@ import 'dart:io';
 import 'package:api_craft/http/raw/raw_http_req.dart';
 import 'package:api_craft/models/models.dart';
 import 'package:api_craft/providers/providers.dart';
-import 'package:api_craft/template-functions/models/template_context.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -15,14 +14,14 @@ final httpRequestProvider = Provider<HttpRequestContext>((ref) {
 
 final requestExecutionProvider = Provider((ref) {
   return (String requestId) {
-    return HttpRequestContext().runById(RefTemplateContext(ref), requestId);
+    return HttpRequestContext().runById(ref, requestId);
   };
 });
 
 class HttpRequestContext {
   HttpRequestContext();
 
-  Future<RawHttpResponse> runById(TemplateContext ref, String requestId) async {
+  Future<RawHttpResponse> runById(Ref ref, String requestId) async {
     final resolver = RequestResolver(ref);
     final req = await resolver.resolveForExecution(requestId);
     debugPrint('Executing request to URL: ${req.uri}');
@@ -33,7 +32,7 @@ class HttpRequestContext {
       headers: req.headers,
       // body: ctx.request.config.body,
       body: _bodies[0],
-      useProxy: false,
+      useProxy: true,
       requestId: req.request.id,
     );
     debugPrint(
@@ -89,10 +88,7 @@ class HttpRequestContext {
     return response;
   }
 
-  Future<RawHttpResponse?> getResById(
-    TemplateContext ref,
-    String requestId,
-  ) async {
+  Future<RawHttpResponse?> getResById(Ref ref, String requestId) async {
     final repo = ref.read(repositoryProvider);
     final responses = await repo.getHistory(requestId, limit: 1);
     if (responses.isNotEmpty) {

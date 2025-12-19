@@ -1,16 +1,13 @@
 import 'package:api_craft/models/models.dart';
 import 'package:api_craft/template-functions/models/form_input.dart';
-import 'package:api_craft/template-functions/models/template_context.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class TemplateFunction {
   // response.body
   final String name;
   final String description;
   final List<FormInput> args;
-  final Future<dynamic> Function(
-    TemplateContext ctx,
-    CallTemplateFunctionArgs args,
-  )
+  final Future<dynamic> Function(Ref ctx, CallTemplateFunctionArgs args)
   onRender;
   // Todo : need to complete other parameters
   // previewArgs,aliases

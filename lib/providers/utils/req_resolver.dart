@@ -5,10 +5,9 @@ import 'package:api_craft/template-functions/parsers/parse.dart';
 import 'package:api_craft/template-functions/parsers/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:api_craft/template-functions/models/template_context.dart';
 
 class RequestResolver {
-  final TemplateContext ref;
+  final Ref ref;
   late final RequestHydrator _hydrator = RequestHydrator(ref);
 
   RequestResolver(this.ref);
@@ -260,14 +259,18 @@ class RequestResolver {
     for (final placeholder in placeholders) {
       if (placeholder is TemplateFnPlaceholder) {
         final fn = getTemplateFunctionByName(placeholder.name);
-        final String fnValue = await fn?.onRender(
+        final String? fnValue = await fn?.onRender(
           ref,
           CallTemplateFunctionArgs(
             values: placeholder.args!,
             purpose: Purpose.send,
           ),
         );
-        text = text.replaceRange(placeholder.start, placeholder.end, fnValue);
+        text = text.replaceRange(
+          placeholder.start,
+          placeholder.end,
+          fnValue ?? '',
+        );
       } else {
         final key = placeholder.name;
         if (values.containsKey(key)) {

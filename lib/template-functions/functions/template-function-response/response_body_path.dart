@@ -3,10 +3,12 @@ import 'dart:convert';
 import 'package:api_craft/models/models.dart';
 import 'package:api_craft/providers/utils/req_executor.dart';
 import 'package:api_craft/template-functions/functions/temple_common_args.dart';
-import 'package:api_craft/template-functions/models/template_context.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:json_path/json_path.dart';
+import 'package:xml/xml.dart';
+import 'package:xml/xpath.dart';
 
 final responseBodyPath = TemplateFunction(
   name: "response.body.path",
@@ -53,9 +55,17 @@ final responseBodyPath = TemplateFunction(
     try {
       return filterJsonPath(response.body, args.values['path'], 'first');
     } catch (e) {
-      debugPrint("Error in parsing response body: $e");
-      return null;
+      // try xpath
     }
+
+    try {
+      return filterXmlPath(response.body, args.values['path'], 'first');
+    } catch (e) {
+      debugPrint("Failed to parse XML: $e");
+      // may not xml
+    }
+
+    return null;
   },
 );
 
@@ -117,7 +127,7 @@ final responseBodyRaw = TemplateFunction(
 
 /// Helpers
 Future<RawHttpResponse?> getResponse(
-  TemplateContext ctx, {
+  Ref ctx, {
   required String purpose,
   String? behavior,
   required String requestId,
@@ -191,4 +201,30 @@ String objToString(dynamic obj) {
   } catch (e) {
     return obj.toString();
   }
+}
+
+String? filterXmlPath(
+  String body,
+  String path,
+  String returnFormat, {
+  String join = ', ',
+}) {
+  final document = XmlDocument.parse(body);
+
+  final nodes = document.xpath(path);
+
+  if (nodes.isEmpty) return null;
+
+  if (returnFormat == Return.first.name) {
+    return _nodeToString(nodes.first);
+  } else if (returnFormat == Return.last.name) {
+    return _nodeToString(nodes.last);
+  } else {
+    return nodes.map(_nodeToString).join(join);
+  }
+}
+
+String? _nodeToString(XmlNode node) {
+  if (node is XmlAttribute) return node.value;
+  return node.value;
 }

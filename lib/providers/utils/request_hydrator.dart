@@ -1,11 +1,10 @@
 import 'package:api_craft/models/models.dart';
 import 'package:api_craft/providers/providers.dart';
 import 'package:api_craft/repository/storage_repository.dart';
-
-import 'package:api_craft/template-functions/models/template_context.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class RequestHydrator {
-  final TemplateContext ref;
+  final Ref ref;
   RequestHydrator(this.ref);
 
   StorageRepository get _repo => ref.read(repositoryProvider);
