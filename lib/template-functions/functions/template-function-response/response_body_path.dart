@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:api_craft/models/models.dart';
 import 'package:api_craft/providers/utils/req_executor.dart';
+import 'package:api_craft/services/app_service.dart';
 import 'package:api_craft/template-functions/functions/temple_common_args.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/widgets.dart';
@@ -133,7 +134,8 @@ Future<RawHttpResponse?> getResponse(
   required String requestId,
   String? ttl,
 }) async {
-  var response = await ctx.read(httpRequestProvider).getResById(ctx, requestId);
+  // var response = await ctx.read(httpRequestProvider).getResById(ctx, requestId);
+  var response = await AppService.http.getRes(ctx, requestId);
 
   if (behavior == Behavior.never.name && response == null) {
     return null;
@@ -149,7 +151,8 @@ Future<RawHttpResponse?> getResponse(
       finalBehavior == Behavior.always.name ||
       (finalBehavior == Behavior.ttl.name &&
           shouldSendExpired(response, ttl))) {
-    response = await ctx.read(httpRequestProvider).runById(ctx, requestId);
+    // response = await ctx.read(httpRequestProvider).runById(ctx, requestId);
+    response = await AppService.http.run(ctx, requestId);
   }
   return response;
 }

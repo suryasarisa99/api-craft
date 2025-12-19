@@ -1,4 +1,4 @@
-import 'package:api_craft/providers/config_resolver_provider.dart';
+import 'package:api_craft/providers/req_compose_provider.dart';
 import 'package:extended_text/extended_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

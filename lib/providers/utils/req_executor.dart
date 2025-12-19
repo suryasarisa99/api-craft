@@ -5,23 +5,8 @@ import 'package:api_craft/providers/providers.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-// this actually does not store any state
-// but made this provider because it uses RequestResolver which requires Ref,
-//but we need to use reqExecutor in ui it is WidgetRef, so we can't pass WidgetRef to RequestResolver directly
-final httpRequestProvider = Provider<HttpRequestContext>((ref) {
-  return HttpRequestContext();
-});
-
-final requestExecutionProvider = Provider((ref) {
-  return (String requestId) {
-    return HttpRequestContext().runById(ref, requestId);
-  };
-});
-
-class HttpRequestContext {
-  HttpRequestContext();
-
-  Future<RawHttpResponse> runById(Ref ref, String requestId) async {
+class HttpService {
+  Future<RawHttpResponse> run(Ref ref, String requestId) async {
     final resolver = RequestResolver(ref);
     final req = await resolver.resolveForExecution(requestId);
     debugPrint('Executing request to URL: ${req.uri}');
@@ -88,7 +73,7 @@ class HttpRequestContext {
     return response;
   }
 
-  Future<RawHttpResponse?> getResById(Ref ref, String requestId) async {
+  Future<RawHttpResponse?> getRes(Ref ref, String requestId) async {
     final repo = ref.read(repositoryProvider);
     final responses = await repo.getHistory(requestId, limit: 1);
     if (responses.isNotEmpty) {

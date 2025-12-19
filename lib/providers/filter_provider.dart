@@ -1,5 +1,5 @@
 import 'package:api_craft/models/node_model.dart';
-import 'package:api_craft/providers/config_resolver_provider.dart';
+import 'package:api_craft/providers/req_compose_provider.dart';
 import 'package:api_craft/providers/environment_provider.dart';
 import 'package:api_craft/providers/file_tree_provider.dart';
 import 'package:api_craft/widgets/ui/filter.dart';

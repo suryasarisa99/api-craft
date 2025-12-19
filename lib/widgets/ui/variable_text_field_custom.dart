@@ -1,7 +1,7 @@
 import 'dart:math';
 
 import 'package:api_craft/models/models.dart';
-import 'package:api_craft/providers/config_resolver_provider.dart';
+import 'package:api_craft/providers/req_compose_provider.dart';
 import 'package:api_craft/providers/filter_provider.dart';
 import 'package:api_craft/providers/providers.dart';
 import 'package:api_craft/screens/home/environment/environment_editor_dialog.dart';

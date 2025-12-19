@@ -1,6 +1,8 @@
 import 'package:api_craft/models/models.dart';
-import 'package:api_craft/providers/config_resolver_provider.dart';
+import 'package:api_craft/providers/ref_provider.dart';
+import 'package:api_craft/providers/req_compose_provider.dart';
 import 'package:api_craft/providers/utils/req_executor.dart';
+import 'package:api_craft/services/app_service.dart';
 import 'package:api_craft/widgets/ui/custom_menu.dart';
 import 'package:flutter_popup/flutter_popup.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -53,9 +55,8 @@ class _RequestUrlState extends ConsumerState<RequestUrl> {
   }
 
   void sendReq() async {
-    // final response = await run(ref.read(reqComposeProvider(widget.id)));
-
-    final response = await ref.read(requestExecutionProvider)(widget.id);
+    final r = ref.read(refProvider);
+    final response = await AppService.http.run(r, widget.id);
     debugPrint(
       "response received, adding to history, status: ${response.statusCode}",
     );
