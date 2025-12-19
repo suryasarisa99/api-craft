@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:api_craft/core/models/models.dart';
+import 'package:api_craft/features/template-functions/models/template_placeholder_model.dart';
 import 'package:flutter/foundation.dart';
 
 class TemplateParseException implements Exception {

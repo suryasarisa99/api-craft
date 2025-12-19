@@ -14,6 +14,7 @@ enum KeyValueEditorMode {
 class KeyValueEditor extends StatefulWidget {
   final List<KeyValueItem> items;
   final ValueChanged<List<KeyValueItem>> onChanged;
+  final bool enableSuggestionsForKey;
   // final Function(int, int) onItemReordered;
   // final Function(int, String, String) onItemChanged;
   // final Function(List<String>, int) onItemAdded;
@@ -26,6 +27,7 @@ class KeyValueEditor extends StatefulWidget {
     required this.items,
     required this.onChanged,
     required this.id,
+    this.enableSuggestionsForKey = true,
     // required this.onItemReordered,
     // required this.onItemChanged,
     // required this.onItemAdded,
@@ -286,6 +288,7 @@ class _KeyValueEditorState extends State<KeyValueEditor> {
         value: '',
         isExtra: extra,
         isEnabled: false,
+        enableSuggestions: isKey ? widget.enableSuggestionsForKey : true,
         onExtraInputChange: (v) {
           _focusKeyField = isKey;
           _addNew(v, isKey);
@@ -306,6 +309,7 @@ class _KeyValueEditorState extends State<KeyValueEditor> {
       controller: controller,
       value: isKey ? item.key : item.value,
       isExtra: extra,
+      enableSuggestions: isKey ? widget.enableSuggestionsForKey : true,
       isEnabled: item.isEnabled,
       onUpdate: (value) {
         _updateItem(

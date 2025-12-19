@@ -217,6 +217,7 @@ class _EnvironmentEditorDialogState
                   // Removed Header as requested.
                   Expanded(
                     child: KeyValueEditor(
+                      enableSuggestionsForKey: false,
                       key: ValueKey(selectedEnv.id), // Ensure rebuild on switch
                       items: selectedEnv.variables,
                       onChanged: (items) {

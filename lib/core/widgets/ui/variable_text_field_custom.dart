@@ -1,10 +1,10 @@
 import 'dart:math';
 
-import 'package:api_craft/core/models/models.dart';
 import 'package:api_craft/core/providers/filter_provider.dart';
 import 'package:api_craft/core/providers/providers.dart';
 import 'package:api_craft/features/environment/environment_editor_dialog.dart';
 import 'package:api_craft/features/sidebar/context_menu.dart';
+import 'package:api_craft/features/template-functions/models/template_placeholder_model.dart';
 import 'package:api_craft/features/template-functions/parsers/parse.dart';
 import 'package:api_craft/features/template-functions/parsers/utils.dart';
 import 'package:api_craft/features/template-functions/widget/form_popup_widget.dart';
@@ -27,6 +27,7 @@ class VariableTextFieldCustom extends ConsumerStatefulWidget {
   final String? placeHolder;
   final KeyEventResult Function(FocusNode, KeyEvent)? onKeyEvent;
   final bool enableUrlSuggestions;
+  final bool enableSuggestions;
 
   const VariableTextFieldCustom({
     super.key,
@@ -39,6 +40,7 @@ class VariableTextFieldCustom extends ConsumerStatefulWidget {
     this.placeHolder,
     this.onKeyEvent,
     this.onSubmitted,
+    this.enableSuggestions = true,
     this.enableUrlSuggestions = false,
   });
 
@@ -78,6 +80,7 @@ class _VariableTextFieldCustomState
     );
 
     // close on focus lost
+    if (!widget.enableSuggestions) return;
     _focusNode.addListener(() {
       if (!_focusNode.hasFocus && _overlayEntry != null) {
         _hideOverlay();
@@ -223,7 +226,7 @@ class _VariableTextFieldCustomState
 
   void _onTextChanged(String text) {
     widget.onChanged?.call(text);
-
+    if (!widget.enableSuggestions) return;
     if (!_focusNode.hasFocus) {
       _hideOverlay();
       return;

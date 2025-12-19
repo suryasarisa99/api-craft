@@ -12,6 +12,7 @@ class CustomInput extends StatefulWidget {
   final Function(String)? onTapOutside;
   final Function(String?)? onExtraInputChange;
   final TextEditingController? controller;
+  final bool enableSuggestions;
   final String value;
   final bool isEnabled;
   final bool isExtra;
@@ -23,6 +24,7 @@ class CustomInput extends StatefulWidget {
     required this.id,
     this.autofocus = false,
     this.onFieldSubmitted,
+    this.enableSuggestions = true,
     this.controller,
     this.onChanged,
     this.onTap,
@@ -70,6 +72,7 @@ class _CustomInputState extends State<CustomInput> {
   Widget build(BuildContext context) {
     return VariableTextFieldCustom(
       id: widget.id,
+      enableSuggestions: widget.enableSuggestions,
       focusNode: widget.focusNode,
       controller: _controller,
       onKeyEvent: (hasFocus, event) {

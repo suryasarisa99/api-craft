@@ -1,5 +1,6 @@
 import 'package:api_craft/core/models/models.dart';
 import 'package:api_craft/core/providers/ref_provider.dart';
+import 'package:api_craft/features/template-functions/models/template_placeholder_model.dart';
 import 'package:api_craft/features/template-functions/parsers/utils.dart';
 import 'package:api_craft/features/template-functions/parsers/parse.dart';
 import 'package:api_craft/features/template-functions/widget/form_input_widget.dart';
@@ -125,16 +126,29 @@ class _FormPopupWidgetState extends ConsumerState<FormPopupWidget> {
                 ),
               ),
             ),
-            Row(
-              children: [
-                Expanded(child: Text(renderedValue ?? "")),
-                const SizedBox(width: 20),
-                IconButton(
-                  onPressed: renderPreview,
-                  icon: const Icon(Icons.refresh),
-                ),
-              ],
+            Container(
+              padding: .symmetric(vertical: 6, horizontal: 12),
+              decoration: BoxDecoration(
+                color: const Color.fromARGB(255, 64, 67, 67),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: SelectableText(
+                      renderedValue ?? "",
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                  ),
+                  const SizedBox(width: 20),
+                  IconButton(
+                    onPressed: renderPreview,
+                    icon: const Icon(Icons.refresh),
+                  ),
+                ],
+              ),
             ),
+            const SizedBox(height: 16),
             ElevatedButton(
               onPressed: handleSubmit,
               child: const Text("Confirm"),

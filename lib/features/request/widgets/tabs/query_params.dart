@@ -15,24 +15,21 @@ class QueryParamsTab extends ConsumerWidget {
         id,
       ).select((value) => (value.node as RequestNode).config.queryParameters),
     );
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        children: [
-          Expanded(
-            child: KeyValueEditor(
-              id: id,
-              mode: KeyValueEditorMode.variables,
-              items: List.from(
-                queryParams,
-              ), // Pass copy to allow local reordering
-              onChanged: (newItems) => ref
-                  .read(reqComposeProvider(id).notifier)
-                  .updateQueryParameters(newItems),
-            ),
+    return Column(
+      children: [
+        Expanded(
+          child: KeyValueEditor(
+            id: id,
+            mode: KeyValueEditorMode.variables,
+            items: List.from(
+              queryParams,
+            ), // Pass copy to allow local reordering
+            onChanged: (newItems) => ref
+                .read(reqComposeProvider(id).notifier)
+                .updateQueryParameters(newItems),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

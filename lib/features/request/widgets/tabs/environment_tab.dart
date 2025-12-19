@@ -19,6 +19,7 @@ class EnvironmentTab extends ConsumerWidget {
       children: [
         Expanded(
           child: KeyValueEditor(
+            enableSuggestionsForKey: false,
             id: id,
             mode: KeyValueEditorMode.variables,
             items: List.from(variables), // Pass copy to allow local reordering
