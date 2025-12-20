@@ -9,7 +9,7 @@ final returnFormatHstak = FormInputHStack(
       optional: true,
       defaultValue: ', ',
       dynamicFn: (ctx, args) {
-        return {'hidden': args.values['purpose'] == Purpose.preview.name};
+        return {'hidden': args.values['result'] != Return.all.name};
       },
     ),
   ],

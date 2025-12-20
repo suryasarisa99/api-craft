@@ -28,6 +28,8 @@ class VariableTextFieldCustom extends ConsumerStatefulWidget {
   final KeyEventResult Function(FocusNode, KeyEvent)? onKeyEvent;
   final bool enableUrlSuggestions;
   final bool enableSuggestions;
+  final int? maxLines;
+  final int? minLines;
 
   const VariableTextFieldCustom({
     super.key,
@@ -42,6 +44,8 @@ class VariableTextFieldCustom extends ConsumerStatefulWidget {
     this.onSubmitted,
     this.enableSuggestions = true,
     this.enableUrlSuggestions = false,
+    this.maxLines = 1,
+    this.minLines,
   });
 
   @override
@@ -432,6 +436,8 @@ class _VariableTextFieldCustomState
           autofocus: true,
           onChanged: _onTextChanged,
           onSubmitted: widget.onSubmitted,
+          maxLines: widget.maxLines,
+          minLines: widget.minLines,
           decoration:
               widget.decoration ??
               InputDecoration(

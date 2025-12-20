@@ -13,6 +13,8 @@ class RequestResolver {
 
   RequestResolver(this.ref);
 
+  // _LazyVariableResolver? _lazyResolver;
+
   FolderNode? _parentOf(Node node) {
     return ref.read(fileTreeProvider).nodeMap[node.parentId] as FolderNode?;
   }
@@ -51,9 +53,9 @@ class RequestResolver {
     final inheritedHeaders = _collectInheritedHeaders(node);
     final auth = _resolveAuth(node).$1;
     final mergedVars = _mergeVariables(node);
-    final resolvedVars = await _resolveVariableValues(mergedVars, 50);
+    final resolver = _LazyVariableResolver(mergedVars, this);
 
-    final resolvedUrl = await _resolveVariables(node.url, resolvedVars);
+    final resolvedUrl = await _resolveVariables(node.url, resolver);
     final uri = Uri.parse(resolvedUrl);
 
     final queryParams = await Future.wait(
@@ -62,8 +64,8 @@ class RequestResolver {
         removeEmptyKeys: false,
       ).map((p) async {
         return [
-          await _resolveVariables(p[0], resolvedVars),
-          await _resolveVariables(p[1], resolvedVars),
+          await _resolveVariables(p[0], resolver),
+          await _resolveVariables(p[1], resolver),
         ];
       }).toList(),
     );
@@ -72,8 +74,8 @@ class RequestResolver {
     final headers = await Future.wait(
       _handleHeaders(node.config.headers, inheritedHeaders).map((h) async {
         return [
-          await _resolveVariables(h[0], resolvedVars),
-          await _resolveVariables(h[1], resolvedVars),
+          await _resolveVariables(h[0], resolver),
+          await _resolveVariables(h[1], resolver),
         ];
       }).toList(),
     );
@@ -111,13 +113,29 @@ class RequestResolver {
         }
       }
     }
+    final resolvedAuth = auth.copyWith(
+      token: await _resolveVariables(auth.token, resolver),
+      username: await _resolveVariables(auth.username, resolver),
+      password: await _resolveVariables(auth.password, resolver),
+    );
+
+    // After all resolution, we can get only the variables that were actually used
+    final finalResolvedVars = <String, VariableValue>{};
+    for (final key in resolver.resolvedKeys) {
+      if (mergedVars.containsKey(key)) {
+        finalResolvedVars[key] = VariableValue(
+          mergedVars[key]!.sourceId,
+          resolver._cache[key]!,
+        );
+      }
+    }
 
     return ResolvedRequestContext(
       request: node,
       uri: fullUri,
       headers: headers,
-      auth: auth,
-      variables: resolvedVars,
+      auth: resolvedAuth,
+      variables: finalResolvedVars,
     );
   }
 
@@ -208,33 +226,6 @@ class RequestResolver {
     return result;
   }
 
-  Future<Map<String, VariableValue>> _resolveVariableValues(
-    Map<String, VariableValue> vars,
-    int depth,
-  ) async {
-    var current = vars;
-
-    for (int i = 0; i < depth; i++) {
-      final next = <String, VariableValue>{};
-      bool changed = false;
-
-      for (final e in current.entries) {
-        final value = e.value.value;
-        if (value is String) {
-          final resolved = await _resolveVariables(value, current);
-          if (resolved != value) changed = true;
-          next[e.key] = VariableValue(e.value.sourceId, resolved);
-        } else {
-          next[e.key] = e.value;
-        }
-      }
-
-      if (!changed) return next;
-      current = next;
-    }
-    return current;
-  }
-
   /// Old way only handles variables
   // final _variableRegExp = RegExp(r'{{\s*([a-zA-Z0-9_-]+)\s*}}');
   // final _variableRegExp = RegExp(r'{{\s*([^{}\s]+)\s*}}');
@@ -252,7 +243,7 @@ class RequestResolver {
   /// New way handles variables and functions
   Future<String> _resolveVariables(
     String text,
-    Map<String, VariableValue> values,
+    _LazyVariableResolver resolver,
   ) async {
     final placeholders = TemplateParser.parseAll(text)
       ..sort((a, b) => b.start.compareTo(a.start));
@@ -260,12 +251,23 @@ class RequestResolver {
     for (final placeholder in placeholders) {
       if (placeholder is TemplateFnPlaceholder) {
         final fn = getTemplateFunctionByName(placeholder.name);
+
+        // Resolve function arguments if they are strings
+        final resolvedArgs = <String, dynamic>{};
+        if (placeholder.args != null) {
+          for (final entry in placeholder.args!.entries) {
+            final val = entry.value;
+            if (val is String) {
+              resolvedArgs[entry.key] = await _resolveVariables(val, resolver);
+            } else {
+              resolvedArgs[entry.key] = val;
+            }
+          }
+        }
+
         final String? fnValue = await fn?.onRender(
           ref,
-          CallTemplateFunctionArgs(
-            values: placeholder.args!,
-            purpose: Purpose.send,
-          ),
+          CallTemplateFunctionArgs(values: resolvedArgs, purpose: Purpose.send),
         );
         text = text.replaceRange(
           placeholder.start,
@@ -274,12 +276,9 @@ class RequestResolver {
         );
       } else {
         final key = placeholder.name;
-        if (values.containsKey(key)) {
-          text = text.replaceRange(
-            placeholder.start,
-            placeholder.end,
-            values[key]!.value,
-          );
+        if (resolver.hasVariable(key)) {
+          final val = await resolver.resolve(key);
+          text = text.replaceRange(placeholder.start, placeholder.end, val);
         }
       }
     }
@@ -356,4 +355,47 @@ class RequestResolver {
   //   // 3️⃣ Replace query
   //   return buffer.isEmpty ? url : url.replace(query: buffer.toString());
   // }
+}
+
+class _LazyVariableResolver {
+  final Map<String, VariableValue> _rawVars;
+  final Map<String, String> _cache = {};
+  final RequestResolver _resolver;
+  final Set<String> _resolving = {}; // To prevent circular dependencies
+  final Set<String> resolvedKeys = {}; // Track which keys were requested
+
+  _LazyVariableResolver(this._rawVars, this._resolver);
+
+  Future<String> resolve(String key) async {
+    resolvedKeys.add(key);
+    debugPrint("Resolving variable: $key");
+    if (_cache.containsKey(key)) {
+      debugPrint("Returning cached value for: $key");
+      return _cache[key]!;
+    }
+    if (_resolving.contains(key)) {
+      debugPrint("Circular dependency detected for variable: $key");
+      return '{{$key}}'; // Or some other fallback
+    }
+
+    _resolving.add(key);
+    try {
+      final value = _rawVars[key]?.value;
+      if (value == null) return '{{$key}}';
+
+      if (value is String) {
+        final resolved = await _resolver._resolveVariables(value, this);
+        _cache[key] = resolved;
+        return resolved;
+      } else {
+        final resolved = value.toString();
+        _cache[key] = resolved;
+        return resolved;
+      }
+    } finally {
+      _resolving.remove(key);
+    }
+  }
+
+  bool hasVariable(String key) => _rawVars.containsKey(key);
 }

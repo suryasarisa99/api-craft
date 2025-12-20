@@ -27,7 +27,10 @@ class FormPopupWidget extends ConsumerStatefulWidget {
 }
 
 class _FormPopupWidgetState extends ConsumerState<FormPopupWidget> {
-  late final fnState = getFnState(widget.templateFn, widget.fnPlaceholder.args);
+  late Map<String, dynamic> fnState = getFnState(
+    widget.templateFn,
+    widget.fnPlaceholder.args,
+  );
   String? renderedValue;
   final debouncer = Debouncer(Duration(milliseconds: 500));
   final _formKey = GlobalKey<FormState>();
@@ -112,12 +115,13 @@ class _FormPopupWidgetState extends ConsumerState<FormPopupWidget> {
               child: Form(
                 key: _formKey,
                 child: FormInputWidget(
+                  id: widget.id,
                   inputs: widget.templateFn.args,
                   data: fnState,
                   onChanged: (key, value) {
                     debugPrint("Input changed: $key -> $value");
                     setState(() {
-                      fnState[key] = value;
+                      fnState = Map.from(fnState)..[key] = value;
                     });
                     debouncer.run(() {
                       renderPreview();
