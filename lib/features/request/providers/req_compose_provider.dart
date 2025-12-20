@@ -1,4 +1,5 @@
 import 'package:api_craft/core/repository/storage_repository.dart';
+import 'package:api_craft/core/utils/debouncer.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:api_craft/core/models/models.dart';
@@ -17,6 +18,8 @@ class ReqComposeNotifier extends Notifier<UiRequestContext> {
       ref.read(fileTreeProvider.select((treeData) => treeData.nodeMap[id]!));
 
   late final StorageRepository _repo = ref.read(repositoryProvider);
+
+  final bodyDebouncer = Debouncer(Duration(milliseconds: 500));
 
   @override
   build() {
@@ -134,7 +137,7 @@ class ReqComposeNotifier extends Notifier<UiRequestContext> {
   void updateBody(String body) {
     debugPrint("update body");
     state = state.copyWith(body: body);
-    _repo.updateRequestBody(id, body);
+    bodyDebouncer.run(() => _repo.updateRequestBody(id, body));
   }
 
   void updateBodyType(String? type) {
