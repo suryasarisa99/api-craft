@@ -28,12 +28,16 @@ class RequestResolver {
     await _hydrator.hydrateNode(node);
     await _hydrator.hydrateAncestors(node);
 
+    final body = await ref.read(repositoryProvider).getBody(requestId);
+    debugPrint("body: $body");
+
     final inheritedHeaders = _collectInheritedHeaders(node);
     final authResult = _resolveAuth(node);
     final vars = _mergeVariables(node);
 
     return UiRequestContext(
       node: node,
+      body: body,
       inheritedHeaders: inheritedHeaders,
       effectiveAuth: authResult.$1,
       authSource: authResult.$2,
@@ -52,6 +56,7 @@ class RequestResolver {
 
     await _hydrator.hydrateNode(node);
     await _hydrator.hydrateAncestors(node);
+    final body = await ref.read(repositoryProvider).getBody(requestId);
 
     final inheritedHeaders = _collectInheritedHeaders(node);
     final auth = _resolveAuth(node).$1;
@@ -134,6 +139,10 @@ class RequestResolver {
       ),
     );
 
+    final resolvedBody = body == null
+        ? null
+        : await _resolveVariables(body, resolver, context: context);
+
     // After all resolution, we can get only the variables that were actually used
     final finalResolvedVars = <String, VariableValue>{};
     for (final key in resolver.resolvedKeys) {
@@ -148,6 +157,7 @@ class RequestResolver {
     return ResolvedRequestContext(
       request: node,
       uri: fullUri,
+      body: resolvedBody,
       headers: headers,
       auth: resolvedAuth,
       variables: finalResolvedVars,

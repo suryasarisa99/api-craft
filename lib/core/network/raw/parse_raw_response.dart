@@ -100,6 +100,15 @@ RawHttpResponse parseRawResponse(
     }
   }
 
+  // E. Extract bodyType from Content-Type
+  String? bodyType;
+  for (final h in headersList) {
+    if (h[0].toLowerCase() == 'content-type') {
+      bodyType = h[1].toLowerCase();
+      break;
+    }
+  }
+
   return RawHttpResponse(
     id: uuid.v4(),
     requestId: requestId,
@@ -112,6 +121,7 @@ RawHttpResponse parseRawResponse(
     headers: headersList,
     bodyBytes: rawBodyBytes,
     body: utf8.decode(rawBodyBytes, allowMalformed: true),
+    bodyType: bodyType,
   );
 }
 

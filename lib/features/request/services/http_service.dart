@@ -20,7 +20,8 @@ class HttpService {
       url: req.uri,
       headers: req.headers,
       // body: ctx.request.config.body,
-      body: _bodies[0],
+      // body: _bodies[0],
+      body: req.body,
       useProxy: false,
       requestId: req.request.id,
     );
@@ -94,9 +95,3 @@ class HttpService {
 }
 
 /// for testing purposes
-const _bodies = [
-  """{
-  "username":"surya",
-  "password":"123"
-}""",
-];

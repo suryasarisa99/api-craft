@@ -14,7 +14,7 @@ final xmlPathFn = TemplateFunction(
       name: 'input',
       label: 'Input',
       placeholder: '<root><foo>bar</foo></root>',
-      defaultValue: '<root><foo>bar</foo></root>',
+      // defaultValue: '<root><foo>bar</foo></root>',
     ),
     returnFormatHstak,
     FormInputCheckbox(

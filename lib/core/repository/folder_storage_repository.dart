@@ -85,6 +85,11 @@ class FolderStorageRepository implements StorageRepository {
   }
 
   @override
+  Future<String?> getBody(String id) async {
+    throw UnimplementedError();
+  }
+
+  @override
   Future<String> createItem({
     required String? parentId,
     required String name,
@@ -296,6 +301,11 @@ class FolderStorageRepository implements StorageRepository {
 
   @override
   Future<void> updateNode(Node node) async {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> updateRequestBody(String id, String body) async {
     throw UnimplementedError();
   }
 

@@ -6,6 +6,34 @@ const menuDivider = Padding(
   child: Divider(height: 1),
 );
 
+class LabeledDivider extends StatelessWidget {
+  final String text;
+  const LabeledDivider({super.key, required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        crossAxisAlignment: .center,
+        children: [
+          const SizedBox(width: 8),
+          Text(
+            text,
+            style: TextStyle(
+              fontSize: 12,
+              color: const Color.fromARGB(255, 120, 119, 119),
+            ),
+          ),
+          const SizedBox(width: 4),
+          Flexible(child: const Divider(height: 1)),
+          const SizedBox(width: 4),
+        ],
+      ),
+    );
+  }
+}
+
 class MyCustomMenu extends StatelessWidget {
   final Widget child;
   final Widget content;

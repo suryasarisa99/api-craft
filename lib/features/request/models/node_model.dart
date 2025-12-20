@@ -200,8 +200,8 @@ class RequestNode extends Node<RequestNodeConfig> {
         ? AuthData.fromMap(jsonDecode(details['auth']))
         : const AuthData();
     config.queryParameters = Node.parseHeaders(details['query_parameters']);
+    config.bodyType = details['body_type'];
 
-    config.body = details['body'] ?? '';
     config.isDetailLoaded = true;
   }
 
@@ -234,7 +234,7 @@ class RequestNode extends Node<RequestNodeConfig> {
         queryParameters: hasDetails
             ? Node.parseHeaders(map['query_parameters'])
             : [],
-        body: map['body'] ?? '',
+        bodyType: map['body_type'],
       ),
     );
   }
@@ -284,7 +284,7 @@ class RequestNode extends Node<RequestNodeConfig> {
       'query_parameters': jsonEncode(
         reqConfig.queryParameters.map((e) => e.toMap()).toList(),
       ),
-      'body': reqConfig.body,
+      'body_type': reqConfig.bodyType,
     };
   }
 

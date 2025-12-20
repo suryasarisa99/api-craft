@@ -48,6 +48,7 @@ class Tables {
     request_type TEXT,    -- 'http', 'graphql','wc','grpc' etc.
     query_parameters TEXT, -- JSON: List of {key, val, enabled}
     body TEXT,
+    body_type TEXT,
     status_code INTEGER
       )
     ''',

@@ -86,13 +86,27 @@ class DbStorageRepository implements StorageRepository {
         'query_parameters',
         'variables',
         'description',
-      ], // Fetch only config cols
+        'body_type',
+      ],
       where: 'id = ?',
       whereArgs: [id],
     );
     // debugPrint("db::get-node-details $id: $res");
     if (res.isEmpty) return {};
     return res.first;
+  }
+
+  @override
+  Future<String?> getBody(String id) async {
+    final db = await _db;
+    final res = await db.query(
+      'nodes',
+      columns: ['body'],
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+    if (res.isEmpty) return null;
+    return res.first['body'] as String?;
   }
 
   @override
@@ -105,6 +119,12 @@ class DbStorageRepository implements StorageRepository {
       where: 'id = ?',
       whereArgs: [node.id],
     );
+  }
+
+  @override
+  Future<void> updateRequestBody(String id, String body) async {
+    final db = await _db;
+    await db.update('nodes', {'body': body}, where: 'id = ?', whereArgs: [id]);
   }
 
   @override

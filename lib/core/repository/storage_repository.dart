@@ -6,8 +6,8 @@ export 'db_storage_repository.dart';
 abstract class StorageRepository {
   /// Loads children for a given parent (or root if parentId is empty/null)
   Future<List<Node>> getNodes();
-
   Future<Map<String, dynamic>> getNodeDetails(String id);
+  Future<String?> getBody(String id);
 
   /// Creates a new item. Returns the new ID.
   Future<String> createItem({
@@ -41,6 +41,7 @@ abstract class StorageRepository {
   // Future<void> saveNodeConfig(String id, NodeConfig config);
 
   Future<void> updateNode(Node node);
+  Future<void> updateRequestBody(String id, String body);
 
   ///
   Future<void> addHistoryEntry(RawHttpResponse entry, {int limit = 10});

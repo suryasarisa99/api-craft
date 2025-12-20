@@ -63,7 +63,7 @@ class ReqComposeNotifier extends Notifier<UiRequestContext> {
   Future<void> _load() async {
     final resolver = RequestResolver(ref);
     final ctx = await resolver.resolveForUi(id);
-    state = ctx;
+    state = ctx.copyWith(isLoading: false);
 
     if (ctx.node is RequestNode) {
       final history = await ref
@@ -124,9 +124,57 @@ class ReqComposeNotifier extends Notifier<UiRequestContext> {
   void updateQueryParameters(List<KeyValueItem> queryParameters) {
     updateNode(
       getNode.copyWith(
-        config: (getNode as RequestNode).config.copyWith(
+        config: (getNode.config as RequestNodeConfig).copyWith(
           queryParameters: queryParameters,
         ),
+      ),
+    );
+  }
+
+  void updateBody(String body) {
+    debugPrint("update body");
+    state = state.copyWith(body: body);
+    _repo.updateRequestBody(id, body);
+  }
+
+  void updateBodyType(String? type) {
+    var node = getNode as RequestNode;
+    var headers = List<KeyValueItem>.from(node.config.headers);
+
+    // Remove existing Content-Type
+    headers.removeWhere((h) => h.key.toLowerCase() == 'content-type');
+
+    if (type != null) {
+      String? contentType;
+      switch (type) {
+        case 'json':
+          contentType = 'application/json';
+          break;
+        case 'xml':
+          contentType = 'application/xml';
+          break;
+        case 'html':
+          contentType = 'text/html';
+          break;
+        case 'text':
+          contentType = 'text/plain';
+          break;
+        case 'form-urlencoded':
+          contentType = 'application/x-www-form-urlencoded';
+          break;
+        case 'multipart-form-data':
+          contentType = 'multipart/form-data';
+          break;
+      }
+
+      if (contentType != null) {
+        headers.add(KeyValueItem(key: 'Content-Type', value: contentType));
+      }
+    }
+
+    updateNode(
+      node.copyWith(
+        config: node.config.copyWith(bodyType: type, headers: headers),
       ),
     );
   }

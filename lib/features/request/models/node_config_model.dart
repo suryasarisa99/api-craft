@@ -71,8 +71,8 @@ class FolderNodeConfig extends NodeConfig {
 }
 
 class RequestNodeConfig extends NodeConfig {
-  String body;
   List<KeyValueItem> queryParameters;
+  String? bodyType;
 
   RequestNodeConfig({
     super.headers,
@@ -80,10 +80,10 @@ class RequestNodeConfig extends NodeConfig {
     super.description,
     super.isDetailLoaded,
     required this.queryParameters,
-    this.body = '',
+    this.bodyType,
   });
 
-  RequestNodeConfig.empty() : body = '', queryParameters = [], super();
+  RequestNodeConfig.empty() : queryParameters = [], bodyType = null, super();
 
   @override
   RequestNodeConfig copyWith({
@@ -93,16 +93,16 @@ class RequestNodeConfig extends NodeConfig {
     bool? isDetailLoaded,
     String? method,
     String? url,
-    String? body,
     List<KeyValueItem>? queryParameters,
+    String? bodyType,
   }) {
     return RequestNodeConfig(
       headers: headers ?? this.headers,
       queryParameters: queryParameters ?? this.queryParameters,
+      bodyType: bodyType ?? this.bodyType,
       auth: auth ?? this.auth,
       description: description ?? this.description,
       isDetailLoaded: isDetailLoaded ?? this.isDetailLoaded,
-      body: body ?? this.body,
     );
   }
 
@@ -114,7 +114,7 @@ class RequestNodeConfig extends NodeConfig {
       description: description,
       isDetailLoaded: isDetailLoaded,
       queryParameters: List<KeyValueItem>.from(queryParameters),
-      body: body,
+      bodyType: bodyType,
     );
   }
 }
