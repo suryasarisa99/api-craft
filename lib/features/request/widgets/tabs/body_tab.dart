@@ -13,14 +13,14 @@ class BodyTab extends ConsumerWidget {
     final state = ref.watch(reqComposeProvider(id));
     final node = state.node;
     final bodyType = node is RequestNode ? node.config.bodyType : null;
-    if (!node.config.isDetailLoaded) {
+    if (state.isLoading || !node.config.isDetailLoaded) {
       return const Center(child: CircularProgressIndicator());
     }
     return CFCodeEditor(
       key: ValueKey(bodyType),
       text: state.body ?? '',
       language: bodyType,
-      readOnly: state.isLoading,
+      readOnly: false,
       onChanged: (newBody) {
         ref.read(reqComposeProvider(id).notifier).updateBody(newBody);
       },
