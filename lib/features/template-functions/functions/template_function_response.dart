@@ -1,14 +1,11 @@
-import 'dart:convert';
-
 import 'package:api_craft/core/models/models.dart';
 import 'package:api_craft/core/services/app_service.dart';
 import 'package:api_craft/features/template-functions/functions/template_common_args.dart';
+import 'package:api_craft/features/template-functions/functions/template_function_json.dart';
+import 'package:api_craft/features/template-functions/functions/template_function_xml.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:json_path/json_path.dart';
-import 'package:xml/xml.dart';
-import 'package:xml/xpath.dart';
 
 final responseBodyPath = TemplateFunction(
   name: "response.body.path",
@@ -171,66 +168,4 @@ bool shouldSendExpired(RawHttpResponse? response, String? ttl) {
   final expiryDate = requestDate.add(expiryDuration);
   debugPrint("expiryDate: $expiryDate, now: ${DateTime.now()}");
   return DateTime.now().isAfter(expiryDate);
-}
-
-String? filterJsonPath(
-  String body,
-  String path,
-  String returnFormat, {
-  String join = ', ',
-}) {
-  final parsed = jsonDecode(body);
-  debugPrint("Parsed body: $parsed");
-  var items = JsonPath(path).read(parsed);
-  if (returnFormat == Return.first.name) {
-    if (items.isNotEmpty) {
-      return objToString(items.first.value);
-    }
-    return null;
-  } else if (returnFormat == Return.last.name) {
-    if (items.isNotEmpty) {
-      return objToString(items.last.value);
-    }
-    return null;
-  } else {
-    final values = items.map((e) => objToString(e.value)).toList();
-    return values.join(join);
-  }
-}
-
-String objToString(dynamic obj) {
-  if (obj == null) return 'null';
-  if (obj is String) return obj;
-  if (obj is num || obj is bool) return obj.toString();
-  try {
-    return jsonEncode(obj);
-  } catch (e) {
-    return obj.toString();
-  }
-}
-
-String? filterXmlPath(
-  String body,
-  String path,
-  String returnFormat, {
-  String join = ', ',
-}) {
-  final document = XmlDocument.parse(body);
-
-  final nodes = document.xpath(path);
-
-  if (nodes.isEmpty) return null;
-
-  if (returnFormat == Return.first.name) {
-    return _nodeToString(nodes.first);
-  } else if (returnFormat == Return.last.name) {
-    return _nodeToString(nodes.last);
-  } else {
-    return nodes.map(_nodeToString).join(join);
-  }
-}
-
-String? _nodeToString(XmlNode node) {
-  if (node is XmlAttribute) return node.value;
-  return node.value;
 }

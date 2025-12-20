@@ -1,7 +1,10 @@
 import 'package:api_craft/core/models/models.dart';
+import 'package:api_craft/features/template-functions/functions/template_function_cookie.dart';
+import 'package:api_craft/features/template-functions/functions/template_function_json.dart';
 import 'package:api_craft/features/template-functions/functions/template_function_prompt.dart';
 import 'package:api_craft/features/template-functions/functions/template_function_regex.dart';
 import 'package:api_craft/features/template-functions/functions/template_function_response.dart';
+import 'package:api_craft/features/template-functions/functions/template_function_xml.dart';
 
 Map<String, dynamic> getDefaultTemplateFunctionState(TemplateFunction fn) {
   final Map<String, dynamic> defaultState = {};
@@ -41,6 +44,9 @@ final templates = [
   promptFn,
   regexMatchFn,
   regexReplaceFn,
+  cookieValueFn,
+  jsonPathFn,
+  xmlPathFn,
 ];
 
 Map<String, TemplateFunction> get templateFunctionRegistry {
