@@ -36,7 +36,7 @@ final responseBodyPath = TemplateFunction(
       },
     ),
   ],
-  onRender: (ctx, args) async {
+  onRender: (ref, ctx, args) async {
     debugPrint("Rendering response.body.path with args: ${args.values}");
     if (args.values['request'] == null || args.values['path'] == null) {
       debugPrint("request or path is null, cannot proceed");
@@ -44,11 +44,12 @@ final responseBodyPath = TemplateFunction(
     }
 
     final response = await getResponse(
-      ctx,
+      ref,
       purpose: args.purpose.name,
       requestId: args.values['request'],
       behavior: args.values['behavior'],
       ttl: args.values['ttl'],
+      context: ctx,
     );
     debugPrint("Got response: $response");
     if (response == null) return null;
@@ -81,17 +82,18 @@ final responseHeader = TemplateFunction(
       dynamicFn: (ctx, args) async {},
     ),
   ],
-  onRender: (ctx, args) async {
+  onRender: (ref, ctx, args) async {
     if (args.values['request'] == null || args.values['header'] == null) {
       return null;
     }
     final h = (args.values['header'] as String).toLowerCase();
     final response = await getResponse(
-      ctx,
+      ref,
       purpose: args.purpose.name,
       requestId: args.values['request'],
       behavior: args.values['behavior'],
       ttl: args.values['ttl'],
+      context: ctx,
     );
     if (response == null) return null;
 
@@ -107,17 +109,18 @@ final responseBodyRaw = TemplateFunction(
   description: 'Access the entire response body, as text',
   args: [requestArgs, behaviorArgs],
 
-  onRender: (ctx, args) async {
+  onRender: (ref, ctx, args) async {
     if (args.values['request'] == null) {
       return null;
     }
 
     final response = await getResponse(
-      ctx,
+      ref,
       purpose: args.purpose.name,
       requestId: args.values['request'],
       behavior: args.values['behavior'],
       ttl: args.values['ttl'],
+      context: ctx,
     );
     if (response == null) return null;
 
@@ -127,14 +130,15 @@ final responseBodyRaw = TemplateFunction(
 
 /// Helpers
 Future<RawHttpResponse?> getResponse(
-  Ref ctx, {
+  Ref ref, {
   required String purpose,
   String? behavior,
   required String requestId,
+  required BuildContext context,
   String? ttl,
 }) async {
   // var response = await ctx.read(httpRequestProvider).getResById(ctx, requestId);
-  var response = await AppService.http.getRes(ctx, requestId);
+  var response = await AppService.http.getRes(ref, requestId);
 
   if (behavior == Behavior.never.name && response == null) {
     return null;
@@ -151,7 +155,7 @@ Future<RawHttpResponse?> getResponse(
       (finalBehavior == Behavior.ttl.name &&
           shouldSendExpired(response, ttl))) {
     // response = await ctx.read(httpRequestProvider).runById(ctx, requestId);
-    response = await AppService.http.run(ctx, requestId);
+    response = await AppService.http.run(ref, requestId, context: context);
   }
   return response;
 }

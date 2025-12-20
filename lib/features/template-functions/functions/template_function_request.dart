@@ -26,7 +26,7 @@ final requestBodyPath = TemplateFunction(
       ],
     ),
   ],
-  onRender: (ctx, args) async {
+  onRender: (ref, ctx, args) async {
     // implement function logic here
   },
 );

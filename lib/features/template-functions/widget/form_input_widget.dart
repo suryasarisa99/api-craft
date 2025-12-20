@@ -24,22 +24,18 @@ class FormInputWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return isVertical
-        ? Column(spacing: 16, children: _buildInputWidgets())
-        : Row(
-            spacing: 8,
-            children: _buildInputWidgets()
-                .map((w) => Expanded(child: w))
-                .toList(),
-          );
+        ? Column(spacing: 16, children: _buildInputWidgets(false))
+        : Row(spacing: 8, children: _buildInputWidgets(true));
   }
 
-  List<Widget> _buildInputWidgets() {
+  List<Widget> _buildInputWidgets(bool isExpanded) {
     return inputs.map((input) {
       return DynamicFormInputWrapper(
         input: input,
         data: data,
         id: id,
         onChanged: onChanged,
+        isExpanded: isExpanded,
       );
     }).toList();
   }
@@ -51,12 +47,15 @@ class DynamicFormInputWrapper extends ConsumerStatefulWidget {
   final String? id;
   final Function(String key, dynamic value) onChanged;
 
+  final bool isExpanded;
+
   const DynamicFormInputWrapper({
     super.key,
     required this.input,
     required this.data,
     required this.id,
     required this.onChanged,
+    this.isExpanded = false,
   });
 
   @override
@@ -112,20 +111,24 @@ class _DynamicFormInputWrapperState
   @override
   Widget build(BuildContext context) {
     final input = widget.input;
+    final mergedInput = input.applyOverrides(_dynamicOverrides);
 
-    // Apply overrides
-    final hidden =
-        _dynamicOverrides?['hidden'] as bool? ??
-        (input is FormInputBase ? input.hidden : false);
+    final bool? hidden = switch (mergedInput) {
+      FormInputBase b => b.hidden,
+      FormInputAccordion a => a.hidden,
+      FormInputHStack h => h.hidden,
+      FormInputBanner b => b.hidden,
+      FormInputMarkdown m => m.hidden,
+      _ => false,
+    };
 
     if (hidden == true) {
       return const SizedBox.shrink();
     }
 
-    return switch (input) {
+    final child = switch (mergedInput) {
       FormInputSelect selectInput => FormWidgetSelect(
         selectInput: selectInput,
-        overrides: _dynamicOverrides,
         value: widget.data[selectInput.name] as String?,
         onChanged: (v) {
           widget.onChanged(selectInput.name, v);
@@ -133,7 +136,6 @@ class _DynamicFormInputWrapperState
       ),
       FormInputText textInput => FormWidgetText(
         input: textInput,
-        overrides: _dynamicOverrides,
         id: widget.id,
         value: widget.data[textInput.name] as String?,
         onChanged: (v) {
@@ -142,7 +144,6 @@ class _DynamicFormInputWrapperState
       ),
       FormInputCheckbox checkboxInput => FormWidgetCheckbox(
         input: checkboxInput,
-        overrides: _dynamicOverrides,
         value: widget.data[checkboxInput.name] as bool?,
         onChanged: (v) {
           widget.onChanged(checkboxInput.name, v);
@@ -150,7 +151,6 @@ class _DynamicFormInputWrapperState
       ),
       FormInputEditor editorInput => FormWidgetEditor(
         input: editorInput,
-        overrides: _dynamicOverrides,
         id: widget.id,
         value: widget.data[editorInput.name] as String?,
         onChanged: (v) {
@@ -159,7 +159,6 @@ class _DynamicFormInputWrapperState
       ),
       FormInputFile fileInput => FormWidgetFile(
         input: fileInput,
-        overrides: _dynamicOverrides,
         value: widget.data[fileInput.name] as String?,
         onChanged: (v) {
           widget.onChanged(fileInput.name, v);
@@ -185,16 +184,19 @@ class _DynamicFormInputWrapperState
       ),
       FormInputMarkdown markdownInput => FormWidgetMarkdown(
         input: markdownInput,
-        overrides: _dynamicOverrides,
       ),
       FormInputHttpRequest httpRequestInput => FormWidgetHttpRequest(
         input: httpRequestInput,
-        overrides: _dynamicOverrides,
         value: widget.data[httpRequestInput.name],
         onChanged: (value) => widget.onChanged(httpRequestInput.name, value),
       ),
-      _ => SizedBox.shrink(),
+      _ => const SizedBox.shrink(),
     };
+
+    if (widget.isExpanded) {
+      return Expanded(child: child);
+    }
+    return child;
   }
 }
 
@@ -202,21 +204,18 @@ class FormWidgetSelect extends StatelessWidget {
   final FormInputSelect selectInput;
   final String? value;
   final ValueChanged<String?>? onChanged;
-  final Map<String, dynamic>? overrides;
   const FormWidgetSelect({
     super.key,
     required this.selectInput,
     this.value,
     this.onChanged,
-    this.overrides,
   });
 
   @override
   Widget build(BuildContext context) {
-    final label = overrides?['label'] as String? ?? selectInput.label;
-    final defaultValue = overrides?['defaultValue'] ?? selectInput.defaultValue;
-    final optional =
-        overrides?['optional'] as bool? ?? selectInput.optional == true;
+    final label = selectInput.label;
+    final defaultValue = selectInput.defaultValue;
+    final optional = selectInput.optional == true;
 
     return DropdownButtonFormField<String>(
       decoration: InputDecoration(labelText: label),
@@ -247,7 +246,6 @@ class FormWidgetText extends StatelessWidget {
   final String? id;
   final ValueChanged<String?>? onChanged;
   final String? value;
-  final Map<String, dynamic>? overrides;
 
   const FormWidgetText({
     super.key,
@@ -255,15 +253,13 @@ class FormWidgetText extends StatelessWidget {
     this.onChanged,
     this.value,
     required this.id,
-    this.overrides,
   });
 
   @override
   Widget build(BuildContext context) {
-    final label = overrides?['label'] as String? ?? input.label;
-    final placeholder =
-        overrides?['placeholder'] as String? ?? input.placeholder;
-    final defaultValue = overrides?['defaultValue'] ?? input.defaultValue;
+    final label = input.label;
+    final placeholder = input.placeholder;
+    final defaultValue = input.defaultValue;
 
     return VariableTextFieldCustom(
       id: id,
@@ -305,14 +301,12 @@ class FormWidgetHttpRequest extends ConsumerStatefulWidget {
   final FormInputHttpRequest input;
   final String? value;
   final ValueChanged<String?>? onChanged;
-  final Map<String, dynamic>? overrides;
 
   const FormWidgetHttpRequest({
     super.key,
     required this.input,
     this.value,
     this.onChanged,
-    this.overrides,
   });
 
   @override
@@ -336,11 +330,9 @@ class _FormWidgetHttpRequestState extends ConsumerState<FormWidgetHttpRequest> {
 
   @override
   Widget build(BuildContext context) {
-    final label = widget.overrides?['label'] as String? ?? widget.input.label;
-    final defaultValue =
-        widget.overrides?['defaultValue'] ?? widget.input.defaultValue;
-    final optional =
-        widget.overrides?['optional'] as bool? ?? widget.input.optional == true;
+    final label = widget.input.label;
+    final defaultValue = widget.input.defaultValue;
+    final optional = widget.input.optional == true;
 
     // show picker
     return DropdownButtonFormField<String>(
@@ -371,23 +363,18 @@ class FormWidgetCheckbox extends StatelessWidget {
   final FormInputCheckbox input;
   final bool? value;
   final ValueChanged<bool?>? onChanged;
-  final Map<String, dynamic>? overrides;
 
   const FormWidgetCheckbox({
     super.key,
     required this.input,
     this.value,
     this.onChanged,
-    this.overrides,
   });
 
   @override
   Widget build(BuildContext context) {
-    final label = overrides?['label'] as String? ?? input.label ?? input.name;
-    final defaultValue =
-        overrides?['defaultValue'] as bool? ??
-        input.defaultValue as bool? ??
-        false;
+    final label = input.label ?? input.name;
+    final defaultValue = input.defaultValue as bool? ?? false;
 
     return CheckboxListTile(
       title: Text(label),
@@ -403,7 +390,6 @@ class FormWidgetEditor extends StatelessWidget {
   final String? value;
   final String? id;
   final ValueChanged<String?>? onChanged;
-  final Map<String, dynamic>? overrides;
 
   const FormWidgetEditor({
     super.key,
@@ -411,14 +397,12 @@ class FormWidgetEditor extends StatelessWidget {
     this.value,
     this.onChanged,
     required this.id,
-    this.overrides,
   });
 
   @override
   Widget build(BuildContext context) {
-    final label = overrides?['label'] as String? ?? input.label;
-    final defaultValue =
-        overrides?['defaultValue'] as String? ?? input.defaultValue as String?;
+    final label = input.label;
+    final defaultValue = input.defaultValue as String?;
 
     return VariableTextFieldCustom(
       id: id,
@@ -434,21 +418,18 @@ class FormWidgetFile extends StatelessWidget {
   final FormInputFile input;
   final String? value;
   final ValueChanged<String?>? onChanged;
-  final Map<String, dynamic>? overrides;
 
   const FormWidgetFile({
     super.key,
     required this.input,
     this.value,
     this.onChanged,
-    this.overrides,
   });
 
   @override
   Widget build(BuildContext context) {
-    final label = overrides?['label'] as String? ?? input.label ?? input.title;
-    final defaultValue =
-        overrides?['defaultValue'] as String? ?? input.defaultValue as String?;
+    final label = input.label ?? input.title;
+    final defaultValue = input.defaultValue as String?;
 
     return Row(
       children: [
@@ -499,21 +480,23 @@ class _FormWidgetAccordionState extends State<FormWidgetAccordion> {
 
   @override
   Widget build(BuildContext context) {
-    return ExpansionTile(
-      title: Text(widget.input.label),
-      initiallyExpanded: _isExpanded,
-      onExpansionChanged: (val) => setState(() => _isExpanded = val),
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: FormInputWidget(
-            id: widget.id,
-            inputs: widget.input.inputs ?? [],
-            onChanged: widget.onChanged,
-            data: widget.data,
+    return SizedBox(
+      child: ExpansionTile(
+        title: Text(widget.input.label),
+        initiallyExpanded: _isExpanded,
+        onExpansionChanged: (val) => setState(() => _isExpanded = val),
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: FormInputWidget(
+              id: widget.id,
+              inputs: widget.input.inputs ?? [],
+              onChanged: widget.onChanged,
+              data: widget.data,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -554,13 +537,12 @@ class FormWidgetBanner extends StatelessWidget {
 
 class FormWidgetMarkdown extends StatelessWidget {
   final FormInputMarkdown input;
-  final Map<String, dynamic>? overrides;
 
-  const FormWidgetMarkdown({super.key, required this.input, this.overrides});
+  const FormWidgetMarkdown({super.key, required this.input});
 
   @override
   Widget build(BuildContext context) {
-    final content = overrides?['content'] as String? ?? input.content;
+    final content = input.content;
     // Simple text for now since flutter_markdown is missing
     return Text(content);
   }

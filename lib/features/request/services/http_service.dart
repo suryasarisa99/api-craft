@@ -6,9 +6,13 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class HttpService {
-  Future<RawHttpResponse> run(Ref ref, String requestId) async {
+  Future<RawHttpResponse> run(
+    Ref ref,
+    String requestId, {
+    required BuildContext context,
+  }) async {
     final resolver = RequestResolver(ref);
-    final req = await resolver.resolveForExecution(requestId);
+    final req = await resolver.resolveForExecution(requestId, context: context);
     debugPrint('Executing request to URL: ${req.uri}');
 
     final response = await sendRawHttp(

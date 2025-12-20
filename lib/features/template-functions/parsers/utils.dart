@@ -1,4 +1,6 @@
 import 'package:api_craft/core/models/models.dart';
+import 'package:api_craft/features/template-functions/functions/template_function_prompt.dart';
+import 'package:api_craft/features/template-functions/functions/template_function_regex.dart';
 import 'package:api_craft/features/template-functions/functions/template_function_response.dart';
 
 Map<String, dynamic> getDefaultTemplateFunctionState(TemplateFunction fn) {
@@ -32,7 +34,14 @@ Map<String, dynamic> getFnState(
   return mergedState;
 }
 
-final templates = [responseBodyPath, responseBodyRaw, responseHeader];
+final templates = [
+  responseBodyPath,
+  responseBodyRaw,
+  responseHeader,
+  promptFn,
+  regexMatchFn,
+  regexReplaceFn,
+];
 
 Map<String, TemplateFunction> get templateFunctionRegistry {
   final Map<String, TemplateFunction> registry = {};

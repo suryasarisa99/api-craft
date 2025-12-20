@@ -38,7 +38,9 @@ class _FormPopupWidgetState extends ConsumerState<FormPopupWidget> {
   @override
   void initState() {
     super.initState();
-    renderPreview();
+    if (widget.templateFn.previewType == "auto") {
+      renderPreview();
+    }
   }
 
   void handleSubmit() {
@@ -54,14 +56,21 @@ class _FormPopupWidgetState extends ConsumerState<FormPopupWidget> {
     final fnStr = serializePlaceholder(
       widget.fnPlaceholder.copyWithArgs(fnState),
     );
+    debugPrint("fnStr: $fnStr");
+    debugPrint(
+      "replace(${widget.fnPlaceholder.start}, ${widget.fnPlaceholder.end}, $fnStr)",
+    );
     final fnStrWithPlaceholders = "{{$fnStr}}";
     debugPrint("Serialized function string: $fnStrWithPlaceholders");
+    final start = widget.fnPlaceholder.start;
+    final end = widget.fnPlaceholder.end;
     widget.updateField((val) {
-      return val.replaceRange(
-        widget.fnPlaceholder.start,
-        widget.fnPlaceholder.end,
-        fnStrWithPlaceholders,
-      );
+      debugPrint("val: $val ,len: ${val.length}");
+      if (val.isEmpty) return fnStrWithPlaceholders;
+      return val.substring(0, start) +
+          fnStrWithPlaceholders +
+          val.substring(end);
+      // return val.replaceRange(start, end, fnStrWithPlaceholders);
     });
     Navigator.of(context).pop();
   }
@@ -71,6 +80,7 @@ class _FormPopupWidgetState extends ConsumerState<FormPopupWidget> {
     widget.templateFn
         .onRender(
           r,
+          context,
           CallTemplateFunctionArgs(values: fnState, purpose: Purpose.preview),
         )
         .then((value) {
@@ -123,9 +133,11 @@ class _FormPopupWidgetState extends ConsumerState<FormPopupWidget> {
                     setState(() {
                       fnState = Map.from(fnState)..[key] = value;
                     });
-                    debouncer.run(() {
-                      renderPreview();
-                    });
+                    if (widget.templateFn.previewType == "auto") {
+                      debouncer.run(() {
+                        renderPreview();
+                      });
+                    }
                   },
                 ),
               ),

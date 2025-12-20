@@ -42,7 +42,10 @@ class RequestResolver {
   }
 
   /// ---------- EXECUTION RESOLUTION ----------
-  Future<ResolvedRequestContext> resolveForExecution(String requestId) async {
+  Future<ResolvedRequestContext> resolveForExecution(
+    String requestId, {
+    required BuildContext context,
+  }) async {
     final node =
         ref.read(fileTreeProvider.select((t) => t.nodeMap[requestId]!))
             as RequestNode;
@@ -55,7 +58,11 @@ class RequestResolver {
     final mergedVars = _mergeVariables(node);
     final resolver = _LazyVariableResolver(mergedVars, this);
 
-    final resolvedUrl = await _resolveVariables(node.url, resolver);
+    final resolvedUrl = await _resolveVariables(
+      node.url,
+      resolver,
+      context: context,
+    );
     final uri = Uri.parse(resolvedUrl);
 
     final queryParams = await Future.wait(
@@ -64,8 +71,8 @@ class RequestResolver {
         removeEmptyKeys: false,
       ).map((p) async {
         return [
-          await _resolveVariables(p[0], resolver),
-          await _resolveVariables(p[1], resolver),
+          await _resolveVariables(p[0], resolver, context: context),
+          await _resolveVariables(p[1], resolver, context: context),
         ];
       }).toList(),
     );
@@ -74,8 +81,8 @@ class RequestResolver {
     final headers = await Future.wait(
       _handleHeaders(node.config.headers, inheritedHeaders).map((h) async {
         return [
-          await _resolveVariables(h[0], resolver),
-          await _resolveVariables(h[1], resolver),
+          await _resolveVariables(h[0], resolver, context: context),
+          await _resolveVariables(h[1], resolver, context: context),
         ];
       }).toList(),
     );
@@ -114,9 +121,17 @@ class RequestResolver {
       }
     }
     final resolvedAuth = auth.copyWith(
-      token: await _resolveVariables(auth.token, resolver),
-      username: await _resolveVariables(auth.username, resolver),
-      password: await _resolveVariables(auth.password, resolver),
+      token: await _resolveVariables(auth.token, resolver, context: context),
+      username: await _resolveVariables(
+        auth.username,
+        resolver,
+        context: context,
+      ),
+      password: await _resolveVariables(
+        auth.password,
+        resolver,
+        context: context,
+      ),
     );
 
     // After all resolution, we can get only the variables that were actually used
@@ -243,8 +258,9 @@ class RequestResolver {
   /// New way handles variables and functions
   Future<String> _resolveVariables(
     String text,
-    _LazyVariableResolver resolver,
-  ) async {
+    _LazyVariableResolver resolver, {
+    required BuildContext context,
+  }) async {
     final placeholders = TemplateParser.parseAll(text)
       ..sort((a, b) => b.start.compareTo(a.start));
 
@@ -258,7 +274,11 @@ class RequestResolver {
           for (final entry in placeholder.args!.entries) {
             final val = entry.value;
             if (val is String) {
-              resolvedArgs[entry.key] = await _resolveVariables(val, resolver);
+              resolvedArgs[entry.key] = await _resolveVariables(
+                val,
+                resolver,
+                context: context,
+              );
             } else {
               resolvedArgs[entry.key] = val;
             }
@@ -267,6 +287,7 @@ class RequestResolver {
 
         final String? fnValue = await fn?.onRender(
           ref,
+          context,
           CallTemplateFunctionArgs(values: resolvedArgs, purpose: Purpose.send),
         );
         text = text.replaceRange(
@@ -277,7 +298,7 @@ class RequestResolver {
       } else {
         final key = placeholder.name;
         if (resolver.hasVariable(key)) {
-          final val = await resolver.resolve(key);
+          final val = await resolver.resolve(key, context: context);
           text = text.replaceRange(placeholder.start, placeholder.end, val);
         }
       }
@@ -366,7 +387,7 @@ class _LazyVariableResolver {
 
   _LazyVariableResolver(this._rawVars, this._resolver);
 
-  Future<String> resolve(String key) async {
+  Future<String> resolve(String key, {required BuildContext context}) async {
     resolvedKeys.add(key);
     debugPrint("Resolving variable: $key");
     if (_cache.containsKey(key)) {
@@ -384,7 +405,11 @@ class _LazyVariableResolver {
       if (value == null) return '{{$key}}';
 
       if (value is String) {
-        final resolved = await _resolver._resolveVariables(value, this);
+        final resolved = await _resolver._resolveVariables(
+          value,
+          this,
+          context: context,
+        );
         _cache[key] = resolved;
         return resolved;
       } else {

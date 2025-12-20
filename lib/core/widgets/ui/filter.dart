@@ -1,3 +1,4 @@
+import 'package:api_craft/features/template-functions/parsers/utils.dart';
 import 'package:flutter/cupertino.dart';
 
 // final List<String> variables = [
@@ -14,12 +15,7 @@ import 'package:flutter/cupertino.dart';
 //   'https://test/{{token}}',
 //   'https://test/{{token}}/magictext',
 // ];
-final List<String> functions = [
-  'getData',
-  'postData',
-  'deleteItem',
-  'updateUser',
-];
+final List<String> functions = templateFunctionRegistry.keys.toList();
 
 class FillOptions {
   final String type; // 'url', 'variable', 'function'
