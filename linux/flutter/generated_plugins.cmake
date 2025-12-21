@@ -4,6 +4,7 @@
 
 list(APPEND FLUTTER_PLUGIN_LIST
   bitsdojo_window_linux
+  flutter_js
   irondash_engine_context
   screen_retriever_linux
   super_native_extensions

@@ -134,6 +134,17 @@ class ReqComposeNotifier extends Notifier<UiRequestContext> {
     );
   }
 
+  void updateScripts(String scripts) {
+    updateNode(
+      (getNode as RequestNode).copyWith(
+        config: (getNode.config as RequestNodeConfig).copyWith(
+          scripts: scripts,
+        ),
+      ),
+    );
+    _repo.updateScripts(id, scripts);
+  }
+
   void updateBody(String body) {
     debugPrint("update body");
     state = state.copyWith(body: body);

@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:api_craft/core/network/raw/raw_http_req.dart';
 import 'package:api_craft/core/models/models.dart';
 import 'package:api_craft/core/providers/providers.dart';
+import 'package:api_craft/core/services/js_engine.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -75,6 +76,16 @@ class HttpService {
             .saveCookiesToJar(cookieJarId, newCookies);
       }
     }
+
+    // 4. Run Scripts
+    final scripts = req.request.reqConfig.scripts;
+    if (scripts != null && scripts.isNotEmpty) {
+      debugPrint("Running post-response script...");
+      await ref
+          .read(jsEngineProvider)
+          .executeScript(scripts, response: response);
+    }
+
     return response;
   }
 

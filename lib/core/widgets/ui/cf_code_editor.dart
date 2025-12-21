@@ -79,7 +79,6 @@ class _CFCodeEditorState extends State<CFCodeEditor> {
       controller: _controller,
       language: _getLanguage(widget.language),
       editorTheme: theme,
-
       readOnly: widget.readOnly,
       enableGutter: true,
       enableFolding: true,

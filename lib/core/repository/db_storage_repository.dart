@@ -87,6 +87,7 @@ class DbStorageRepository implements StorageRepository {
         'variables',
         'description',
         'body_type',
+        'scripts',
       ],
       where: 'id = ?',
       whereArgs: [id],
@@ -125,6 +126,17 @@ class DbStorageRepository implements StorageRepository {
   Future<void> updateRequestBody(String id, String body) async {
     final db = await _db;
     await db.update('nodes', {'body': body}, where: 'id = ?', whereArgs: [id]);
+  }
+
+  @override
+  Future<void> updateScripts(String id, String scripts) async {
+    final db = await _db;
+    await db.update(
+      'nodes',
+      {'scripts': scripts},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
   }
 
   @override

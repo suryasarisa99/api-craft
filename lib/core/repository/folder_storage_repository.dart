@@ -310,6 +310,11 @@ class FolderStorageRepository implements StorageRepository {
   }
 
   @override
+  Future<void> updateScripts(String id, String scripts) async {
+    throw UnimplementedError();
+  }
+
+  @override
   Future<void> addHistoryEntry(RawHttpResponse entry, {int limit = 10}) {
     throw UnimplementedError();
   }

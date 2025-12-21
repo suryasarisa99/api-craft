@@ -42,6 +42,7 @@ abstract class StorageRepository {
 
   Future<void> updateNode(Node node);
   Future<void> updateRequestBody(String id, String body);
+  Future<void> updateScripts(String id, String scripts);
 
   ///
   Future<void> addHistoryEntry(RawHttpResponse entry, {int limit = 10});

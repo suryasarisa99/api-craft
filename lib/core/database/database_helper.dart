@@ -49,6 +49,7 @@ class Tables {
     query_parameters TEXT, -- JSON: List of {key, val, enabled}
     body TEXT,
     body_type TEXT,
+    scripts TEXT,
     status_code INTEGER
       )
     ''',
@@ -126,7 +127,7 @@ class DatabaseHelper {
 
     final db = await openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: (db, version) async {
         await Tables.createAllTables(db);
         await _ensureDefaults(db);

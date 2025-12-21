@@ -6,6 +6,7 @@ import 'package:api_craft/features/auth/auth_tab.dart';
 import 'package:api_craft/features/request/widgets/tabs/headers_tab.dart';
 import 'package:api_craft/features/request/widgets/tabs/query_params.dart';
 import 'package:api_craft/features/request/widgets/tabs/body_tab.dart';
+import 'package:api_craft/features/request/widgets/tabs/script_tab.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lazy_load_indexed_stack/lazy_load_indexed_stack.dart';
@@ -41,10 +42,11 @@ class _RequestTabState extends ConsumerState<RequestTab>
     QueryParamsTab(id: widget.node.id),
     HeadersTab(id: widget.node.id),
     AuthTab(id: widget.node.id),
+    ScriptTab(id: widget.node.id),
   ];
 
   late final TabController _tabController = TabController(
-    length: 4,
+    length: 5,
     vsync: this,
   );
 
@@ -201,6 +203,7 @@ class _RequestTabState extends ConsumerState<RequestTab>
                   },
                 ),
                 AuthTabHeader(widget.node.id, controller: _tabController),
+                const Tab(text: "Scripts"),
               ],
             ),
           ),

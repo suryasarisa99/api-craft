@@ -201,6 +201,7 @@ class RequestNode extends Node<RequestNodeConfig> {
         : const AuthData();
     config.queryParameters = Node.parseHeaders(details['query_parameters']);
     config.bodyType = details['body_type'];
+    config.scripts = details['scripts'];
 
     config.isDetailLoaded = true;
   }
@@ -235,6 +236,7 @@ class RequestNode extends Node<RequestNodeConfig> {
             ? Node.parseHeaders(map['query_parameters'])
             : [],
         bodyType: map['body_type'],
+        scripts: map['scripts'],
       ),
     );
   }
@@ -285,6 +287,7 @@ class RequestNode extends Node<RequestNodeConfig> {
         reqConfig.queryParameters.map((e) => e.toMap()).toList(),
       ),
       'body_type': reqConfig.bodyType,
+      'scripts': reqConfig.scripts,
     };
   }
 
