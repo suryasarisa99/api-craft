@@ -66,6 +66,7 @@ class Tables {
   body TEXT,          -- UTF8 String
   executed_at INTEGER NOT NULL,
   duration_ms INTEGER,
+  error_message TEXT, -- Error message if failed
   --  response_size INTEGER,
   FOREIGN KEY(request_id) REFERENCES nodes(id) ON DELETE CASCADE
 );
@@ -127,7 +128,7 @@ class DatabaseHelper {
 
     final db = await openDatabase(
       path,
-      version: 2,
+      version: 3,
       onCreate: (db, version) async {
         await Tables.createAllTables(db);
         await _ensureDefaults(db);

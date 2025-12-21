@@ -1,5 +1,6 @@
 import 'package:api_craft/core/models/models.dart';
 import 'package:api_craft/core/providers/ref_provider.dart';
+import 'package:api_craft/core/widgets/ui/custom_dialog.dart';
 import 'package:api_craft/features/template-functions/models/template_placeholder_model.dart';
 import 'package:api_craft/features/template-functions/parsers/utils.dart';
 import 'package:api_craft/features/template-functions/parsers/parse.dart';
@@ -99,78 +100,74 @@ class _FormPopupWidgetState extends ConsumerState<FormPopupWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return Dialog(
-      child: Container(
-        width: 800,
-        height: 600,
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: .start,
-          children: [
-            Container(
-              padding: .symmetric(vertical: 1, horizontal: 8),
-              decoration: BoxDecoration(
-                color: const Color.fromARGB(255, 59, 61, 62),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Text(
-                "${widget.fnPlaceholder.name}(...)",
-                style: const TextStyle(fontSize: 17, fontWeight: .w600),
-              ),
+    return CustomDialog(
+      width: 800,
+      height: 600,
+      padding: const EdgeInsets.all(16.0),
+
+      child: Column(
+        crossAxisAlignment: .start,
+        children: [
+          Container(
+            padding: .symmetric(vertical: 1, horizontal: 8),
+            decoration: BoxDecoration(
+              color: const Color.fromARGB(255, 59, 61, 62),
+              borderRadius: BorderRadius.circular(4),
             ),
-            const SizedBox(height: 10),
-            Text(widget.templateFn.description),
-            const SizedBox(height: 16),
-            Expanded(
-              child: Form(
-                key: _formKey,
-                child: FormInputWidget(
-                  id: widget.id,
-                  inputs: widget.templateFn.args,
-                  data: fnState,
-                  onChanged: (key, value) {
-                    debugPrint("Input changed: $key -> $value");
-                    setState(() {
-                      fnState = Map.from(fnState)..[key] = value;
+            child: Text(
+              "${widget.fnPlaceholder.name}(...)",
+              style: const TextStyle(fontSize: 17, fontWeight: .w600),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(widget.templateFn.description),
+          const SizedBox(height: 16),
+          Expanded(
+            child: Form(
+              key: _formKey,
+              child: FormInputWidget(
+                id: widget.id,
+                inputs: widget.templateFn.args,
+                data: fnState,
+                onChanged: (key, value) {
+                  debugPrint("Input changed: $key -> $value");
+                  setState(() {
+                    fnState = Map.from(fnState)..[key] = value;
+                  });
+                  if (widget.templateFn.previewType == "auto") {
+                    debouncer.run(() {
+                      renderPreview();
                     });
-                    if (widget.templateFn.previewType == "auto") {
-                      debouncer.run(() {
-                        renderPreview();
-                      });
-                    }
-                  },
+                  }
+                },
+              ),
+            ),
+          ),
+          Container(
+            padding: .symmetric(vertical: 6, horizontal: 12),
+            decoration: BoxDecoration(
+              color: const Color.fromARGB(255, 64, 67, 67),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: SelectableText(
+                    renderedValue ?? "",
+                    style: const TextStyle(color: Colors.white),
+                  ),
                 ),
-              ),
+                const SizedBox(width: 20),
+                IconButton(
+                  onPressed: renderPreview,
+                  icon: const Icon(Icons.refresh),
+                ),
+              ],
             ),
-            Container(
-              padding: .symmetric(vertical: 6, horizontal: 12),
-              decoration: BoxDecoration(
-                color: const Color.fromARGB(255, 64, 67, 67),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: SelectableText(
-                      renderedValue ?? "",
-                      style: const TextStyle(color: Colors.white),
-                    ),
-                  ),
-                  const SizedBox(width: 20),
-                  IconButton(
-                    onPressed: renderPreview,
-                    icon: const Icon(Icons.refresh),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: handleSubmit,
-              child: const Text("Confirm"),
-            ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 16),
+          ElevatedButton(onPressed: handleSubmit, child: const Text("Confirm")),
+        ],
       ),
     );
   }

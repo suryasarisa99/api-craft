@@ -16,6 +16,7 @@ class RawHttpResponse {
   final Uint8List bodyBytes;
   final String body;
   final String? bodyType;
+  final String? errorMessage;
 
   RawHttpResponse({
     required this.id,
@@ -29,6 +30,8 @@ class RawHttpResponse {
     required this.executeAt,
     required this.durationMs,
     required this.requestId,
+
+    this.errorMessage,
   });
 
   factory RawHttpResponse.fromMap(Map<String, dynamic> map) {
@@ -53,6 +56,7 @@ class RawHttpResponse {
       bodyBytes: base64.decode(map['body_base64']),
       bodyType: map['body_type'],
       body: map['body'],
+      errorMessage: map['error_message'],
     );
   }
 
@@ -70,6 +74,7 @@ class RawHttpResponse {
       'body': body,
       'body_type': bodyType,
       'body_base64': base64.encode(bodyBytes),
+      'error_message': errorMessage,
     };
   }
 }

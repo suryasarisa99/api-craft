@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'package:api_craft/core/providers/providers.dart';
+
 import 'package:api_craft/core/widgets/ui/custom_menu.dart';
 import 'package:api_craft/features/response/response_headers.dart';
 import 'package:api_craft/features/response/widgets/response_body_tab.dart';
@@ -46,9 +48,41 @@ class _ResponseTAbState extends ConsumerState<ResponseTAb>
     if (node == null) {
       return const Center(child: Text("No Active Request"));
     }
+    final isSending = ref.watch(
+      reqComposeProvider(id).select((d) => d.isSending),
+    );
+    final sendError = ref.watch(
+      reqComposeProvider(id).select((d) => d.sendError),
+    );
+    final sendStartTime = ref.watch(
+      reqComposeProvider(id).select((d) => d.sendStartTime),
+    );
     final response = ref.watch(
       reqComposeProvider(id).select((d) => d.history?.firstOrNull),
     );
+
+    if (isSending) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const CircularProgressIndicator(),
+            const SizedBox(height: 16),
+            const Text("Sending Request..."),
+            if (sendStartTime != null) _ResponseTimer(startTime: sendStartTime),
+          ],
+        ),
+      );
+    }
+
+    if (sendError != null) {
+      return _ErrorSearch(error: sendError);
+    }
+
+    if (response?.errorMessage != null) {
+      return _ErrorSearch(error: response!.errorMessage!);
+    }
+
     if (response == null) {
       return const Center(child: Text("No Response Available"));
     }
@@ -126,6 +160,64 @@ class _ResponseTAbState extends ConsumerState<ResponseTAb>
           ),
         ),
       ],
+    );
+  }
+}
+
+class _ResponseTimer extends StatefulWidget {
+  final DateTime startTime;
+  const _ResponseTimer({required this.startTime});
+
+  @override
+  State<_ResponseTimer> createState() => _ResponseTimerState();
+}
+
+class _ResponseTimerState extends State<_ResponseTimer> {
+  late final Timer _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(milliseconds: 50), (timer) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ms = DateTime.now().difference(widget.startTime).inMilliseconds;
+    return Text("${ms} ms", style: const TextStyle(fontFamily: "monospace"));
+  }
+}
+
+class _ErrorSearch extends StatelessWidget {
+  final String error;
+  const _ErrorSearch({required this.error});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.error_outline, color: Colors.red, size: 48),
+            const SizedBox(height: 16),
+            SelectableText(
+              "Error: $error",
+              style: const TextStyle(color: Colors.red),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

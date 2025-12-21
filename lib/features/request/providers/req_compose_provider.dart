@@ -229,4 +229,20 @@ class ReqComposeNotifier extends Notifier<UiRequestContext> {
     ref.read(fileTreeProvider.notifier).updateNode(node);
     state = state.copyWith(node: node);
   }
+
+  void startSending() {
+    state = state.copyWith(
+      isSending: true,
+      sendStartTime: DateTime.now(),
+      sendError: null,
+    );
+  }
+
+  void finishSending() {
+    state = state.copyWith(isSending: false);
+  }
+
+  void setSendError(String error) {
+    state = state.copyWith(isSending: false, sendError: error);
+  }
 }
