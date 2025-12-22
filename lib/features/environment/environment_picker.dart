@@ -1,3 +1,4 @@
+import 'package:api_craft/core/widgets/ui/surya_theme_icon.dart';
 import 'package:api_craft/features/environment/environment_provider.dart';
 import 'package:api_craft/features/environment/cookie_jar_editor_dialog.dart';
 import 'package:api_craft/features/environment/environment_editor_dialog.dart';
@@ -5,6 +6,7 @@ import 'package:api_craft/core/widgets/ui/custom_menu.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_popup/flutter_popup.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:suryaicons/bulk_rounded.dart';
 
 class EnvironmentPicker extends ConsumerWidget {
   const EnvironmentPicker({super.key});
@@ -94,9 +96,11 @@ class EnvironmentPicker extends ConsumerWidget {
                     ref.read(environmentProvider.notifier).selectCookieJar(val),
               ),
             ),
-            menuDivider,
+            LabeledDivider(
+              text: state.selectedCookieJar?.name ?? "No Cookie Jar",
+            ),
             CustomMenuIconItem(
-              icon: Icon(Icons.cookie_outlined, size: 16),
+              icon: const SuryaThemeIcon(BulkRounded.cookie),
               title: const Text("Manage Cookies"),
               value: 'manage',
               onTap: (_) {
@@ -111,7 +115,8 @@ class EnvironmentPicker extends ConsumerWidget {
               },
             ),
             CustomMenuIconItem(
-              icon: Icon(Icons.edit, size: 16),
+              // icon: Icon(Icons.edit, size: 16),
+              icon: const SuryaThemeIcon(BulkRounded.edit03),
               title: const Text("Rename Cookie Jar"),
               value: 'rename',
               onTap: (_) {
@@ -127,7 +132,7 @@ class EnvironmentPicker extends ConsumerWidget {
             ),
             if (state.cookieJars.length > 1) ...[
               CustomMenuIconItem(
-                icon: Icon(Icons.delete, size: 16, color: Colors.red),
+                icon: const SuryaThemeIcon(BulkRounded.delete01),
                 title: const Text(
                   "Delete Cookie Jar",
                   style: TextStyle(color: Colors.red),
@@ -147,7 +152,7 @@ class EnvironmentPicker extends ConsumerWidget {
             ],
             menuDivider,
             CustomMenuIconItem(
-              icon: Icon(Icons.add, size: 16),
+              icon: const SuryaThemeIcon(BulkRounded.add01),
               title: const Text("New Cookie Jar"),
               value: 'new',
               onTap: (_) {
@@ -161,7 +166,8 @@ class EnvironmentPicker extends ConsumerWidget {
             padding: const EdgeInsets.all(4.0),
             child: Row(
               children: [
-                const Icon(Icons.cookie_outlined, size: 18),
+                // const Icon(Icons.cookie_outlined, size: 18),
+                const SuryaThemeIcon(BulkRounded.cookie),
                 if (selectedJar != null && selectedJar.name != 'Default') ...[
                   const SizedBox(width: 4),
                   Text(selectedJar.name, style: const TextStyle(fontSize: 12)),

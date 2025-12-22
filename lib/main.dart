@@ -1,12 +1,13 @@
 import 'package:api_craft/core/constants/globals.dart';
 import 'package:api_craft/core/screens/home_screen.dart';
-import 'package:bitsdojo_window/bitsdojo_window.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
-import 'dart:developer'; // Use for better logging
+import 'dart:developer';
+
+import 'package:window_manager/window_manager.dart'; // Use for better logging
 
 Future<String> getDatabaseFilePath() async {
   // 1. Get the default databases directory for the current platform (macOS in this case)
@@ -23,25 +24,26 @@ Future<String> getDatabaseFilePath() async {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  doWhenWindowReady(() {
-    final win = appWindow;
-    // const initialSize = Size(600, 450);
-    // win.minSize = initialSize;
-    // win.size = initialSize;
-    // win.alignment = Alignment.center;
-    win.show();
-  });
-  // final path = await getDatabaseFilePath();
-  // await windowManager.ensureInitialized();
-  // const WindowOptions windowOptions = WindowOptions(
-  //   center: true,
-  //   backgroundColor: Colors.transparent,
-  //   skipTaskbar: false,
-  // );
-  // await windowManager.waitUntilReadyToShow(windowOptions, () async {
-  //   await windowManager.show();
-  //   await windowManager.focus();
+  // doWhenWindowReady(() {
+  //   final win = appWindow;
+  //   // const initialSize = Size(600, 450);
+  //   // win.minSize = initialSize;
+  //   // win.size = initialSize;
+  //   // win.alignment = Alignment.center;
+  //   win.show();
   // });
+  // final path = await getDatabaseFilePath();
+  await windowManager.ensureInitialized();
+  const WindowOptions windowOptions = WindowOptions(
+    center: true,
+    backgroundColor: Colors.transparent,
+    skipTaskbar: false,
+    titleBarStyle: TitleBarStyle.hidden,
+  );
+  await windowManager.waitUntilReadyToShow(windowOptions, () async {
+    await windowManager.show();
+    await windowManager.focus();
+  });
   prefs = await SharedPreferences.getInstance();
   runApp(ProviderScope(child: const MainApp()));
 }
@@ -90,8 +92,8 @@ class MainApp extends StatelessWidget {
         ),
         iconButtonTheme: IconButtonThemeData(
           style: IconButton.styleFrom(
-            minimumSize: const Size(38, 28),
-            maximumSize: const Size(38, 28),
+            minimumSize: const Size(32, 28),
+            maximumSize: const Size(32, 28),
             alignment: Alignment.center,
             padding: .zero,
             shape: RoundedRectangleBorder(

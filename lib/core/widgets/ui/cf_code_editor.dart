@@ -1,10 +1,10 @@
+import 'package:api_craft/core/widgets/ui/key_value_lang.dart';
 import 'package:flutter/material.dart';
 import 'package:code_forge/code_forge.dart';
 import 'package:re_highlight/re_highlight.dart';
 import 'package:re_highlight/languages/json.dart';
 import 'package:re_highlight/languages/xml.dart';
 import 'package:re_highlight/languages/javascript.dart';
-import 'package:re_highlight/languages/dart.dart';
 import 'package:re_highlight/styles/atom-one-dark.dart';
 
 class CFCodeEditor extends StatefulWidget {
@@ -59,14 +59,16 @@ class _CFCodeEditorState extends State<CFCodeEditor> {
     super.dispose();
   }
 
-  Mode _getLanguage(String? lang) {
+  Mode? _getLanguage(String? lang) {
     debugPrint('lang: $lang');
-    if (lang == null) return langDart;
+    if (lang == null) return null;
     final l = lang.toLowerCase();
+    debugPrint("l: $l, (l == 'form-urlencoded')  ${l == 'form-urlencoded'}");
+    if (l == "form-urlencoded") return langKeyValue;
     if (l.contains('json')) return langJson;
     if (l.contains('xml') || l.contains('html')) return langXml;
     if (l.contains('javascript') || l.contains('js')) return langJavascript;
-    return langDart;
+    return null;
   }
 
   @override

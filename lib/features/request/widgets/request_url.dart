@@ -3,11 +3,13 @@ import 'package:api_craft/core/providers/providers.dart';
 import 'package:api_craft/core/providers/ref_provider.dart';
 import 'package:api_craft/core/services/app_service.dart';
 import 'package:api_craft/core/widgets/ui/custom_menu.dart';
+import 'package:api_craft/core/widgets/ui/surya_theme_icon.dart';
 import 'package:flutter_popup/flutter_popup.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:api_craft/core/widgets/ui/variable_text_field_custom.dart';
 import 'package:api_craft/features/request/providers/ws_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:suryaicons/bulk_rounded.dart';
 
 class RequestUrl extends ConsumerStatefulWidget {
   final String id;
@@ -87,36 +89,38 @@ class _RequestUrlState extends ConsumerState<RequestUrl> {
                 prefixIconConstraints: BoxConstraints(maxWidth: 80),
                 prefixIcon: Padding(
                   padding: const EdgeInsets.only(left: 8),
-                  child: Consumer(
-                    builder: (context, ref, child) {
-                      final req = ref.watch(
-                        reqComposeProvider(
-                          widget.id,
-                        ).select((d) => (d.node as RequestNode)),
-                      );
-
-                      if (req.requestType == RequestType.http) {
-                        return MyCustomMenu.contentColumn(
-                          popupKey: popupKey,
-                          items: _buildMenuItems(req.method),
-                          child: Text(
-                            req.method,
-                            style: TextStyle(
-                              color:
-                                  methodsColorsMap[req.method] ?? Colors.grey,
-                              fontWeight: FontWeight.w400,
-                              fontSize: 13,
-                            ),
-                          ),
+                  child: GestureDetector(
+                    child: Consumer(
+                      builder: (context, ref, child) {
+                        final req = ref.watch(
+                          reqComposeProvider(
+                            widget.id,
+                          ).select((d) => (d.node as RequestNode)),
                         );
-                      }
-                      return SizedBox.shrink();
-                    },
+
+                        if (req.requestType == RequestType.http) {
+                          return MyCustomMenu.contentColumn(
+                            popupKey: popupKey,
+                            items: _buildMenuItems(req.method),
+                            child: Text(
+                              req.method,
+                              style: TextStyle(
+                                color:
+                                    methodsColorsMap[req.method] ?? Colors.grey,
+                                fontWeight: FontWeight.w400,
+                                fontSize: 13,
+                              ),
+                            ),
+                          );
+                        }
+                        return SizedBox.shrink();
+                      },
+                    ),
                   ),
                 ),
-                suffixIconConstraints: BoxConstraints(maxWidth: 84),
+                suffixIconConstraints: BoxConstraints(maxWidth: 70),
                 suffixIcon: Padding(
-                  padding: const EdgeInsets.only(right: 8),
+                  padding: const EdgeInsets.only(right: 3),
                   child: UrlSuffixBtn(id: widget.id),
                 ),
                 border: OutlineInputBorder(),
@@ -203,26 +207,44 @@ class _UrlSuffixBtnState extends ConsumerState<UrlSuffixBtn> {
           widget.id,
         ).select((s) => (s.isConnected, s.isConnecting)),
       );
-      if (isConnected) {
+      if (connecting) {
         return Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            IconButton(onPressed: disconnectWs, icon: Icon(Icons.link_off)),
             IconButton(
-              onPressed: () {
-                // handle send mssg
-              },
-              icon: Icon(Icons.send),
+              onPressed: disconnectWs,
+              icon:
+                  //  Icon(Icons.link_off)
+                  const SuryaThemeIcon(BulkRounded.cancelCircle),
             ),
+            if (isConnected)
+              IconButton(
+                onPressed: () {
+                  // handle send mssg
+                },
+                // icon: const Icon(Icons.send_rounded),
+                icon: Transform.rotate(
+                  angle: 0.78,
+                  child: const SuryaThemeIcon(BulkRounded.sent),
+                ),
+              ),
           ],
         );
       }
       return IconButton(
-        onPressed: connecting ? null : sendReq,
-        icon: Icon(Icons.swap_vert),
+        onPressed: sendReq,
+        icon: const SuryaThemeIcon(BulkRounded.arrowUpDown),
       );
     }
-    return IconButton(onPressed: sendReq, icon: Icon(Icons.send));
+    return IconButton(
+      onPressed: sendReq,
+      icon:
+          //  const Icon(Icons.send_rounded)
+          Transform.rotate(
+            angle: 0.78,
+            child: const SuryaThemeIcon(BulkRounded.sent),
+          ),
+    );
   }
 }
 

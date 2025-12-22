@@ -1,3 +1,4 @@
+import 'package:api_craft/core/widgets/ui/surya_theme_icon.dart';
 import 'package:api_craft/features/collection/collection_picker.dart';
 import 'package:api_craft/features/environment/environment_picker.dart';
 import 'package:api_craft/features/request/widgets/request.dart';
@@ -7,6 +8,9 @@ import 'package:api_craft/core/widgets/ui/top_bar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
 import 'package:multi_split_view/multi_split_view.dart';
+import 'package:suryaicons/bulk_rounded.dart';
+import 'package:suryaicons/duotone_rounded.dart';
+import 'package:suryaicons/twotone_rounded.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -117,9 +121,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   }
                   setState(() {});
                 },
-                icon: Icon(
-                  isSidebarVisible ? Icons.chevron_left : Icons.chevron_right,
-                ),
+                // icon: Icon(
+                //   isSidebarVisible ? Icons.chevron_left : Icons.chevron_right,
+                // ),
+                icon: isSidebarVisible
+                    ? const SuryaThemeIcon(BulkRounded.sidebarLeft01)
+                    : const SuryaThemeIcon(BulkRounded.sidebarLeft),
               ),
               CollectionPicker(),
               // > indicator?

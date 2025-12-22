@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:api_craft/core/models/models.dart';
 import 'package:api_craft/core/providers/providers.dart';
+import 'package:api_craft/core/widgets/ui/surya_theme_icon.dart';
 import 'package:api_craft/features/sidebar/context_menu.dart';
 import 'package:api_craft/features/sidebar/sidebar.dart';
 import 'package:flutter/material.dart';
@@ -9,26 +10,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:super_context_menu/super_context_menu.dart';
 import 'package:suryaicons/bulk_rounded.dart';
-import 'package:suryaicons/suryaicons.dart';
 
-final _folderClr = const Color(0xFFC4742D);
-final _folderSize = 18.0;
-
-final folderIcon = SuryaIcon(
-  icon: BulkRounded.folder01,
-  color: Colors.transparent,
-  color2: _folderClr,
-  opacity: 0.8,
-  size: _folderSize,
-  strokeWidth: 1,
-);
-final folderOpenIcon = SuryaIcon(
-  icon: BulkRounded.folder02,
-  color: _folderClr,
-  color2: const Color(0xFFFFA726),
-  opacity: 1,
-  size: _folderSize,
-);
+const folderIcon = SuryaThemeIcon(BulkRounded.folder01);
+const folderOpenIcon = SuryaThemeIcon(BulkRounded.folder02);
 
 class FileNodeTile extends ConsumerStatefulWidget {
   final String nodeId; // Accepts ID only
@@ -57,7 +41,7 @@ class _FileTreeTileState extends ConsumerState<FileNodeTile>
   // Your Constants (Unchanged)
   // We cannot access 'widget.node.type' in initializer anymore, handled in build/initState logic
   static const double _kIndentation = 6.0;
-  static const double _kIconSize = 14.0;
+  static const double _kIconSize = 16.0;
   // static const double _kFolderIconSize = 17.0;
   static const double _kSpacingBetweenArrowAndIcon = 2.0;
 
@@ -285,7 +269,7 @@ class _FileTreeTileState extends ConsumerState<FileNodeTile>
                                     child: SizedBox(
                                       width: _kIconSize + 2,
                                       child: Icon(
-                                        Icons.keyboard_arrow_right,
+                                        Icons.keyboard_arrow_right_rounded,
                                         size: _kIconSize + 2,
                                         color: textColor.withValues(alpha: 0.3),
                                       ),
@@ -376,7 +360,7 @@ class _FileTreeTileState extends ConsumerState<FileNodeTile>
                                       2,
                           ),
                           width: 1,
-                          color: theme.dividerColor.withValues(alpha: 0.25),
+                          color: theme.dividerColor.withValues(alpha: 0.4),
                         ),
                       ),
                     ),

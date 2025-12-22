@@ -22,7 +22,7 @@ class LabeledDivider extends StatelessWidget {
             text,
             style: TextStyle(
               fontSize: 12,
-              color: const Color.fromARGB(255, 120, 119, 119),
+              color: const Color.fromARGB(255, 138, 138, 138),
             ),
           ),
           const SizedBox(width: 4),
@@ -72,7 +72,7 @@ class MyCustomMenu extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final popupClr = const Color.fromARGB(255, 41, 41, 42);
+    final popupClr = const Color.fromARGB(255, 38, 38, 38);
     return CustomPopup(
       key: popupKey,
       barrierColor: Colors.transparent,
@@ -164,8 +164,8 @@ class CustomMenuIconItem extends StatelessWidget {
     bool checked = false,
   }) : icon = checked == true
            ? const Icon(
-               Icons.check,
-               color: Color.fromARGB(255, 120, 120, 120),
+               Icons.check_rounded,
+               color: Color.fromARGB(255, 162, 162, 162),
                size: 16,
              )
            : null;

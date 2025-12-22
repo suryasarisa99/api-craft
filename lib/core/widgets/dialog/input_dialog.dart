@@ -24,6 +24,7 @@ class InputDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
+      insetPadding: EdgeInsets.symmetric(horizontal: 0),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
       backgroundColor: Colors.grey[900],
       contentPadding: .only(left: 18, right: 18, top: 12, bottom: 12),

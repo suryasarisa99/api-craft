@@ -1,8 +1,12 @@
+import 'package:api_craft/core/widgets/ui/surya_theme_icon.dart';
 import 'package:api_craft/features/request/models/websocket_message.dart';
 import 'package:api_craft/features/request/providers/ws_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:suryaicons/bulk_rounded.dart';
+import 'package:suryaicons/duotone_rounded.dart';
+import 'package:suryaicons/twotone_rounded.dart';
 
 class WsResponseTab extends ConsumerWidget {
   final String requestId;
@@ -63,7 +67,18 @@ class _MessageBubble extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 2),
       child: Row(
         children: [
-          Icon(icon, color: color, size: 16),
+          // Icon(icon, color: color, size: 16),
+          message.isSent
+              ? const SuryaThemeIcon(
+                  BulkRounded.arrowUpDouble,
+                  clr: Color.fromARGB(255, 255, 168, 227),
+                  size: 15,
+                )
+              : const SuryaThemeIcon(
+                  BulkRounded.arrowDownDouble,
+                  clr: Color.fromARGB(255, 0, 254, 30),
+                  size: 14,
+                ),
           SizedBox(width: 6),
           Expanded(
             child: Text(message.message, overflow: TextOverflow.ellipsis),

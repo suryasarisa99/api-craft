@@ -2,9 +2,11 @@ import 'package:api_craft/core/constants/globals.dart';
 import 'package:api_craft/core/models/models.dart';
 import 'package:api_craft/core/providers/providers.dart';
 import 'package:api_craft/core/widgets/ui/custom_menu.dart';
+import 'package:api_craft/core/widgets/ui/surya_theme_icon.dart';
 import 'package:flutter_popup/flutter_popup.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
+import 'package:suryaicons/bulk_rounded.dart';
 
 class CollectionPicker extends ConsumerStatefulWidget {
   const CollectionPicker({super.key});
@@ -25,14 +27,6 @@ class _CollectionPickerState extends ConsumerState<CollectionPicker> {
       popupKey: _popupKey,
       width: 200,
       items: [
-        const Padding(
-          padding: EdgeInsets.all(8.0),
-          child: Text(
-            "Collections",
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-        ),
-        menuDivider,
         ...collections.map((c) {
           final isSelected = c.id == selectedCollection?.id;
           return CustomMenuIconItem.tick(
@@ -48,7 +42,7 @@ class _CollectionPickerState extends ConsumerState<CollectionPicker> {
         }),
         menuDivider,
         CustomMenuIconItem(
-          icon: const Icon(Icons.add, size: 18),
+          icon: const SuryaThemeIcon(BulkRounded.plusSign),
           title: const Text("Create New..."),
           value: 'create',
           onTap: (_) {
@@ -61,7 +55,7 @@ class _CollectionPickerState extends ConsumerState<CollectionPicker> {
           menuDivider,
           // menuDivider, // Optional divider before clear history
           CustomMenuIconItem(
-            icon: const Icon(Icons.history, size: 18),
+            icon: const SuryaThemeIcon(BulkRounded.linkBackward),
             title: const Text("Clear History"),
             value: 'clear_history',
             onTap: (_) {
@@ -75,17 +69,14 @@ class _CollectionPickerState extends ConsumerState<CollectionPicker> {
         if (selectedCollection != null &&
             selectedCollection.id != kDefaultCollection.id)
           CustomMenuIconItem(
-            icon: const Icon(Icons.delete, size: 18, color: Colors.red),
+            // icon: const Icon(Icons.delete, size: 18, color: Colors.red),
+            icon: const SuryaThemeIcon(BulkRounded.delete01),
             title: const Text(
               "Delete Collection",
               style: TextStyle(color: Colors.red),
             ),
             value: 'delete',
-            onTap: (_) {
-              Future.microtask(
-                () => _showDeleteDialog(context, selectedCollection),
-              );
-            },
+            onTap: (_) => _showDeleteDialog(context, selectedCollection),
           ),
       ],
       child: TextButton(

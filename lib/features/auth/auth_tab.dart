@@ -128,7 +128,7 @@ class _AuthTabHeaderState extends ConsumerState<AuthTabHeader> {
                   Text(authType.label, style: style),
                 SizedBox(width: 4),
                 if (widget.controller == null) Spacer(),
-                Icon(Icons.arrow_drop_down),
+                Icon(Icons.arrow_drop_down, size: 16),
               ],
             ),
           ),

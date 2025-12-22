@@ -179,7 +179,7 @@ class _ResponseTAbState extends ConsumerState<ResponseTAb>
                               ? "Pretty"
                               : "Raw",
                         ),
-                        const Icon(Icons.arrow_right, size: 16),
+                        const Icon(Icons.arrow_drop_down, size: 16),
                       ],
                     ),
                   ),

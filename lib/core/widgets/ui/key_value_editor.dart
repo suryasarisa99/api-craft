@@ -243,6 +243,7 @@ class _KeyValueEditorState extends State<KeyValueEditor> {
                               ExcludeFocus(
                                 child: PopupMenuButton<String>(
                                   icon: const Icon(Icons.arrow_drop_down),
+                                  padding: .zero,
                                   onSelected: (val) {
                                     if (val == 'delete') {
                                       _removeItem(i);
@@ -263,7 +264,7 @@ class _KeyValueEditorState extends State<KeyValueEditor> {
                                 ),
                               )
                             else
-                              SizedBox(width: 38),
+                              SizedBox(width: 32),
                           ],
                         ),
                       );
