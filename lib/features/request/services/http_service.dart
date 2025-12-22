@@ -33,7 +33,7 @@ class HttpService {
         // body: ctx.request.config.body,
         // body: _bodies[0],
         body: req.body,
-        useProxy: false,
+        useProxy: true,
         requestId: req.request.id,
       );
       debugPrint(

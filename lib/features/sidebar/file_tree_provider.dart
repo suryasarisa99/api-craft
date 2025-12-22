@@ -119,13 +119,27 @@ class FileTreeNotifier extends Notifier<TreeData> {
 
   // --- ACTIONS ---
 
-  Future<void> createItem(String? parentId, String name, NodeType type) async {
+  Future<void> createItem(
+    String? parentId,
+    String name,
+    NodeType type, {
+    RequestType requestType = RequestType.http,
+  }) async {
     if (state.isLoading) return;
+
+    final typeStr = (type == NodeType.request) ? requestType.toString() : null;
+    final methodStr = (type == NodeType.request)
+        ? requestType == RequestType.ws
+              ? 'WS'
+              : 'GET'
+        : null;
 
     final id = await _repo.createItem(
       parentId: parentId,
       name: name,
       type: type,
+      requestType: typeStr,
+      method: methodStr,
     );
     late Node newItem;
     if (NodeType.folder == type) {
@@ -140,6 +154,8 @@ class FileTreeNotifier extends Notifier<TreeData> {
         'id': id,
         'parent_id': parentId,
         'name': name,
+        'request_type': requestType.toString(),
+        'method': methodStr,
       });
     }
 

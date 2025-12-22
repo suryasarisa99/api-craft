@@ -40,6 +40,8 @@ dependencies:
   code_forge: ^1.4.0
   re_highlight: ^0.0.3
   flutter_js: ^0.8.1
+  web_socket_channel: ^3.0.3
+  crypto: ^3.0.7
 
 dev_dependencies:
   flutter_test:

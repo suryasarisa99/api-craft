@@ -1,5 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:api_craft/features/request/models/websocket_session.dart';
+import 'package:api_craft/features/request/models/websocket_message.dart';
 import 'package:api_craft/core/models/models.dart';
 import 'package:path/path.dart' as p;
 import 'storage_repository.dart';
@@ -94,6 +96,8 @@ class FolderStorageRepository implements StorageRepository {
     required String? parentId,
     required String name,
     required NodeType type,
+    String? requestType,
+    String? method,
   }) async {
     final parent = parentId ?? rootPath;
     final finalName = (type == NodeType.request && !name.endsWith('.json'))
@@ -108,9 +112,13 @@ class FolderStorageRepository implements StorageRepository {
         p.join(newPath, 'folder.json'),
       ).writeAsString(jsonEncode({'name': name}));
     } else {
-      await File(
-        newPath,
-      ).writeAsString(jsonEncode({'method': 'GET', 'url': ''}));
+      await File(newPath).writeAsString(
+        jsonEncode({
+          'method': method ?? 'GET',
+          'url': '',
+          if (requestType != null) 'request_type': requestType,
+        }),
+      );
     }
     return newPath; // Return the new ID (Path)
   }
@@ -373,6 +381,45 @@ class FolderStorageRepository implements StorageRepository {
 
   @override
   Future<void> deleteCookieJar(String id) {
+    throw UnimplementedError();
+  }
+
+  // --- WebSocket ---
+  @override
+  Future<void> createWebSocketSession(WebSocketSession session) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> updateWebSocketSession(WebSocketSession session) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<List<WebSocketSession>> getWebSocketSessions(String requestId) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> deleteWebSocketSession(String sessionId) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> addWebSocketMessage(WebSocketMessage msg) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<List<WebSocketMessage>> getWebSocketMessages(
+    String sessionId, {
+    int limit = 100,
+  }) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> clearWebSocketSessionMessages(String sessionId) {
     throw UnimplementedError();
   }
 }

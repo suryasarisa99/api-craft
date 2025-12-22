@@ -10,6 +10,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_popup/flutter_popup.dart';
 import 'package:lazy_load_indexed_stack/lazy_load_indexed_stack.dart';
 
+import 'package:api_craft/core/models/models.dart';
+import 'package:api_craft/features/request/providers/ws_provider.dart';
+import 'package:api_craft/features/response/widgets/ws_response_tab.dart';
+
 enum BodyViewMode { pretty, raw }
 
 class ResponseTAb extends ConsumerStatefulWidget {
@@ -60,6 +64,44 @@ class _ResponseTAbState extends ConsumerState<ResponseTAb>
     final response = ref.watch(
       reqComposeProvider(id).select((d) => d.history?.firstOrNull),
     );
+
+    if (node.requestType == RequestType.ws) {
+      final wsState = ref.watch(wsRequestProvider(id));
+
+      Color statusColor = Colors.grey;
+      String statusText = "Disconnected";
+      if (wsState.isConnected) {
+        statusColor = Colors.green;
+        statusText = "Connected";
+      } else if (wsState.isConnecting) {
+        statusColor = Colors.orange;
+        statusText = "Connecting...";
+      }
+
+      return Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8.0),
+            color: Colors.grey.shade900,
+            child: Row(
+              children: [
+                Icon(Icons.circle, color: statusColor, size: 12),
+                const SizedBox(width: 8),
+                Text(statusText),
+                const Spacer(),
+                Text("${wsState.messages.length} Messages"),
+              ],
+            ),
+          ),
+          Expanded(
+            child: WsResponseTab(
+              requestId: id,
+              scrollController: ScrollController(),
+            ),
+          ),
+        ],
+      );
+    }
 
     if (isSending) {
       return Center(

@@ -1,5 +1,7 @@
 import 'package:api_craft/core/constants/globals.dart';
 import 'package:api_craft/core/models/models.dart';
+import 'package:api_craft/features/request/models/websocket_session.dart';
+import 'package:api_craft/features/request/models/websocket_message.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:uuid/uuid.dart';
@@ -144,6 +146,8 @@ class DbStorageRepository implements StorageRepository {
     required String? parentId,
     required String name,
     required NodeType type,
+    String? requestType,
+    String? method,
   }) async {
     final db = await _db;
     final newId = _uuid.v4();
@@ -164,6 +168,8 @@ class DbStorageRepository implements StorageRepository {
       'name': name,
       'type': type.toString(),
       'sort_order': nextOrder,
+      'request_type': requestType,
+      'method': method,
     });
 
     return newId;
@@ -412,5 +418,83 @@ class DbStorageRepository implements StorageRepository {
   Future<void> deleteCookieJar(String id) async {
     final db = await _db;
     await db.delete('cookie_jars', where: 'id = ?', whereArgs: [id]);
+  }
+
+  // --- WebSocket ---
+  @override
+  Future<void> createWebSocketSession(WebSocketSession session) async {
+    final db = await _db;
+    await db.insert(
+      'websocket_sessions',
+      session.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  @override
+  Future<void> updateWebSocketSession(WebSocketSession session) async {
+    final db = await _db;
+    await db.update(
+      'websocket_sessions',
+      session.toMap(),
+      where: 'id = ?',
+      whereArgs: [session.id],
+    );
+  }
+
+  @override
+  Future<List<WebSocketSession>> getWebSocketSessions(String requestId) async {
+    final db = await _db;
+    final result = await db.query(
+      'websocket_sessions',
+      where: 'request_id = ?',
+      whereArgs: [requestId],
+      orderBy: 'start_time DESC',
+    );
+    return result.map((e) => WebSocketSession.fromMap(e)).toList();
+  }
+
+  @override
+  Future<void> deleteWebSocketSession(String sessionId) async {
+    final db = await _db;
+    await db.delete(
+      'websocket_sessions',
+      where: 'id = ?',
+      whereArgs: [sessionId],
+    );
+  }
+
+  @override
+  Future<void> addWebSocketMessage(WebSocketMessage msg) async {
+    final db = await _db;
+    final map = msg.toMap();
+    map.remove('id');
+    await db.insert('websocket_messages', map);
+  }
+
+  @override
+  Future<List<WebSocketMessage>> getWebSocketMessages(
+    String sessionId, {
+    int limit = 100,
+  }) async {
+    final db = await _db;
+    final result = await db.query(
+      'websocket_messages',
+      where: 'session_id = ?',
+      whereArgs: [sessionId],
+      orderBy: 'timestamp DESC',
+      limit: limit,
+    );
+    return result.map((e) => WebSocketMessage.fromMap(e)).toList();
+  }
+
+  @override
+  Future<void> clearWebSocketSessionMessages(String sessionId) async {
+    final db = await _db;
+    await db.delete(
+      'websocket_messages',
+      where: 'session_id = ?',
+      whereArgs: [sessionId],
+    );
   }
 }

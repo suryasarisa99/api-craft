@@ -169,7 +169,7 @@ class FolderNode extends Node<FolderNodeConfig> {
   }
 }
 
-enum RequestType { http, wc }
+enum RequestType { http, ws }
 
 // --- REQUEST NODE ---
 class RequestNode extends Node<RequestNodeConfig> {

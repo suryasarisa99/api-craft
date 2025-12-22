@@ -1,11 +1,12 @@
 import 'package:api_craft/core/models/models.dart';
+import 'package:api_craft/core/providers/providers.dart';
 import 'package:api_craft/core/providers/ref_provider.dart';
-import 'package:api_craft/features/request/providers/req_compose_provider.dart';
 import 'package:api_craft/core/services/app_service.dart';
 import 'package:api_craft/core/widgets/ui/custom_menu.dart';
 import 'package:flutter_popup/flutter_popup.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:api_craft/core/widgets/ui/variable_text_field_custom.dart';
+import 'package:api_craft/features/request/providers/ws_provider.dart';
 import 'package:flutter/material.dart';
 
 class RequestUrl extends ConsumerStatefulWidget {
@@ -88,34 +89,35 @@ class _RequestUrlState extends ConsumerState<RequestUrl> {
                   padding: const EdgeInsets.only(left: 8),
                   child: Consumer(
                     builder: (context, ref, child) {
-                      final method = ref.watch(
+                      final req = ref.watch(
                         reqComposeProvider(
                           widget.id,
-                        ).select((d) => (d.node as RequestNode).method),
+                        ).select((d) => (d.node as RequestNode)),
                       );
-                      return MyCustomMenu.contentColumn(
-                        popupKey: popupKey,
-                        items: _buildMenuItems(method),
-                        child: Text(
-                          method,
-                          style: TextStyle(
-                            color: methodsColorsMap[method] ?? Colors.grey,
-                            fontWeight: FontWeight.w400,
-                            fontSize: 13,
+
+                      if (req.requestType == RequestType.http) {
+                        return MyCustomMenu.contentColumn(
+                          popupKey: popupKey,
+                          items: _buildMenuItems(req.method),
+                          child: Text(
+                            req.method,
+                            style: TextStyle(
+                              color:
+                                  methodsColorsMap[req.method] ?? Colors.grey,
+                              fontWeight: FontWeight.w400,
+                              fontSize: 13,
+                            ),
                           ),
-                        ),
-                      );
+                        );
+                      }
+                      return SizedBox.shrink();
                     },
                   ),
                 ),
+                suffixIconConstraints: BoxConstraints(maxWidth: 84),
                 suffixIcon: Padding(
-                  padding: const .only(right: 8),
-                  child: IconButton(
-                    onPressed: () {
-                      sendReq();
-                    },
-                    icon: Icon(Icons.send),
-                  ),
+                  padding: const EdgeInsets.only(right: 8),
+                  child: UrlSuffixBtn(id: widget.id),
                 ),
                 border: OutlineInputBorder(),
                 isDense: true,
@@ -154,6 +156,73 @@ class _RequestUrlState extends ConsumerState<RequestUrl> {
         ),
       );
     }).toList();
+  }
+}
+
+class UrlSuffixBtn extends ConsumerStatefulWidget {
+  final String id;
+  const UrlSuffixBtn({super.key, required this.id});
+
+  @override
+  ConsumerState<UrlSuffixBtn> createState() => _UrlSuffixBtnState();
+}
+
+class _UrlSuffixBtnState extends ConsumerState<UrlSuffixBtn> {
+  late final reqType =
+      (ref.read(fileTreeProvider).nodeMap[widget.id] as RequestNode)
+          .requestType;
+
+  // send http req or connect wc
+  void sendReq() async {
+    if (reqType == RequestType.http) {
+      final r = ref.read(refProvider);
+      final response = await AppService.http.run(
+        r,
+        widget.id,
+        context: context,
+      );
+      debugPrint(
+        "response received, adding to history, status: ${response.statusCode}",
+      );
+    } else if (reqType == RequestType.ws) {
+      final wsNotifier = ref.read(wsRequestProvider(widget.id).notifier);
+      wsNotifier.connect(context);
+    }
+  }
+
+  void disconnectWs() {
+    final wsNotifier = ref.read(wsRequestProvider(widget.id).notifier);
+    wsNotifier.disconnect();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (reqType == RequestType.ws) {
+      final (isConnected, connecting) = ref.watch(
+        wsRequestProvider(
+          widget.id,
+        ).select((s) => (s.isConnected, s.isConnecting)),
+      );
+      if (isConnected) {
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(onPressed: disconnectWs, icon: Icon(Icons.link_off)),
+            IconButton(
+              onPressed: () {
+                // handle send mssg
+              },
+              icon: Icon(Icons.send),
+            ),
+          ],
+        );
+      }
+      return IconButton(
+        onPressed: connecting ? null : sendReq,
+        icon: Icon(Icons.swap_vert),
+      );
+    }
+    return IconButton(onPressed: sendReq, icon: Icon(Icons.send));
   }
 }
 

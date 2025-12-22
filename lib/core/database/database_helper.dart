@@ -12,6 +12,8 @@ class Tables {
   static const String history = 'request_history';
   static const String environments = 'environments';
   static const String cookieJars = 'cookie_jars';
+  static const String websocketMessages = 'websocket_messages';
+  static const String websocketSessions = 'websocket_sessions';
 
   static const queries = (
     collections:
@@ -26,7 +28,7 @@ class Tables {
     nodes:
         '''
       CREATE TABLE $nodes (
-       -- 1. Identity & Tree
+        -- 1. Identity & Tree
     id TEXT PRIMARY KEY,
     collection_id TEXT NOT NULL,
     parent_id TEXT,
@@ -91,6 +93,30 @@ class Tables {
         cookies TEXT -- JSON: List of CookieDef
       )
     ''',
+    websocketSessions:
+        '''
+      CREATE TABLE $websocketSessions (
+        id TEXT PRIMARY KEY,
+        request_id TEXT NOT NULL,
+        start_time TEXT NOT NULL,
+        end_time TEXT,
+        url TEXT,
+        FOREIGN KEY(request_id) REFERENCES nodes(id) ON DELETE CASCADE
+      )
+    ''',
+    websocketMessages:
+        '''
+      CREATE TABLE $websocketMessages (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        request_id TEXT NOT NULL,
+        session_id TEXT,
+        is_sent INTEGER NOT NULL, -- 0 or 1
+        message TEXT NOT NULL,
+        timestamp TEXT NOT NULL,
+        FOREIGN KEY(request_id) REFERENCES nodes(id) ON DELETE CASCADE,
+        FOREIGN KEY(session_id) REFERENCES websocket_sessions(id) ON DELETE CASCADE
+      )
+    ''',
   );
 
   static List<String> queriesList = [
@@ -99,6 +125,8 @@ class Tables {
     queries.history,
     queries.environments,
     queries.cookieJars,
+    queries.websocketSessions,
+    queries.websocketMessages,
   ];
   static List<String> tableNames = [
     collections,
@@ -106,6 +134,8 @@ class Tables {
     history,
     environments,
     cookieJars,
+    websocketSessions,
+    websocketMessages,
   ];
 
   static Future<void> createAllTables(Database db) async {
@@ -128,7 +158,7 @@ class DatabaseHelper {
 
     final db = await openDatabase(
       path,
-      version: 3,
+      version: 2,
       onCreate: (db, version) async {
         await Tables.createAllTables(db);
         await _ensureDefaults(db);

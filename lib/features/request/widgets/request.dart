@@ -7,6 +7,7 @@ import 'package:api_craft/features/request/widgets/tabs/headers_tab.dart';
 import 'package:api_craft/features/request/widgets/tabs/query_params.dart';
 import 'package:api_craft/features/request/widgets/tabs/body_tab.dart';
 import 'package:api_craft/features/request/widgets/tabs/script_tab.dart';
+import 'package:api_craft/features/request/widgets/tabs/ws_message_tab.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lazy_load_indexed_stack/lazy_load_indexed_stack.dart';
@@ -38,7 +39,9 @@ class _RequestTabState extends ConsumerState<RequestTab>
     with SingleTickerProviderStateMixin {
   /// tabs
   late final List<Widget> children = [
-    BodyTab(id: widget.node.id),
+    widget.node.requestType == RequestType.ws
+        ? WsMessageTab(requestId: widget.node.id)
+        : BodyTab(id: widget.node.id),
     QueryParamsTab(id: widget.node.id),
     HeadersTab(id: widget.node.id),
     AuthTab(id: widget.node.id),
@@ -106,72 +109,78 @@ class _RequestTabState extends ConsumerState<RequestTab>
                 fontWeight: FontWeight.w400,
               ),
               tabs: [
-                IgnorePointer(
-                  child: MyCustomMenu.contentColumn(
-                    popupKey: _menuKey,
-                    items: [
-                      LabeledDivider(text: "Form Data"),
-                      CustomMenuIconItem.tick(
-                        title: const Text("URL-Encoded"),
-                        value: "form-urlencoded",
-                        checked:
-                            widget.node.config.bodyType == 'form-urlencoded',
-                        onTap: (v) => ref
-                            .read(_provider.notifier)
-                            .updateBodyType('form-urlencoded'),
-                      ),
-                      CustomMenuIconItem.tick(
-                        title: const Text("Multipart Form"),
-                        value: "multipart-form-data",
-                        checked:
-                            widget.node.config.bodyType ==
-                            'multipart-form-data',
-                        onTap: (v) => ref
-                            .read(_provider.notifier)
-                            .updateBodyType('multipart-form-data'),
-                      ),
-                      LabeledDivider(text: "Text Content"),
-                      CustomMenuIconItem.tick(
-                        title: const Text("JSON"),
-                        value: "json",
-                        checked: widget.node.config.bodyType == 'json',
-                        onTap: (v) =>
-                            ref.read(_provider.notifier).updateBodyType('json'),
-                      ),
-                      CustomMenuIconItem.tick(
-                        title: const Text("XML"),
-                        value: "xml",
-                        checked: widget.node.config.bodyType == 'xml',
-                        onTap: (v) =>
-                            ref.read(_provider.notifier).updateBodyType('xml'),
-                      ),
-                      CustomMenuIconItem.tick(
-                        title: const Text("Text"),
-                        value: "text",
-                        checked: widget.node.config.bodyType == 'text',
-                        onTap: (v) =>
-                            ref.read(_provider.notifier).updateBodyType('text'),
-                      ),
-                      LabeledDivider(text: "Other"),
-                      CustomMenuIconItem.tick(
-                        title: const Text("No Body"),
-                        value: "none",
-                        checked: widget.node.config.bodyType == null,
-                        onTap: (v) =>
-                            ref.read(_provider.notifier).updateBodyType(null),
-                      ),
-                    ],
-                    child: Tab(
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Text("Body"),
-                          const Icon(Icons.arrow_drop_down, size: 16),
-                        ],
+                if (widget.node.requestType == RequestType.ws)
+                  const Tab(text: "Message")
+                else
+                  IgnorePointer(
+                    child: MyCustomMenu.contentColumn(
+                      popupKey: _menuKey,
+                      items: [
+                        LabeledDivider(text: "Form Data"),
+                        CustomMenuIconItem.tick(
+                          title: const Text("URL-Encoded"),
+                          value: "form-urlencoded",
+                          checked:
+                              widget.node.config.bodyType == 'form-urlencoded',
+                          onTap: (v) => ref
+                              .read(_provider.notifier)
+                              .updateBodyType('form-urlencoded'),
+                        ),
+                        CustomMenuIconItem.tick(
+                          title: const Text("Multipart Form"),
+                          value: "multipart-form-data",
+                          checked:
+                              widget.node.config.bodyType ==
+                              'multipart-form-data',
+                          onTap: (v) => ref
+                              .read(_provider.notifier)
+                              .updateBodyType('multipart-form-data'),
+                        ),
+                        LabeledDivider(text: "Text Content"),
+                        CustomMenuIconItem.tick(
+                          title: const Text("JSON"),
+                          value: "json",
+                          checked: widget.node.config.bodyType == 'json',
+                          onTap: (v) => ref
+                              .read(_provider.notifier)
+                              .updateBodyType('json'),
+                        ),
+                        CustomMenuIconItem.tick(
+                          title: const Text("XML"),
+                          value: "xml",
+                          checked: widget.node.config.bodyType == 'xml',
+                          onTap: (v) => ref
+                              .read(_provider.notifier)
+                              .updateBodyType('xml'),
+                        ),
+                        CustomMenuIconItem.tick(
+                          title: const Text("Text"),
+                          value: "text",
+                          checked: widget.node.config.bodyType == 'text',
+                          onTap: (v) => ref
+                              .read(_provider.notifier)
+                              .updateBodyType('text'),
+                        ),
+                        LabeledDivider(text: "Other"),
+                        CustomMenuIconItem.tick(
+                          title: const Text("No Body"),
+                          value: "none",
+                          checked: widget.node.config.bodyType == null,
+                          onTap: (v) =>
+                              ref.read(_provider.notifier).updateBodyType(null),
+                        ),
+                      ],
+                      child: Tab(
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Text("Body"),
+                            const Icon(Icons.arrow_drop_down, size: 16),
+                          ],
+                        ),
                       ),
                     ),
                   ),
-                ),
                 Consumer(
                   builder: (context, ref, child) {
                     final paramsCount = ref.watch(

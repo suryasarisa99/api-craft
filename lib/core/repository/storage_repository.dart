@@ -1,4 +1,7 @@
 import 'package:api_craft/core/models/models.dart';
+import 'package:api_craft/features/request/models/websocket_message.dart';
+
+import 'package:api_craft/features/request/models/websocket_session.dart';
 
 export 'folder_storage_repository.dart';
 export 'db_storage_repository.dart';
@@ -14,6 +17,8 @@ abstract class StorageRepository {
     required String? parentId,
     required String name,
     required NodeType type,
+    String? requestType,
+    String? method,
   });
 
   /// Deletes an item (and its children).
@@ -61,4 +66,17 @@ abstract class StorageRepository {
   Future<void> createCookieJar(CookieJarModel jar);
   Future<void> updateCookieJar(CookieJarModel jar);
   Future<void> deleteCookieJar(String id);
+
+  // --- WebSocket ---
+  Future<void> createWebSocketSession(WebSocketSession session);
+  Future<void> updateWebSocketSession(WebSocketSession session);
+  Future<List<WebSocketSession>> getWebSocketSessions(String requestId);
+  Future<void> deleteWebSocketSession(String sessionId);
+
+  Future<void> addWebSocketMessage(WebSocketMessage msg);
+  Future<List<WebSocketMessage>> getWebSocketMessages(
+    String sessionId, {
+    int limit = 100,
+  });
+  Future<void> clearWebSocketSessionMessages(String sessionId);
 }

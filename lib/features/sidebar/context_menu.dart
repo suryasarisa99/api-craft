@@ -68,13 +68,26 @@ List<MenuElement> _getFolderSpecificMenuActions({
   return [
     MenuSeparator(),
     MenuAction(
-      title: 'New File',
+      title: 'HTTP Request',
       callback: () {
         createFile(
           context: context,
           ref: ref,
           isRoot: isRoot,
           parentId: parentId,
+          type: RequestType.http,
+        );
+      },
+    ),
+    MenuAction(
+      title: 'WebSocket Request',
+      callback: () {
+        createFile(
+          context: context,
+          ref: ref,
+          isRoot: isRoot,
+          parentId: parentId,
+          type: RequestType.ws,
         );
       },
     ),
@@ -156,12 +169,15 @@ void createFile({
   required bool isRoot,
   bool useSelectedNode = false,
   String? parentId,
+  RequestType type = RequestType.http,
 }) {
   showDialog(
     context: context,
     builder: (context) {
       return InputDialog(
-        title: "New Request File",
+        title: type == RequestType.http
+            ? "New HTTP Request"
+            : "New WebSocket Request",
         placeholder: "File Name",
         onConfirmed: (fileName) {
           final folder = useSelectedNode
@@ -169,7 +185,12 @@ void createFile({
               : parentId;
           ref
               .read(fileTreeProvider.notifier)
-              .createItem(folder, fileName, NodeType.request);
+              .createItem(
+                folder,
+                fileName,
+                NodeType.request,
+                requestType: type,
+              );
         },
       );
     },
