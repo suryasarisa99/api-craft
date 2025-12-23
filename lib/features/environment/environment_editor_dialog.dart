@@ -27,7 +27,8 @@ class _EnvironmentEditorDialogState
     super.initState();
     _activeEnvId = widget.globalActive
         ? ref.read(environmentProvider).globalEnvironment?.id
-        : ref.read(environmentProvider).selectedEnvironmentId;
+        : ref.read(environmentProvider).selectedEnvironmentId ??
+              ref.read(environmentProvider).globalEnvironment?.id;
   }
 
   void _onSubEnvTap(String id) {
@@ -58,6 +59,11 @@ class _EnvironmentEditorDialogState
                   color: color,
                   isShared: isShared,
                 );
+            setState(() {
+              _activeEnvId = ref
+                  .read(environmentProvider)
+                  .selectedEnvironmentId;
+            });
           },
         ),
       );

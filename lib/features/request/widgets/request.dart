@@ -78,7 +78,7 @@ class _RequestTabState extends ConsumerState<RequestTab>
         debugPrint("req-tab:: debounce ${v.name} ");
         _repo.updateNode(v);
       });
-    });
+    }, fireImmediately: false);
   }
 
   @override

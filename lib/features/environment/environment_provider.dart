@@ -179,11 +179,10 @@ class EnvironmentNotifier extends Notifier<EnvironmentState> {
     // Update local state
     state = state.copyWith(environments: [...state.environments, newEnv]);
 
-    await repo.createEnvironment(newEnv);
-
     if (!isGlobal) {
       selectEnvironment(newEnv.id);
     }
+    repo.createEnvironment(newEnv);
   }
 
   Future<void> updateEnvironment(Environment env) async {

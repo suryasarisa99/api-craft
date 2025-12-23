@@ -29,15 +29,17 @@ class ReqComposeNotifier extends Notifier<UiRequestContext> {
     // }
     final node = treeState.nodeMap[id]!;
     if (node is RequestNode) {
-      ref.listen(environmentProvider.select((s) => s.selectedEnvironment), (
-        old,
-        newEnv,
-      ) {
-        if (old != newEnv) {
-          debugPrint("environment changed");
-          _load();
-        }
-      });
+      // Sub-Env Changed
+      ref.listen(
+        environmentProvider.select((s) => s.selectedEnvironment),
+        (_, _) => _load(),
+      );
+      // Global Env Changed
+      ref.listen(
+        environmentProvider.select((s) => s.globalEnvironment),
+        (_, _) => _load(),
+      );
+      // Ancestor Changed
       ref.listen(nodeUpdateTriggerProvider, (_, event) {
         debugPrint("received trigger event");
         if (event != null &&
@@ -48,22 +50,18 @@ class ReqComposeNotifier extends Notifier<UiRequestContext> {
           _load();
         }
       });
-      // only handles immediate parent position changes
+      // Direct Parent Changed
       ref.listen(
         fileTreeProvider.select((tree) => tree.nodeMap[id]?.parentId),
-        (old, newId) {
-          if (old != newId) {
-            debugPrint("active request parent changed");
-            _load();
-          }
-        },
+        (_, _) => _load(),
       );
     }
-    _load();
+    _load(true);
     return UiRequestContext.empty(node);
   }
 
-  Future<void> _load() async {
+  Future<void> _load([bool initial = false]) async {
+    debugPrint("initial[$initial] : req-compose-provider loading for $id");
     final resolver = RequestResolver(ref);
     final ctx = await resolver.resolveForUi(id);
     state = ctx.copyWith(isLoading: false);
