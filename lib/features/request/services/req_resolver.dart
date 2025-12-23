@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:api_craft/core/network/header_utils.dart';
 import 'package:api_craft/core/models/models.dart';
 import 'package:api_craft/core/providers/providers.dart';
@@ -21,9 +23,14 @@ class RequestResolver {
 
   /// ---------- UI RESOLUTION ----------
   Future<UiRequestContext> resolveForUi(String requestId) async {
-    final node = ref.read(
-      fileTreeProvider.select((t) => t.nodeMap[requestId]!),
-    );
+    debugPrint("resolve for ui: $requestId");
+    //callstack
+    late Node node;
+    try {
+      node = ref.read(fileTreeProvider.select((t) => t.nodeMap[requestId]!));
+    } catch (e) {
+      log("error for id: $requestId: $e", stackTrace: StackTrace.current);
+    }
 
     await _hydrator.hydrateNode(node);
     await _hydrator.hydrateAncestors(node);
@@ -227,14 +234,24 @@ class RequestResolver {
       ptr = _parentOf(ptr);
     }
 
-    // 1. Start with Global Environment Variables
+    // 1. Start with Global Environment Variables (Always Active)
     final envState = ref.read(environmentProvider);
-    final env = envState.selectedEnvironment;
-    if (env != null) {
-      for (final v in env.variables) {
+    final globalEnv = envState.globalEnvironment;
+    if (globalEnv != null) {
+      for (final v in globalEnv.variables) {
         if (v.isEnabled) {
-          // result[v.key] = VariableValue(env.id, v.value);
-          result[v.key] = VariableValue(null, v.value);
+          result[v.key] = VariableValue("global-env", v.value);
+        }
+      }
+    }
+
+    // 2. Overlay Selected Sub-Environment
+    final selectedEnv = envState.selectedEnvironment;
+    // If selected is Global, we already added it. If it's different (Sub-Env), overlay it.
+    if (selectedEnv != null && selectedEnv.id != globalEnv?.id) {
+      for (final v in selectedEnv.variables) {
+        if (v.isEnabled) {
+          result[v.key] = VariableValue("sub-env", v.value);
         }
       }
     }

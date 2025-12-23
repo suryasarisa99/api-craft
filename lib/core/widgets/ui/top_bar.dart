@@ -27,7 +27,7 @@ class TopBar extends ConsumerWidget {
       //     await windowManager.maximize();
       //   }
       // },
-      child: Container(
+      child: Ink(
         height: topBarHeight,
         decoration: BoxDecoration(
           color: topBarColor,

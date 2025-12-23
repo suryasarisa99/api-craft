@@ -132,11 +132,22 @@ class _VariableTextFieldCustomState
             context: context,
             builder: (_) => const EnvironmentEditorDialog(),
           );
+        }
+        if (source == "global-env") {
+          showDialog(
+            context: context,
+            builder: (_) => const EnvironmentEditorDialog(globalActive: true),
+          );
+        } else if (source == "sub-env") {
+          showDialog(
+            context: context,
+            builder: (_) => const EnvironmentEditorDialog(),
+          );
         } else {
           showFolderConfigDialog(
             context: context,
             ref: ref,
-            id: source,
+            id: source!,
             tabIndex: 3,
           );
         }

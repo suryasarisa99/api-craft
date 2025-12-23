@@ -27,6 +27,21 @@ class DbStorageRepository implements StorageRepository {
   }
 
   @override
+  Future<void> updateCollectionSelection(
+    String collectionId,
+    String? envId,
+    String? jarId,
+  ) async {
+    final db = await _db;
+    await db.update(
+      'collections',
+      {'selected_env_id': envId, 'selected_jar_id': jarId},
+      where: 'id = ?',
+      whereArgs: [collectionId],
+    );
+  }
+
+  @override
   Future<List<Node>> getNodes() async {
     final db = await _db;
 

@@ -42,10 +42,7 @@ class CookiesJarPicker extends ConsumerWidget {
     BuildContext context,
     CookieJarModel? jar,
   ) {
-    final cookieJars = ref.watch(
-      environmentProvider.select((s) => s.cookieJars),
-    );
-    debugPrint("watching for cookiesjar");
+    final cookieJars = ref.read(environmentProvider).cookieJars;
     return [
       /// cookies Jar List
       ...cookieJars.map(
@@ -184,103 +181,55 @@ class CookiesJarPicker extends ConsumerWidget {
   }
 }
 
-class EnvironmentPicker extends ConsumerWidget {
-  const EnvironmentPicker({super.key});
+class EnvironmentButton extends ConsumerWidget {
+  const EnvironmentButton({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(environmentProvider);
-    final selectedEnv = state.selectedEnvironment;
+    final selectedEnv = ref.watch(
+      environmentProvider.select((e) => e.selectedEnvironment),
+    );
+    final globalEnv = ref.watch(
+      environmentProvider.select((e) => e.globalEnvironment),
+    );
 
-    // "Show 'No Environment' with gray text if no variables in default environment and default env is selected"
-    bool isNoEnvironment = false;
-    if (selectedEnv != null &&
-        selectedEnv.name == 'Default' &&
-        selectedEnv.variables.isEmpty) {
-      isNoEnvironment = true;
+    String displayText = "Global";
+    Color? color;
+
+    if (selectedEnv != null) {
+      displayText = selectedEnv.name;
+      if (!selectedEnv.isGlobal) {
+        color = selectedEnv.color;
+      }
+    } else if (globalEnv != null) {
+      displayText = globalEnv.name;
     }
 
-    final displayText = selectedEnv == null
-        ? "No Environment"
-        : (isNoEnvironment ? "No Environment" : selectedEnv.name);
+    final isGlobalOrNull = selectedEnv == null || selectedEnv.isGlobal;
 
-    final color = selectedEnv?.color;
-
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // Environment Picker
-        MyCustomMenu.contentColumn(
-          popupKey: GlobalKey<CustomPopupState>(),
-          items: [
-            ...state.environments.map(
-              (e) => CustomMenuIconItem.tick(
-                checked: e.id == state.selectedEnvironmentId,
-                title: Text(e.name),
-                value: e.id,
-                onTap: (val) => ref
-                    .read(environmentProvider.notifier)
-                    .selectEnvironment(val),
-              ),
-            ),
-            menuDivider,
-            CustomMenuIconItem(
-              title: const Text("Manage Environments"),
-              value: 'manage',
-              onTap: (_) {
-                showDialog(
-                  context: context,
-                  builder: (_) => const EnvironmentEditorDialog(),
-                );
-              },
+    return InkWell(
+      borderRadius: BorderRadius.circular(6),
+      onTap: () {
+        showDialog(
+          context: context,
+          builder: (ctx) => const EnvironmentEditorDialog(),
+        );
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 2.0),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (color != null) ...[
+              Icon(Icons.circle, size: 10, color: color),
+              const SizedBox(width: 8),
+            ],
+            Text(
+              displayText,
+              style: TextStyle(color: isGlobalOrNull ? Colors.grey : null),
             ),
           ],
-          childPadding: const EdgeInsets.symmetric(
-            horizontal: 8.0,
-            vertical: 4.0,
-          ),
-          child: Row(
-            children: [
-              if (color != null) Icon(Icons.circle, size: 10, color: color),
-              const SizedBox(width: 8),
-              Text(
-                displayText,
-                style: TextStyle(color: isNoEnvironment ? Colors.grey : null),
-              ),
-              const SizedBox(width: 4),
-              const Icon(Icons.arrow_drop_down, size: 16, color: Colors.grey),
-            ],
-          ),
         ),
-      ],
-    );
-  }
-
-  void _showDeleteConfirmation(
-    BuildContext context,
-    WidgetRef ref,
-    String id,
-    String jarName,
-  ) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text("Delete Cookie Jar"),
-        content: Text("Are you sure you want to delete '$jarName'?"),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text("Cancel"),
-          ),
-          TextButton(
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            onPressed: () {
-              ref.read(environmentProvider.notifier).deleteCookieJar(id);
-              Navigator.pop(ctx);
-            },
-            child: const Text("Delete"),
-          ),
-        ],
       ),
     );
   }

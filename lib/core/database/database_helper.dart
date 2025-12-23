@@ -3,6 +3,7 @@ import 'package:api_craft/core/constants/globals.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:uuid/uuid.dart';
 
 // Provider to give synchronous access to DB after app start
 
@@ -22,7 +23,9 @@ class Tables {
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
         type TEXT NOT NULL, -- 'database' or 'filesystem'
-        path TEXT -- Null if database, actual path if filesystem
+        path TEXT, -- Null if database, actual path if filesystem
+        selected_env_id TEXT,
+        selected_jar_id TEXT
       )
     ''',
     nodes:
@@ -81,7 +84,8 @@ class Tables {
         name TEXT NOT NULL,
         color INTEGER,
         variables TEXT, -- JSON: List of {key, val, enabled}
-        is_shared INTEGER DEFAULT 0
+        is_shared INTEGER DEFAULT 0,
+        is_global INTEGER DEFAULT 0
       )
     ''',
     cookieJars:
@@ -158,13 +162,12 @@ class DatabaseHelper {
 
     final db = await openDatabase(
       path,
-      version: 3,
+      version: 2,
       onCreate: (db, version) async {
         await Tables.createAllTables(db);
         await _ensureDefaults(db);
       },
       onUpgrade: (db, oldVersion, newVersion) async {
-        // for development only
         await Tables.dropAllTables(db);
         await Tables.createAllTables(db);
         await _ensureDefaults(db);
@@ -204,9 +207,20 @@ class DatabaseHelper {
       whereArgs: [kDefaultCollection.id],
     );
 
-    if (envResult.isEmpty) {
-      // If no environment exists for default collection, add the default one
-      await db.insert(Tables.environments, kDefaultEnvironment.toMap());
+    // Ensure we have a Global one
+    final hasGlobal = envResult.any((e) => (e['is_global'] as int?) == 1);
+    if (!hasGlobal) {
+      // If we have environments but none are Global, update the first one or create new?
+      // Since default env is "Default Environment", let's make it Global or create a separate Global.
+      // Usually "Global" is distinct.
+      // But for FRESH install, we want "Global" + maybe "Development"?
+      // Let's just create "Global" if missing.
+      await db.insert(Tables.environments, {
+        ...kDefaultEnvironment.toMap(),
+        'id': const Uuid().v4(),
+        'name': 'Global',
+        'is_global': 1,
+      });
     }
 
     // 3. Ensure Default Cookie Jar exists for Default Collection

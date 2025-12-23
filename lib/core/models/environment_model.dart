@@ -10,6 +10,7 @@ class Environment {
   final Color? color;
   final List<KeyValueItem> variables;
   final bool isShared;
+  final bool isGlobal;
 
   const Environment({
     required this.id,
@@ -18,6 +19,7 @@ class Environment {
     this.color,
     this.variables = const [],
     this.isShared = false,
+    this.isGlobal = false,
   });
 
   Environment copyWith({
@@ -27,6 +29,7 @@ class Environment {
     Color? color,
     List<KeyValueItem>? variables,
     bool? isShared,
+    bool? isGlobal,
   }) {
     return Environment(
       id: id ?? this.id,
@@ -35,6 +38,7 @@ class Environment {
       color: color ?? this.color,
       variables: variables ?? this.variables,
       isShared: isShared ?? this.isShared,
+      isGlobal: isGlobal ?? this.isGlobal,
     );
   }
 
@@ -46,6 +50,7 @@ class Environment {
       'color': color?.value,
       'variables': jsonEncode(variables.map((e) => e.toMap()).toList()),
       'is_shared': isShared ? 1 : 0,
+      'is_global': isGlobal ? 1 : 0,
     };
   }
 
@@ -57,6 +62,7 @@ class Environment {
       color: map['color'] != null ? Color(map['color']) : null,
       variables: Node.parseHeaders(map['variables']),
       isShared: (map['is_shared'] as int? ?? 0) == 1,
+      isGlobal: (map['is_global'] as int? ?? 0) == 1,
     );
   }
 }

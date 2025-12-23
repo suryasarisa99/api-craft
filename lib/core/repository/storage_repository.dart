@@ -39,6 +39,13 @@ abstract class StorageRepository {
   Future<void> createOne(Node node);
   Future<void> createMany(List<Node> nodes);
 
+  // --- Collections ---
+  Future<void> updateCollectionSelection(
+    String collectionId,
+    String? envId,
+    String? jarId,
+  );
+
   /// Reads the configuration columns (headers, auth, vars, desc) for a node
   // Future<NodeConfig> getNodeConfig(String id);
 

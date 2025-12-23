@@ -12,6 +12,15 @@ class FolderStorageRepository implements StorageRepository {
   FolderStorageRepository({required this.rootPath});
 
   @override
+  Future<void> updateCollectionSelection(
+    String collectionId,
+    String? envId,
+    String? jarId,
+  ) {
+    throw UnimplementedError();
+  }
+
+  @override
   Future<List<Node>> getNodes() async {
     throw UnimplementedError();
     // If parentId is null/empty, we are at Root

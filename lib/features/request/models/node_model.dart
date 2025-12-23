@@ -169,7 +169,7 @@ class FolderNode extends Node<FolderNodeConfig> {
   }
 }
 
-enum RequestType { http, ws }
+enum RequestType { http, ws, grpc, grapql }
 
 // --- REQUEST NODE ---
 class RequestNode extends Node<RequestNodeConfig> {

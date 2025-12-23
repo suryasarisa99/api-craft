@@ -1,6 +1,7 @@
 import 'package:api_craft/core/constants/globals.dart';
 import 'package:api_craft/core/models/models.dart';
 import 'package:api_craft/core/providers/providers.dart';
+import 'package:api_craft/core/widgets/dialog/input_dialog.dart';
 import 'package:api_craft/core/widgets/ui/custom_menu.dart';
 import 'package:api_craft/core/widgets/ui/surya_theme_icon.dart';
 import 'package:flutter_popup/flutter_popup.dart';
@@ -88,31 +89,16 @@ class _CollectionPickerState extends ConsumerState<CollectionPicker> {
     final controller = TextEditingController();
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("New Collection"),
-        content: TextField(
-          controller: controller,
-          decoration: const InputDecoration(labelText: "Collection Name"),
-          autofocus: true,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel"),
-          ),
-          TextButton(
-            onPressed: () {
-              final name = controller.text.trim();
-              if (name.isNotEmpty) {
-                ref
-                    .read(collectionsProvider.notifier)
-                    .createCollection(name, type: CollectionType.database);
-                Navigator.pop(context);
-              }
-            },
-            child: const Text("Create"),
-          ),
-        ],
+      builder: (context) => InputDialog(
+        onConfirmed: (text) {
+          final name = text.trim();
+          if (name.isNotEmpty) {
+            ref
+                .read(collectionsProvider.notifier)
+                .createCollection(name, type: CollectionType.database);
+          }
+        },
+        title: "New Collection",
       ),
     );
   }

@@ -131,7 +131,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               CookiesJarPicker(),
               CollectionPicker(),
               Icon(Icons.keyboard_arrow_right, size: 16),
-              const EnvironmentPicker(),
+              const EnvironmentButton(),
             ],
           ),
           // Expanded(child: MultiSplitView(controller: _controller)),

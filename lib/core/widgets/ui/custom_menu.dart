@@ -38,7 +38,7 @@ class MyCustomMenu extends StatelessWidget {
   final Widget child;
   final Widget content;
   final double? width;
-  final EdgeInsets? childPadding;
+  final EdgeInsets childPadding;
   final GlobalKey<CustomPopupState>? popupKey;
   final bool useBtn;
   const MyCustomMenu({
@@ -48,7 +48,7 @@ class MyCustomMenu extends StatelessWidget {
     required this.content,
     this.childPadding = const EdgeInsets.symmetric(
       horizontal: 8.0,
-      vertical: 4.0,
+      vertical: 2.0,
     ),
     this.width,
     this.useBtn = true,
@@ -61,7 +61,7 @@ class MyCustomMenu extends StatelessWidget {
     this.width,
     this.childPadding = const EdgeInsets.symmetric(
       horizontal: 8.0,
-      vertical: 4.0,
+      vertical: 2.0,
     ),
     this.useBtn = true,
     required List<Widget> items,
@@ -113,58 +113,17 @@ class MyCustomMenu extends StatelessWidget {
       ),
       child: !useBtn
           ? child
-          : TextButton(
-              style: TextButton.styleFrom(
-                minimumSize: const Size(40, 34),
-                padding: childPadding,
-              ),
-              onPressed: () {
+          : InkWell(
+              borderRadius: BorderRadius.circular(6),
+              onTap: () {
                 debugPrint("CustomMenuBtn Pressed");
                 popupKey?.currentState?.show();
               },
-              child: child,
+              child: Padding(padding: childPadding, child: child),
             ),
     );
   }
 }
-
-// SizedBox(
-//       width: 180,
-//       child: InkWell(
-//         borderRadius: BorderRadius.circular(4),
-//         onTap: () {
-//           ref
-//               .read(resolveConfigProvider(widget.id).notifier)
-//               .updateAuth(
-//                 ref
-//                     .read(resolveConfigProvider(widget.id))
-//                     .node
-//                     .config
-//                     .auth
-//                     .copyWith(type: type),
-//               );
-//           Navigator.of(context).pop();
-//         },
-//         child: Ink(
-//           padding: const .symmetric(vertical: 3, horizontal: 4),
-//           // alignment: Alignment.centerLeft,
-//           width: 140,
-//           child: Row(
-//             children: [
-//               if (checked)
-//                 Icon(
-//                   Icons.check,
-//                   color: const Color.fromARGB(255, 120, 120, 120),
-//                   size: 16,
-//                 )
-//               else
-//                 SizedBox(width: 16),
-//               SizedBox(width: 8),
-//               Text(n),
-//             ],
-//           ),
-//         ),
-//       )
 
 class CustomMenuIconItem extends StatelessWidget {
   final Widget title;

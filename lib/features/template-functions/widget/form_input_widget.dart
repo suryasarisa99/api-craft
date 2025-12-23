@@ -326,12 +326,15 @@ class _FormWidgetHttpRequestState extends ConsumerState<FormWidgetHttpRequest> {
   @override
   void initState() {
     super.initState();
-    requestNodes = ref
-        .read(fileTreeProvider)
-        .nodeMap
-        .values
-        .whereType<RequestNode>()
-        .toList();
+    final nodes = ref.read(fileTreeProvider).nodeMap.values;
+    // only http and graphql requests
+    requestNodes = [
+      for (final node in nodes)
+        if (node is RequestNode &&
+            (node.requestType == RequestType.http ||
+                node.requestType == RequestType.grapql))
+          node,
+    ];
   }
 
   @override

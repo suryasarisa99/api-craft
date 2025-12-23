@@ -1,4 +1,5 @@
 import 'package:api_craft/core/models/models.dart';
+import 'package:api_craft/core/widgets/dialog/input_dialog.dart';
 import 'package:api_craft/features/environment/environment_provider.dart';
 import 'package:api_craft/features/collection/selected_collection_provider.dart';
 import 'package:api_craft/features/environment/environment_creation_dialog.dart';
@@ -9,7 +10,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:super_context_menu/super_context_menu.dart';
 
 class EnvironmentEditorDialog extends ConsumerStatefulWidget {
-  const EnvironmentEditorDialog({super.key});
+  final bool globalActive;
+  const EnvironmentEditorDialog({super.key, this.globalActive = false});
 
   @override
   ConsumerState<EnvironmentEditorDialog> createState() =>
@@ -18,24 +20,26 @@ class EnvironmentEditorDialog extends ConsumerStatefulWidget {
 
 class _EnvironmentEditorDialogState
     extends ConsumerState<EnvironmentEditorDialog> {
-  String? _selectedEnvId;
+  String? _activeEnvId;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final state = ref.read(environmentProvider);
-      if (state.selectedEnvironmentId != null) {
-        setState(() {
-          _selectedEnvId = state.selectedEnvironmentId;
-        });
-      }
-    });
+    _activeEnvId = widget.globalActive
+        ? ref.read(environmentProvider).globalEnvironment?.id
+        : ref.read(environmentProvider).selectedEnvironmentId;
   }
 
-  void _onEnvSelected(Environment env) {
+  void _onSubEnvTap(String id) {
     setState(() {
-      _selectedEnvId = env.id;
+      _activeEnvId = id;
+    });
+    ref.read(environmentProvider.notifier).selectEnvironment(id);
+  }
+
+  void _onGlobalTap(String id) {
+    setState(() {
+      _activeEnvId = id;
     });
   }
 
@@ -46,7 +50,7 @@ class _EnvironmentEditorDialogState
         context: context,
         builder: (ctx) => EnvironmentCreationDialog(
           onCreate: (name, color, isShared) async {
-            await ref
+            ref
                 .read(environmentProvider.notifier)
                 .createEnvironment(
                   name,
@@ -54,21 +58,6 @@ class _EnvironmentEditorDialogState
                   color: color,
                   isShared: isShared,
                 );
-            // Auto select logic handled inside createEnvironment call in provider?
-            // Actually provider's createEnvironment calls selectEnvironment at the end.
-            // But _selectedEnvId local state needs update.
-            // final all = ref
-            //     .read(environmentProvider)
-            //     .environments; // reload happen?
-            // Since creating is async, by the time future returns, data is loaded.
-            // But watch() in build handles data.
-            // We just need to sync _selectedEnvId to the new one.
-            final newState = ref.read(environmentProvider);
-            if (newState.selectedEnvironmentId != null) {
-              setState(() {
-                _selectedEnvId = newState.selectedEnvironmentId;
-              });
-            }
           },
         ),
       );
@@ -77,9 +66,15 @@ class _EnvironmentEditorDialogState
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(environmentProvider);
-    final envs = state.environments;
-    final selectedEnv = envs.where((e) => e.id == _selectedEnvId).firstOrNull;
+    final envs = ref.watch(environmentProvider.select((e) => e.environments));
+    final selectedEnvId = ref.watch(
+      environmentProvider.select((e) => e.selectedEnvironmentId),
+    );
+
+    final globalEnv = envs.where((e) => e.isGlobal).firstOrNull;
+    final subEnvs = envs.where((e) => !e.isGlobal).toList();
+
+    final activeEnv = envs.where((e) => e.id == _activeEnvId).firstOrNull;
 
     return CustomDialog(
       width: 900,
@@ -94,112 +89,57 @@ class _EnvironmentEditorDialogState
               border: Border(right: BorderSide(color: Colors.grey[800]!)),
             ),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                const SizedBox(height: 12),
+                if (globalEnv != null) ...[
+                  _EnvironmentTile(
+                    env: globalEnv,
+                    isActive: globalEnv.id == _activeEnvId,
+                    isSelected: true, // Global is always selected
+                    isGlobal: true,
+                    onTap: _onGlobalTap,
+                    providerRef: ref,
+                    showRenameDialog: _showRenameDialog,
+                    showColorDialog: _showColorDialog,
+                  ),
+                ],
+                const SizedBox(height: 12),
                 Padding(
-                  padding: const EdgeInsets.all(8.0),
+                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       const Text(
-                        "Environments",
-                        style: TextStyle(fontWeight: FontWeight.bold),
+                        "Sub Environments",
+                        style: TextStyle(fontSize: 13, fontWeight: .w500),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.add),
+                        icon: const Icon(Icons.add, size: 18),
                         onPressed: _createNewEnv,
-                        tooltip: "Create new environment",
+                        tooltip: "Create new sub environment",
                       ),
                     ],
                   ),
                 ),
-                const Divider(height: 1),
+                const SizedBox(height: 8),
                 Expanded(
                   child: ListView.builder(
-                    itemCount: envs.length,
+                    itemCount: subEnvs.length,
                     itemBuilder: (context, index) {
-                      final env = envs[index];
-                      final isSelected = env.id == _selectedEnvId;
-                      return ContextMenuWidget(
-                        menuProvider: (_) => Menu(
-                          children: [
-                            MenuAction(
-                              title: "Rename",
-                              callback: () {
-                                _showRenameDialog(env);
-                              },
-                            ),
-                            MenuAction(
-                              title: "Edit Color", // Simple palette popup?
-                              callback: () {
-                                _showColorDialog(env);
-                              },
-                            ),
-                            MenuAction(
-                              title: "Duplicate",
-                              callback: () {
-                                ref
-                                    .read(environmentProvider.notifier)
-                                    .duplicateEnvironment(env);
-                              },
-                            ),
-                            MenuAction(
-                              title: env.isShared
-                                  ? "Make Private"
-                                  : "Make Shared",
-                              callback: () {
-                                ref
-                                    .read(environmentProvider.notifier)
-                                    .toggleShared(env);
-                              },
-                            ),
-                            MenuSeparator(),
-                            MenuAction(
-                              title: "Delete",
-                              attributes: const MenuActionAttributes(
-                                destructive: true,
-                              ),
-                              callback: () {
-                                ref
-                                    .read(environmentProvider.notifier)
-                                    .deleteEnvironment(env.id);
-                                if (isSelected) {
-                                  setState(() => _selectedEnvId = null);
-                                }
-                              },
-                            ),
-                          ],
-                        ),
-                        child: ListTile(
-                          onTap: () => _onEnvSelected(env),
-                          selected: isSelected,
-                          dense: true,
-                          minVerticalPadding: 0,
-                          minTileHeight: 32,
-                          selectedTileColor: Colors.white10,
-                          leading: Icon(
-                            Icons.circle,
-                            color: env.color ?? Colors.grey,
-                            size: 12,
-                          ),
-                          title: Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  env.name,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                              if (env.isShared) ...[
-                                const SizedBox(width: 4),
-                                const Icon(
-                                  Icons.people,
-                                  size: 14,
-                                  color: Colors.grey,
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
+                      final env = subEnvs[index];
+                      final isSelected = env.id == selectedEnvId;
+                      final isActive = env.id == _activeEnvId;
+
+                      return _EnvironmentTile(
+                        env: env,
+                        isActive: isActive,
+                        isSelected: isSelected,
+                        isGlobal: false,
+                        onTap: _onSubEnvTap,
+                        providerRef: ref,
+                        showRenameDialog: _showRenameDialog,
+                        showColorDialog: _showColorDialog,
                       );
                     },
                   ),
@@ -208,26 +148,35 @@ class _EnvironmentEditorDialogState
             ),
           ),
           // Right Pane (Variables Only)
-          if (selectedEnv != null)
+          if (activeEnv != null)
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  SizedBox(height: 28),
-                  // Removed Header as requested.
+                  const SizedBox(height: 12),
+                  Padding(
+                    padding: const .only(left: 16),
+                    child: Text(
+                      activeEnv.name,
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
                   Expanded(
                     child: KeyValueEditor(
                       enableSuggestionsForKey: false,
-                      key: ValueKey(selectedEnv.id), // Ensure rebuild on switch
-                      items: selectedEnv.variables,
+                      key: ValueKey(activeEnv.id),
+                      items: activeEnv.variables,
                       onChanged: (items) {
                         ref
                             .read(environmentProvider.notifier)
                             .updateEnvironment(
-                              selectedEnv.copyWith(variables: items),
+                              activeEnv.copyWith(variables: items),
                             );
                       },
-                      // id: selectedEnv.id,
                       id: null,
                       mode: KeyValueEditorMode.variables,
                       isVariable: true,
@@ -246,33 +195,18 @@ class _EnvironmentEditorDialogState
   }
 
   void _showRenameDialog(Environment env) {
-    final controller = TextEditingController(text: env.name);
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text("Rename Environment"),
-        content: TextField(
-          controller: controller,
-          decoration: const InputDecoration(labelText: "Name"),
-          autofocus: true,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text("Cancel"),
-          ),
-          TextButton(
-            onPressed: () {
-              if (controller.text.isNotEmpty) {
-                ref
-                    .read(environmentProvider.notifier)
-                    .updateEnvironment(env.copyWith(name: controller.text));
-                Navigator.pop(ctx);
-              }
-            },
-            child: const Text("Refactor"),
-          ),
-        ],
+      builder: (ctx) => InputDialog(
+        initialValue: env.name,
+        onConfirmed: (text) {
+          if (text.isNotEmpty) {
+            ref
+                .read(environmentProvider.notifier)
+                .updateEnvironment(env.copyWith(name: text));
+          }
+        },
+        title: "Rename Environment",
       ),
     );
   }
@@ -293,42 +227,159 @@ class _EnvironmentEditorDialogState
           Colors.grey,
         ];
 
-        return AlertDialog(
-          title: const Text("Select Color"),
-          content: Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: colors
-                .map(
-                  (c) => InkWell(
-                    onTap: () {
-                      ref
-                          .read(environmentProvider.notifier)
-                          .updateEnvironment(
-                            env.copyWith(color: c == Colors.grey ? null : c),
-                          );
-                      Navigator.pop(ctx);
-                    },
-                    child: Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: c,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white24),
+        return CustomDialog(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                "Select Color",
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: colors
+                    .map(
+                      (c) => InkWell(
+                        onTap: () {
+                          ref
+                              .read(environmentProvider.notifier)
+                              .updateEnvironment(
+                                env.copyWith(
+                                  color: c == Colors.grey ? null : c,
+                                ),
+                              );
+                          Navigator.pop(ctx);
+                        },
+                        child: Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: c,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white24),
+                          ),
+                          child:
+                              (env.color == c ||
+                                  (env.color == null && c == Colors.grey))
+                              ? const Icon(Icons.check, size: 16)
+                              : null,
+                        ),
                       ),
-                      child:
-                          (env.color == c ||
-                              (env.color == null && c == Colors.grey))
-                          ? const Icon(Icons.check, size: 16)
-                          : null,
-                    ),
-                  ),
-                )
-                .toList(),
+                    )
+                    .toList(),
+              ),
+            ],
           ),
         );
       },
+    );
+  }
+}
+
+class _EnvironmentTile extends StatelessWidget {
+  final Environment env;
+  final bool isSelected;
+  final bool isActive;
+  final bool isGlobal;
+  final Function(String) onTap;
+  final WidgetRef providerRef;
+  final Function(Environment) showRenameDialog;
+  final Function(Environment) showColorDialog;
+
+  const _EnvironmentTile({
+    required this.env,
+    required this.isSelected,
+    required this.isActive,
+    required this.isGlobal,
+    required this.onTap,
+    required this.providerRef,
+    required this.showRenameDialog,
+    required this.showColorDialog,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ContextMenuWidget(
+      menuProvider: (_) => Menu(
+        children: [
+          if (!isGlobal) ...[
+            MenuAction(title: "Rename", callback: () => showRenameDialog(env)),
+            MenuAction(
+              title: "Edit Color",
+              callback: () => showColorDialog(env),
+            ),
+            MenuAction(
+              title: "Duplicate",
+              callback: () {
+                providerRef
+                    .read(environmentProvider.notifier)
+                    .duplicateEnvironment(env);
+              },
+            ),
+          ],
+          MenuAction(
+            title: env.isShared ? "Make Private" : "Make Shared",
+            callback: () {
+              providerRef.read(environmentProvider.notifier).toggleShared(env);
+            },
+          ),
+          if (!isGlobal) ...[
+            MenuSeparator(),
+            MenuAction(
+              title: "Delete",
+              attributes: const MenuActionAttributes(destructive: true),
+              callback: () {
+                providerRef
+                    .read(environmentProvider.notifier)
+                    .deleteEnvironment(env.id);
+              },
+            ),
+          ],
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8.0),
+        child: ListTile(
+          onTap: () => onTap(env.id),
+          selected: isSelected,
+          dense: true,
+          minVerticalPadding: 0,
+          contentPadding: .only(left: 6, right: 10),
+          minTileHeight: 30,
+          selectedTileColor: Colors.white10,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+          // leading:
+          title: Row(
+            children: [
+              // SizedBox(width: 6),
+              isActive
+                  ? const Icon(Icons.play_arrow, size: 16)
+                  : const SizedBox(width: 16, height: 16),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  env.name,
+                  overflow: TextOverflow.ellipsis,
+                  style: isGlobal
+                      ? const TextStyle(fontWeight: FontWeight.bold)
+                      : null,
+                ),
+              ),
+              if (env.color != null) ...[
+                const SizedBox(width: 6),
+                Icon(Icons.circle, size: 8, color: env.color),
+              ],
+              if (env.isShared) ...[
+                const SizedBox(width: 4),
+                const Icon(Icons.people, size: 14, color: Colors.grey),
+              ],
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

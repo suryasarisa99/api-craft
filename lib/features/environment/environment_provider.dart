@@ -19,6 +19,8 @@ class EnvironmentState {
     this.isLoading = true,
   });
 
+  /// The currently selected sub-environment.
+  /// Note: The Global environment is always effective implicitly in the Resolver.
   Environment? get selectedEnvironment {
     if (selectedEnvironmentId == null) return null;
     try {
@@ -27,6 +29,17 @@ class EnvironmentState {
       return null;
     }
   }
+
+  Environment? get globalEnvironment {
+    try {
+      return environments.firstWhere((e) => e.isGlobal);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  List<Environment> get subEnvironments =>
+      environments.where((e) => !e.isGlobal).toList();
 
   CookieJarModel? get selectedCookieJar {
     if (selectedCookieJarId == null) return null;
@@ -60,9 +73,11 @@ class EnvironmentNotifier extends Notifier<EnvironmentState> {
 
   @override
   EnvironmentState build() {
-    final collection = ref.watch(selectedCollectionProvider);
-    if (collection != null) {
-      Future.microtask(() => loadData(collection.id));
+    final collectionId = ref.watch(
+      selectedCollectionProvider.select((c) => c?.id),
+    );
+    if (collectionId != null) {
+      Future.microtask(() => loadData(collectionId));
       return EnvironmentState(isLoading: true);
     }
     return EnvironmentState(isLoading: false);
@@ -70,24 +85,31 @@ class EnvironmentNotifier extends Notifier<EnvironmentState> {
 
   Future<void> loadData(String collectionId) async {
     state = state.copyWith(isLoading: true);
-    debugPrint("env::load-data $collectionId");
     final repo = ref.read(repositoryProvider);
 
     try {
       var envs = await repo.getEnvironments(collectionId);
       var jars = await repo.getCookieJars(collectionId);
 
-      // Defaults are now guaranteed by DBHelper or CollectionsProvider creation
+      // Get persisted selection from the Collection Model
+      final collection = ref.read(selectedCollectionProvider);
 
-      // Keep selection or select first/default
-      String? selEnv = state.selectedEnvironmentId;
-      if (selEnv == null || !envs.any((e) => e.id == selEnv)) {
-        selEnv = envs.isNotEmpty ? envs.first.id : null;
+      String? selEnv = collection?.selectedEnvId;
+      String? selJar = collection?.selectedJarId;
+
+      // Validate Env persistence
+      if (selEnv != null && !envs.any((e) => e.id == selEnv)) {
+        selEnv = null;
       }
 
-      String? selJar = state.selectedCookieJarId;
-      if (selJar == null || !jars.any((e) => e.id == selJar)) {
-        selJar = jars.isNotEmpty ? jars.first.id : null;
+      // Validate Jar persistence
+      if (selJar != null && !jars.any((e) => e.id == selJar)) {
+        selJar = null;
+      }
+
+      // Default Jar if none selected?
+      if (selJar == null && jars.isNotEmpty) {
+        selJar = jars.first.id;
       }
 
       state = state.copyWith(
@@ -107,12 +129,34 @@ class EnvironmentNotifier extends Notifier<EnvironmentState> {
     }
   }
 
-  void selectEnvironment(String id) {
+  void selectEnvironment(String? id) {
     state = state.copyWith(selectedEnvironmentId: id);
+    _persistSelection();
   }
 
   void selectCookieJar(String id) {
     state = state.copyWith(selectedCookieJarId: id);
+    _persistSelection();
+  }
+
+  Future<void> _persistSelection() async {
+    final collection = ref.read(selectedCollectionProvider);
+    if (collection != null) {
+      // 1. Update Provider State
+      final updatedCol = collection.copyWith(
+        selectedEnvId: state.selectedEnvironmentId,
+        selectedJarId: state.selectedCookieJarId,
+      );
+      ref.read(selectedCollectionProvider.notifier).select(updatedCol);
+
+      // 2. Update DB
+      final repo = ref.read(repositoryProvider);
+      repo.updateCollectionSelection(
+        collection.id,
+        state.selectedEnvironmentId,
+        state.selectedCookieJarId,
+      );
+    }
   }
 
   Future<void> createEnvironment(
@@ -120,6 +164,7 @@ class EnvironmentNotifier extends Notifier<EnvironmentState> {
     String collectionId, {
     Color? color,
     bool isShared = false,
+    bool isGlobal = false,
   }) async {
     final repo = ref.read(repositoryProvider);
     final newEnv = Environment(
@@ -128,23 +173,46 @@ class EnvironmentNotifier extends Notifier<EnvironmentState> {
       name: name,
       color: color,
       isShared: isShared,
+      isGlobal: isGlobal,
     );
+
+    // Update local state
+    state = state.copyWith(environments: [...state.environments, newEnv]);
+
     await repo.createEnvironment(newEnv);
-    await loadData(collectionId);
-    selectEnvironment(newEnv.id);
+
+    if (!isGlobal) {
+      selectEnvironment(newEnv.id);
+    }
   }
 
   Future<void> updateEnvironment(Environment env) async {
     final repo = ref.read(repositoryProvider);
+
+    // Update local state
+    final index = state.environments.indexWhere((e) => e.id == env.id);
+    if (index != -1) {
+      final newEnvs = List<Environment>.from(state.environments);
+      newEnvs[index] = env;
+      state = state.copyWith(environments: newEnvs);
+    }
+
     await repo.updateEnvironment(env);
-    await loadData(env.collectionId);
   }
 
   Future<void> duplicateEnvironment(Environment env) async {
-    final newEnv = env.copyWith(id: _uuid.v4(), name: "${env.name} (Copy)");
+    if (env.isGlobal) return;
+
+    final newEnv = env.copyWith(
+      id: _uuid.v4(),
+      name: "${env.name} (Copy)",
+      isGlobal: false,
+    );
     final repo = ref.read(repositoryProvider);
+
+    state = state.copyWith(environments: [...state.environments, newEnv]);
+
     await repo.createEnvironment(newEnv);
-    await loadData(env.collectionId);
   }
 
   Future<void> toggleShared(Environment env) async {
@@ -153,28 +221,36 @@ class EnvironmentNotifier extends Notifier<EnvironmentState> {
   }
 
   Future<void> deleteEnvironment(String id) async {
-    final curEnv = state.selectedEnvironment;
+    final target = state.environments.firstWhere((e) => e.id == id);
+    if (target.isGlobal) return;
+
+    final curEnvId = state.selectedEnvironmentId;
     final repo = ref.read(repositoryProvider);
+
+    // Update state first
+    state = state.copyWith(
+      environments: state.environments.where((e) => e.id != id).toList(),
+    );
+
     await repo.deleteEnvironment(id);
 
-    if (curEnv?.id == id) {
+    if (curEnvId == id) {
       state = state.copyWith(selectedEnvironmentId: null);
+      _persistSelection();
     }
-    // Reload
-    // Safety check: if env was deleted, we need to know the collectionId to reload.
-    // We can get it from the state before deletion if needed, but here we used state.environments (which might assume existence).
-    // Better to pass collectionId or fetch from state before logic.
-    // Existing logic assumes we can find it in state.
-    final collectionId = state.environments
-        .firstWhere((e) => e.id == id, orElse: () => state.environments.first)
-        .collectionId;
-    await loadData(collectionId);
   }
 
   Future<void> updateCookieJar(CookieJarModel jar) async {
     final repo = ref.read(repositoryProvider);
+
+    final index = state.cookieJars.indexWhere((j) => j.id == jar.id);
+    if (index != -1) {
+      final newJars = List<CookieJarModel>.from(state.cookieJars);
+      newJars[index] = jar;
+      state = state.copyWith(cookieJars: newJars);
+    }
+
     await repo.updateCookieJar(jar);
-    await loadData(jar.collectionId);
   }
 
   Future<void> createCookieJar(String name, String collectionId) async {
@@ -184,8 +260,10 @@ class EnvironmentNotifier extends Notifier<EnvironmentState> {
       collectionId: collectionId,
       name: name,
     );
+
+    state = state.copyWith(cookieJars: [...state.cookieJars, newJar]);
+
     await repo.createCookieJar(newJar);
-    await loadData(collectionId);
     selectCookieJar(newJar.id);
   }
 
@@ -197,19 +275,17 @@ class EnvironmentNotifier extends Notifier<EnvironmentState> {
 
   Future<void> deleteCookieJar(String id) async {
     final repo = ref.read(repositoryProvider);
-    // Needed for reloading
-    final collectionId = state.cookieJars
-        .firstWhere((j) => j.id == id)
-        .collectionId;
+
+    state = state.copyWith(
+      cookieJars: state.cookieJars.where((j) => j.id != id).toList(),
+    );
 
     await repo.deleteCookieJar(id);
 
-    // If deleted jar was selected, selection logic in loadData will handle selecting another one
     if (state.selectedCookieJarId == id) {
       state = state.copyWith(selectedCookieJarId: null);
+      _persistSelection();
     }
-
-    await loadData(collectionId);
   }
 
   Future<void> saveCookiesToJar(
@@ -217,25 +293,12 @@ class EnvironmentNotifier extends Notifier<EnvironmentState> {
     List<CookieDef> newCookies,
   ) async {
     final jar = state.cookieJars.firstWhere((j) => j.id == jarId);
-    // Merge logic: replace existing cookies with same key/domain/path?
-    // For simplicity, we'll iterate new cookies and upsert into existing list.
-    // A proper cookie store is complex (domain matching etc), but here we store as list.
-
-    // We need to match based on Key + Domain (and maybe Path).
-    // Let's assume Key + Domain is unique enough for this simple list.
 
     final currentCookies = List<CookieDef>.from(jar.cookies);
 
     for (final nc in newCookies) {
-      // Find index of existing cookie
       final idx = currentCookies.indexWhere(
-        (c) =>
-            c.key == nc.key &&
-            c.domain == nc.domain &&
-            c.path == nc.path, // Strict match?
-        // Usually domain/path in Set-Cookie might be absent (meaning host/path of req).
-        // The nc passed here should have domain/path filled from request context if missing?
-        // We will handle that in caller.
+        (c) => c.key == nc.key && c.domain == nc.domain && c.path == nc.path,
       );
 
       if (idx != -1) {

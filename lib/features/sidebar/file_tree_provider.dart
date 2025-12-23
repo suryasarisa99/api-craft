@@ -39,7 +39,8 @@ class FileTreeNotifier extends Notifier<TreeData> {
 
   @override
   TreeData build() {
-    ref.watch(selectedCollectionProvider);
+    ref.watch(selectedCollectionProvider.select((c) => c?.id));
+    debugPrint("building file tree");
     _loadInitialData();
 
     // 2. Return initial state: empty map, isLoading: true
