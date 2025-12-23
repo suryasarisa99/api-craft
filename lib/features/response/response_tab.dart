@@ -154,6 +154,7 @@ class _ResponseTAbState extends ConsumerState<ResponseTAb>
               IgnorePointer(
                 child: MyCustomMenu.contentColumn(
                   popupKey: _menuKey,
+                  useBtn: false,
                   items: [
                     CustomMenuIconItem.tick(
                       title: const Text("Pretty"),

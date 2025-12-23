@@ -45,15 +45,11 @@ class _CollectionPickerState extends ConsumerState<CollectionPicker> {
           icon: const SuryaThemeIcon(BulkRounded.plusSign),
           title: const Text("Create New..."),
           value: 'create',
-          onTap: (_) {
-            // Delay to allow popup to close before showing dialog
-            Future.microtask(() => _showCreateDialog(context));
-          },
+          onTap: (_) => _showCreateDialog(context),
         ),
 
         if (selectedCollection != null) ...[
           menuDivider,
-          // menuDivider, // Optional divider before clear history
           CustomMenuIconItem(
             icon: const SuryaThemeIcon(BulkRounded.linkBackward),
             title: const Text("Clear History"),
@@ -79,16 +75,11 @@ class _CollectionPickerState extends ConsumerState<CollectionPicker> {
             onTap: (_) => _showDeleteDialog(context, selectedCollection),
           ),
       ],
-      child: TextButton(
-        onPressed: () {
-          _popupKey.currentState?.show();
-        },
-        child: Text(
-          selectedCollection != null
-              ? selectedCollection.name
-              : 'Select Collection',
-          style: Theme.of(context).textTheme.bodyMedium,
-        ),
+      child: Text(
+        selectedCollection != null
+            ? selectedCollection.name
+            : 'Select Collection',
+        style: Theme.of(context).textTheme.bodyMedium,
       ),
     );
   }

@@ -38,13 +38,20 @@ class MyCustomMenu extends StatelessWidget {
   final Widget child;
   final Widget content;
   final double? width;
+  final EdgeInsets? childPadding;
   final GlobalKey<CustomPopupState>? popupKey;
+  final bool useBtn;
   const MyCustomMenu({
     super.key,
     required this.popupKey,
     required this.child,
     required this.content,
+    this.childPadding = const EdgeInsets.symmetric(
+      horizontal: 8.0,
+      vertical: 4.0,
+    ),
     this.width,
+    this.useBtn = true,
   });
 
   MyCustomMenu.contentColumn({
@@ -52,6 +59,11 @@ class MyCustomMenu extends StatelessWidget {
     required this.child,
     required this.popupKey,
     this.width,
+    this.childPadding = const EdgeInsets.symmetric(
+      horizontal: 8.0,
+      vertical: 4.0,
+    ),
+    this.useBtn = true,
     required List<Widget> items,
   }) : content = Material(
          color: Colors.transparent,
@@ -99,7 +111,19 @@ class MyCustomMenu extends StatelessWidget {
           ),
         ],
       ),
-      child: child,
+      child: !useBtn
+          ? child
+          : TextButton(
+              style: TextButton.styleFrom(
+                minimumSize: const Size(40, 34),
+                padding: childPadding,
+              ),
+              onPressed: () {
+                debugPrint("CustomMenuBtn Pressed");
+                popupKey?.currentState?.show();
+              },
+              child: child,
+            ),
     );
   }
 }
@@ -177,8 +201,8 @@ class CustomMenuIconItem extends StatelessWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(4),
         onTap: () {
-          onTap?.call(value);
           Navigator.of(context).pop(value);
+          onTap?.call(value);
         },
         child: Ink(
           padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),

@@ -106,6 +106,19 @@ class _RequestTabState extends ConsumerState<RequestTab>
               controller: _tabController,
               isScrollable: true,
               tabAlignment: TabAlignment.start,
+
+              indicatorWeight: 1,
+              indicator: BoxDecoration(
+                color: Colors.transparent,
+                border: Border(
+                  bottom: BorderSide(
+                    color: Theme.of(context).colorScheme.primary,
+                    width: 2,
+                  ),
+                ),
+              ),
+              labelPadding: .symmetric(horizontal: 10),
+              // indicatorSize: TabBarIndicatorSize.tab,
               labelStyle: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w400,
@@ -172,6 +185,7 @@ class _RequestTabState extends ConsumerState<RequestTab>
                               ref.read(_provider.notifier).updateBodyType(null),
                         ),
                       ],
+                      useBtn: false,
                       child: Tab(
                         child: Row(
                           mainAxisSize: MainAxisSize.min,

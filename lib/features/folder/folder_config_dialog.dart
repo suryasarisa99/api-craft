@@ -275,7 +275,7 @@ class __GeneralTabState extends ConsumerState<_GeneralTab> {
           TextFormField(
             initialValue: name,
             decoration: const InputDecoration(
-              labelText: "Folder Name",
+              hintText: "Folder Name",
               border: OutlineInputBorder(),
             ),
             onChanged: notifier.updateName,
@@ -292,7 +292,8 @@ class __GeneralTabState extends ConsumerState<_GeneralTab> {
               maxLines: null,
               minLines: null,
               decoration: const InputDecoration(
-                labelText: "Description",
+                // labelText: "Description",
+                hintText: "Description",
                 border: OutlineInputBorder(),
               ),
               onChanged: notifier.updateDescription,

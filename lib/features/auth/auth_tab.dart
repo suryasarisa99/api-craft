@@ -118,6 +118,7 @@ class _AuthTabHeaderState extends ConsumerState<AuthTabHeader> {
               // if (authType == AuthType.inherit && authSource != null)
             ],
             popupKey: popupKey,
+            useBtn: false,
             child: Row(
               children: [
                 if (authType == AuthType.inherit && authSource != null) ...[

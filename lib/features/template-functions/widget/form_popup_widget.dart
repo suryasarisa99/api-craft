@@ -101,12 +101,12 @@ class _FormPopupWidgetState extends ConsumerState<FormPopupWidget> {
   @override
   Widget build(BuildContext context) {
     return CustomDialog(
-      width: 800,
-      height: 600,
+      width: 700,
       padding: const EdgeInsets.all(16.0),
 
       child: Column(
         crossAxisAlignment: .start,
+        mainAxisSize: .min,
         children: [
           Container(
             padding: .symmetric(vertical: 1, horizontal: 8),
@@ -122,27 +122,26 @@ class _FormPopupWidgetState extends ConsumerState<FormPopupWidget> {
           const SizedBox(height: 10),
           Text(widget.templateFn.description),
           const SizedBox(height: 16),
-          Expanded(
-            child: Form(
-              key: _formKey,
-              child: FormInputWidget(
-                id: widget.id,
-                inputs: widget.templateFn.args,
-                data: fnState,
-                onChanged: (key, value) {
-                  debugPrint("Input changed: $key -> $value");
-                  setState(() {
-                    fnState = Map.from(fnState)..[key] = value;
+          Form(
+            key: _formKey,
+            child: FormInputWidget(
+              id: widget.id,
+              inputs: widget.templateFn.args,
+              data: fnState,
+              onChanged: (key, value) {
+                debugPrint("Input changed: $key -> $value");
+                setState(() {
+                  fnState = Map.from(fnState)..[key] = value;
+                });
+                if (widget.templateFn.previewType == "auto") {
+                  debouncer.run(() {
+                    renderPreview();
                   });
-                  if (widget.templateFn.previewType == "auto") {
-                    debouncer.run(() {
-                      renderPreview();
-                    });
-                  }
-                },
-              ),
+                }
+              },
             ),
           ),
+          const SizedBox(height: 16),
           Container(
             padding: .symmetric(vertical: 6, horizontal: 12),
             decoration: BoxDecoration(
@@ -166,7 +165,12 @@ class _FormPopupWidgetState extends ConsumerState<FormPopupWidget> {
             ),
           ),
           const SizedBox(height: 16),
-          ElevatedButton(onPressed: handleSubmit, child: const Text("Confirm")),
+          Row(
+            mainAxisAlignment: .end,
+            children: [
+              FilledButton(onPressed: handleSubmit, child: const Text("Save")),
+            ],
+          ),
         ],
       ),
     );

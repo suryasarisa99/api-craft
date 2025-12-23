@@ -1,5 +1,6 @@
 import 'package:api_craft/core/providers/providers.dart';
 import 'package:api_craft/core/widgets/ui/variable_text_field_custom.dart';
+import 'package:dotted_decoration/dotted_decoration.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:api_craft/core/models/models.dart';
 import 'package:flutter/material.dart';
@@ -263,7 +264,12 @@ class FormWidgetText extends StatelessWidget {
 
     return VariableTextFieldCustom(
       id: id,
-      decoration: InputDecoration(labelText: label, hintText: placeholder),
+
+      decoration: InputDecoration(
+        labelText: label,
+        hintText: placeholder,
+        contentPadding: EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+      ),
       initialValue: value ?? defaultValue,
       onChanged: (val) {
         onChanged?.call(val);
@@ -377,11 +383,22 @@ class FormWidgetCheckbox extends StatelessWidget {
     final defaultValue = input.defaultValue as bool? ?? false;
 
     return CheckboxListTile(
+      dense: true,
+      contentPadding: .zero,
       title: Text(label),
       value: value ?? defaultValue,
       onChanged: onChanged,
       controlAffinity: ListTileControlAffinity.leading,
     );
+    // return Transform.scale(
+    //   scale: 1,
+    //   child: SwitchListTile(
+    //     title: Text(label),
+    //     controlAffinity: ListTileControlAffinity.leading,
+    //     value: value ?? defaultValue,
+    //     onChanged: onChanged,
+    //   ),
+    // );
   }
 }
 
@@ -480,20 +497,33 @@ class _FormWidgetAccordionState extends State<FormWidgetAccordion> {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
+    return DecoratedBox(
+      decoration: DottedDecoration(
+        shape: Shape.box,
+        color: const Color.fromARGB(255, 109, 109, 109),
+        dash: [5, 3],
+        borderRadius: BorderRadius.circular(6),
+      ),
       child: ExpansionTile(
         title: Text(widget.input.label),
+        dense: true,
+        visualDensity: VisualDensity.compact,
+        minTileHeight: 28,
+        backgroundColor: const Color(0xFF252525),
+        collapsedBackgroundColor: const Color(0xFF252525),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+        collapsedShape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(6),
+        ),
         initiallyExpanded: _isExpanded,
+        childrenPadding: .symmetric(horizontal: 18, vertical: 14),
         onExpansionChanged: (val) => setState(() => _isExpanded = val),
         children: [
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: FormInputWidget(
-              id: widget.id,
-              inputs: widget.input.inputs ?? [],
-              onChanged: widget.onChanged,
-              data: widget.data,
-            ),
+          FormInputWidget(
+            id: widget.id,
+            inputs: widget.input.inputs ?? [],
+            onChanged: widget.onChanged,
+            data: widget.data,
           ),
         ],
       ),

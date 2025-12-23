@@ -128,9 +128,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                     ? const SuryaThemeIcon(BulkRounded.sidebarLeft01)
                     : const SuryaThemeIcon(BulkRounded.sidebarLeft),
               ),
+              CookiesJarPicker(),
               CollectionPicker(),
-              // > indicator?
-              const Text(" > ", style: TextStyle(color: Colors.grey)),
+              Icon(Icons.keyboard_arrow_right, size: 16),
               const EnvironmentPicker(),
             ],
           ),

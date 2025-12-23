@@ -10,7 +10,6 @@ dependencies:
   flutter:
     sdk: flutter
   extended_text_field: ^16.0.2
-  go_router: ^17.0.0
   flutter_riverpod: ^3.0.3
   path: ^1.9.1
   path_provider: ^2.1.5
@@ -42,6 +41,7 @@ dependencies:
   flutter_js: ^0.8.1
   web_socket_channel: ^3.0.3
   crypto: ^3.0.7
+  dotted_decoration: ^2.0.0
 
 dev_dependencies:
   flutter_test:

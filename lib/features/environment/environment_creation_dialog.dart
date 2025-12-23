@@ -1,3 +1,4 @@
+import 'package:api_craft/core/widgets/ui/custom_dialog.dart';
 import 'package:flutter/material.dart';
 
 class EnvironmentCreationDialog extends StatefulWidget {
@@ -43,31 +44,35 @@ class _EnvironmentCreationDialogState extends State<EnvironmentCreationDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text("Create Environment"),
-      content: SizedBox(
-        width: 400,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Name Input
-            TextField(
-              controller: _nameController,
-              decoration: const InputDecoration(
-                labelText: "Name",
-                hintText: "e.g., Production, Staging",
-                border: OutlineInputBorder(),
-              ),
-              autofocus: true,
-              onSubmitted: (_) => _submit(),
+    return CustomDialog(
+      width: 400,
+      child: Column(
+        mainAxisSize: .min,
+        crossAxisAlignment: .start,
+        children: [
+          const Text(
+            "Create New Environment",
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _nameController,
+            decoration: const InputDecoration(
+              // labelText: "Name",
+              hintText: "Name",
+              border: OutlineInputBorder(),
             ),
-            const SizedBox(height: 16),
+            autofocus: true,
+            onSubmitted: (_) => _submit(),
+          ),
+          const SizedBox(height: 16),
 
-            // Color Selection
-            const Text("Color Code"),
-            const SizedBox(height: 8),
-            Row(
+          // Color Selection
+          const Padding(padding: .only(left: 10), child: Text("Color Code")),
+          const SizedBox(height: 8),
+          Padding(
+            padding: const .only(left: 10),
+            child: Row(
               children: [
                 // "None" option
                 InkWell(
@@ -97,6 +102,7 @@ class _EnvironmentCreationDialogState extends State<EnvironmentCreationDialog> {
                   return Padding(
                     padding: const EdgeInsets.only(right: 8.0),
                     child: InkWell(
+                      borderRadius: BorderRadius.circular(16),
                       onTap: () => setState(() => _selectedColor = c),
                       child: Container(
                         width: 32,
@@ -121,41 +127,47 @@ class _EnvironmentCreationDialogState extends State<EnvironmentCreationDialog> {
                 }),
               ],
             ),
-            const SizedBox(height: 16),
+          ),
+          const SizedBox(height: 16),
 
-            // Shared Toggle
-            Row(
-              children: [
-                Switch(
+          // Shared Toggle
+          Row(
+            children: [
+              Transform.scale(
+                scale: 0.6,
+                child: Switch(
                   value: _isShared,
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  padding: .zero,
                   onChanged: (val) => setState(() => _isShared = val),
                   // activeColor: Colors.blue,
                 ),
-                const SizedBox(width: 8),
-                const Text("Share this environment"),
-              ],
-            ),
-            const Text(
-              "Shared environments are synced with your team (if applicable).",
-              style: TextStyle(fontSize: 12, color: Colors.grey),
-            ),
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text("Cancel"),
-        ),
-        ElevatedButton(
-          onPressed: _submit,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Theme.of(context).primaryColor,
-            foregroundColor: Colors.white,
+              ),
+              const Text("Share this environment"),
+              const SizedBox(width: 16),
+              Tooltip(
+                message: "Shared environments are synced with your team",
+                child: Icon(Icons.info_outline, color: Colors.grey, size: 16),
+              ),
+            ],
           ),
-          child: const Text("Create"),
-        ),
-      ],
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Spacer(),
+              // TextButton(
+              //   onPressed: () => Navigator.pop(context),
+              //   child: Text(
+              //     "Cancel",
+              //     style: TextStyle(color: Colors.grey[350]),
+              //   ),
+              // ),
+              const SizedBox(width: 16),
+              FilledButton(onPressed: _submit, child: const Text("Create")),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

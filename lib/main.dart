@@ -83,13 +83,37 @@ class MainApp extends StatelessWidget {
           ),
         ),
         textButtonTheme: TextButtonThemeData(
-          style: TextButton.styleFrom(
+          // style: TextButton.styleFrom(
+          //   shape: RoundedRectangleBorder(
+          //     borderRadius: BorderRadius.circular(6.0),
+          //   ),
+          //   foregroundColor: colorSchema.primaryContainer,
+          // ),
+          style: ButtonStyle(
+            shape: WidgetStatePropertyAll<RoundedRectangleBorder>(
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(6.0)),
+            ),
+            foregroundColor: WidgetStatePropertyAll<Color>(
+              colorSchema.primaryContainer,
+            ),
+          ),
+        ),
+        filledButtonTheme: FilledButtonThemeData(
+          style: FilledButton.styleFrom(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(6.0),
+            ),
+          ),
+        ),
+        outlinedButtonTheme: OutlinedButtonThemeData(
+          style: OutlinedButton.styleFrom(
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(6.0),
             ),
             foregroundColor: colorSchema.primaryContainer,
           ),
         ),
+        // filledButtonTheme:
         iconButtonTheme: IconButtonThemeData(
           style: IconButton.styleFrom(
             minimumSize: const Size(32, 28),
@@ -101,6 +125,7 @@ class MainApp extends StatelessWidget {
             ),
           ),
         ),
+        iconTheme: IconThemeData(color: Colors.grey),
         inputDecorationTheme: InputDecorationThemeData(
           isDense: true,
           contentPadding: EdgeInsets.symmetric(horizontal: 6, vertical: 9),

@@ -86,7 +86,7 @@ class _RequestUrlState extends ConsumerState<RequestUrl> {
               enableUrlSuggestions: true,
               id: widget.id,
               decoration: InputDecoration(
-                prefixIconConstraints: BoxConstraints(maxWidth: 80),
+                prefixIconConstraints: BoxConstraints(maxWidth: 90),
                 prefixIcon: Padding(
                   padding: const EdgeInsets.only(left: 8),
                   child: GestureDetector(
