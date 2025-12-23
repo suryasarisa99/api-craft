@@ -263,6 +263,7 @@ class DbStorageRepository implements StorageRepository {
 
     for (final node in nodes) {
       final map = node.toMap();
+      map['collection_id'] = collectionId;
       batch.insert('nodes', map);
     }
 

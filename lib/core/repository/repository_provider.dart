@@ -7,20 +7,23 @@ import '../providers/providers.dart';
 
 final repositoryProvider = Provider<StorageRepository>((ref) {
   // 1. Await the Selected Collection (Handles loading state automatically)
-  final collection = ref.watch(selectedCollectionProvider);
+  final (collectionId, type) = ref.watch(
+    selectedCollectionProvider.select((c) => (c?.id, c?.type)),
+  );
 
-  if (collection == null) {
+  if (collectionId == null) {
     Future.delayed(const Duration(milliseconds: 100), () {
       ref.read(selectedCollectionProvider.notifier).select(kDefaultCollection);
     });
   }
 
   // 2. Return the correct Repository based on type
-  if (collection == null || collection.type == CollectionType.database) {
+  if (collectionId == null || type == CollectionType.database) {
     final db = ref.watch(databaseProvider);
-    return DbStorageRepository(db, collection?.id);
+    return DbStorageRepository(db, collectionId!);
   } else {
-    return FolderStorageRepository(rootPath: collection.path!);
+    // return FolderStorageRepository(rootPath: collection.path!);
+    return FolderStorageRepository(rootPath: collectionId);
   }
 });
 

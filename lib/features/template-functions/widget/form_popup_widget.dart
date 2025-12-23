@@ -1,4 +1,5 @@
 import 'package:api_craft/core/models/models.dart';
+import 'package:api_craft/core/providers/providers.dart';
 import 'package:api_craft/core/providers/ref_provider.dart';
 import 'package:api_craft/core/widgets/ui/custom_dialog.dart';
 import 'package:api_craft/features/template-functions/models/template_placeholder_model.dart';
@@ -40,7 +41,7 @@ class _FormPopupWidgetState extends ConsumerState<FormPopupWidget> {
   void initState() {
     super.initState();
     if (widget.templateFn.previewType == "auto") {
-      renderPreview();
+      renderPreview("auto");
     }
   }
 
@@ -76,26 +77,35 @@ class _FormPopupWidgetState extends ConsumerState<FormPopupWidget> {
     Navigator.of(context).pop();
   }
 
-  void renderPreview() async {
+  void renderPreview(String previewType) async {
     final r = ref.read(refProvider);
-    widget.templateFn
-        .onRender(
-          r,
-          context,
-          CallTemplateFunctionArgs(values: fnState, purpose: Purpose.preview),
-        )
-        .then((value) {
-          debugPrint("Rendered value: $value");
-          setState(() {
-            renderedValue = value;
-          });
-        })
-        .catchError((error) {
-          debugPrint("Error rendering value: $error");
-          setState(() {
-            renderedValue = "";
-          });
-        });
+
+    // resolve args values for nested functions,variables.
+    final reqResolver = RequestResolver(r);
+    try {
+      final resolvedArgs = await reqResolver.resolveForTemplatePreview(
+        widget.id,
+        fnState,
+        context,
+        previewType,
+      );
+      final val = await widget.templateFn.onRender(
+        r,
+        context,
+        CallTemplateFunctionArgs(
+          values: resolvedArgs,
+          purpose: Purpose.preview,
+        ),
+      );
+      setState(() {
+        renderedValue = val;
+      });
+    } catch (e) {
+      debugPrint("Error rendering value: $e");
+      setState(() {
+        renderedValue = "";
+      });
+    }
   }
 
   @override
@@ -135,7 +145,7 @@ class _FormPopupWidgetState extends ConsumerState<FormPopupWidget> {
                 });
                 if (widget.templateFn.previewType == "auto") {
                   debouncer.run(() {
-                    renderPreview();
+                    renderPreview("auto");
                   });
                 }
               },
@@ -158,7 +168,7 @@ class _FormPopupWidgetState extends ConsumerState<FormPopupWidget> {
                 ),
                 const SizedBox(width: 20),
                 IconButton(
-                  onPressed: renderPreview,
+                  onPressed: () => renderPreview("click"),
                   icon: const Icon(Icons.refresh),
                 ),
               ],

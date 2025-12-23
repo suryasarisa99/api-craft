@@ -48,11 +48,11 @@ final responseBodyPath = TemplateFunction(
       ttl: args.values['ttl'],
       context: ctx,
     );
-    debugPrint("Got response: $response");
     if (response == null) return null;
     try {
       return filterJsonPath(response.body, args.values['path'], 'first');
     } catch (e) {
+      debugPrint("Failed to parse JSON: $e");
       // try xpath
     }
 
@@ -134,7 +134,6 @@ Future<RawHttpResponse?> getResponse(
   required BuildContext context,
   String? ttl,
 }) async {
-  // var response = await ctx.read(httpRequestProvider).getResById(ctx, requestId);
   var response = await AppService.http.getRes(ref, requestId);
 
   if (behavior == Behavior.never.name && response == null) {
@@ -147,6 +146,7 @@ Future<RawHttpResponse?> getResponse(
   debugPrint(
     "Final behavior: $finalBehavior, response is null: ${response == null}",
   );
+  debugPrint("response-body: ${response?.body ?? ''}");
   if ((finalBehavior == Behavior.smart.name && response == null) ||
       finalBehavior == Behavior.always.name ||
       (finalBehavior == Behavior.ttl.name &&

@@ -52,6 +52,35 @@ class RequestResolver {
     );
   }
 
+  Future<Map<String, dynamic>> resolveForTemplatePreview(
+    String? requestId,
+    Map<String, dynamic> args,
+    BuildContext context,
+    String? previewType,
+  ) async {
+    final node =
+        ref.read(fileTreeProvider.select((t) => t.nodeMap[requestId]))
+            as RequestNode?;
+    final mergedVars = _mergeVariables(node);
+    final resolver = LazyVariableResolver(mergedVars, this);
+    // resolve args values if string
+    final resolvedArgs = <String, dynamic>{};
+    for (final entry in args.entries) {
+      if (entry.value is String) {
+        resolvedArgs[entry.key] = await resolveVariables(
+          entry.value,
+          resolver,
+          context: context,
+          purpose: Purpose.preview,
+          prvType: previewType,
+        );
+      } else {
+        resolvedArgs[entry.key] = entry.value;
+      }
+    }
+    return resolvedArgs;
+  }
+
   /// ---------- EXECUTION RESOLUTION ----------
   Future<ResolvedRequestContext> resolveForExecution(
     String requestId, {
@@ -68,9 +97,9 @@ class RequestResolver {
     final inheritedHeaders = _collectInheritedHeaders(node);
     final auth = _resolveAuth(node).$1;
     final mergedVars = _mergeVariables(node);
-    final resolver = _LazyVariableResolver(mergedVars, this);
+    final resolver = LazyVariableResolver(mergedVars, this);
 
-    final resolvedUrl = await _resolveVariables(
+    final resolvedUrl = await resolveVariables(
       node.url,
       resolver,
       context: context,
@@ -83,8 +112,8 @@ class RequestResolver {
         removeEmptyKeys: false,
       ).map((p) async {
         return [
-          await _resolveVariables(p[0], resolver, context: context),
-          await _resolveVariables(p[1], resolver, context: context),
+          await resolveVariables(p[0], resolver, context: context),
+          await resolveVariables(p[1], resolver, context: context),
         ];
       }).toList(),
     );
@@ -93,8 +122,8 @@ class RequestResolver {
     final headers = await Future.wait(
       _handleHeaders(node.config.headers, inheritedHeaders).map((h) async {
         return [
-          await _resolveVariables(h[0], resolver, context: context),
-          await _resolveVariables(h[1], resolver, context: context),
+          await resolveVariables(h[0], resolver, context: context),
+          await resolveVariables(h[1], resolver, context: context),
         ];
       }).toList(),
     );
@@ -133,13 +162,13 @@ class RequestResolver {
       }
     }
     final resolvedAuth = auth.copyWith(
-      token: await _resolveVariables(auth.token, resolver, context: context),
-      username: await _resolveVariables(
+      token: await resolveVariables(auth.token, resolver, context: context),
+      username: await resolveVariables(
         auth.username,
         resolver,
         context: context,
       ),
-      password: await _resolveVariables(
+      password: await resolveVariables(
         auth.password,
         resolver,
         context: context,
@@ -148,7 +177,7 @@ class RequestResolver {
 
     final resolvedBody = body == null
         ? null
-        : await _resolveVariables(body, resolver, context: context);
+        : await resolveVariables(body, resolver, context: context);
 
     // After all resolution, we can get only the variables that were actually used
     final finalResolvedVars = <String, VariableValue>{};
@@ -224,15 +253,8 @@ class RequestResolver {
     return (const AuthData(type: AuthType.noAuth), null);
   }
 
-  Map<String, VariableValue> _mergeVariables(Node node) {
+  Map<String, VariableValue> _mergeVariables(Node? node) {
     final result = <String, VariableValue>{};
-    final chain = <FolderNode>[];
-
-    var ptr = _parentOf(node);
-    while (ptr != null) {
-      chain.insert(0, ptr);
-      ptr = _parentOf(ptr);
-    }
 
     // 1. Start with Global Environment Variables (Always Active)
     final envState = ref.read(environmentProvider);
@@ -254,6 +276,16 @@ class RequestResolver {
           result[v.key] = VariableValue("sub-env", v.value);
         }
       }
+    }
+    // may be resolving for template preview which used in global env
+    if (node == null) return result;
+
+    final chain = <FolderNode>[];
+
+    var ptr = _parentOf(node);
+    while (ptr != null) {
+      chain.insert(0, ptr);
+      ptr = _parentOf(ptr);
     }
 
     // 2. Overlay Folder Chain Variables (Overrides Global)
@@ -283,10 +315,12 @@ class RequestResolver {
   // }
 
   /// New way handles variables and functions
-  Future<String> _resolveVariables(
+  Future<String> resolveVariables(
     String text,
-    _LazyVariableResolver resolver, {
+    LazyVariableResolver resolver, {
     required BuildContext context,
+    Purpose purpose = Purpose.send,
+    String? prvType,
   }) async {
     final placeholders = TemplateParser.parseAll(text)
       ..sort((a, b) => b.start.compareTo(a.start));
@@ -295,13 +329,22 @@ class RequestResolver {
       if (placeholder is TemplateFnPlaceholder) {
         final fn = getTemplateFunctionByName(placeholder.name);
 
+        if (purpose == Purpose.preview &&
+            fn?.previewType == 'click' &&
+            prvType != 'click') {
+          // return text;
+          throw Exception(
+            'Preview not supports, because of using click previewType function',
+          );
+        }
+
         // Resolve function arguments if they are strings
         final resolvedArgs = <String, dynamic>{};
         if (placeholder.args != null) {
           for (final entry in placeholder.args!.entries) {
             final val = entry.value;
             if (val is String) {
-              resolvedArgs[entry.key] = await _resolveVariables(
+              resolvedArgs[entry.key] = await resolveVariables(
                 val,
                 resolver,
                 context: context,
@@ -315,7 +358,7 @@ class RequestResolver {
         final String? fnValue = await fn?.onRender(
           ref,
           context,
-          CallTemplateFunctionArgs(values: resolvedArgs, purpose: Purpose.send),
+          CallTemplateFunctionArgs(values: resolvedArgs, purpose: purpose),
         );
         text = text.replaceRange(
           placeholder.start,
@@ -405,14 +448,14 @@ class RequestResolver {
   // }
 }
 
-class _LazyVariableResolver {
+class LazyVariableResolver {
   final Map<String, VariableValue> _rawVars;
   final Map<String, String> _cache = {};
   final RequestResolver _resolver;
   final Set<String> _resolving = {}; // To prevent circular dependencies
   final Set<String> resolvedKeys = {}; // Track which keys were requested
 
-  _LazyVariableResolver(this._rawVars, this._resolver);
+  LazyVariableResolver(this._rawVars, this._resolver);
 
   Future<String> resolve(String key, {required BuildContext context}) async {
     resolvedKeys.add(key);
@@ -432,7 +475,7 @@ class _LazyVariableResolver {
       if (value == null) return '{{$key}}';
 
       if (value is String) {
-        final resolved = await _resolver._resolveVariables(
+        final resolved = await _resolver.resolveVariables(
           value,
           this,
           context: context,

@@ -16,7 +16,12 @@ class HttpService {
     required BuildContext context,
   }) async {
     final resolver = RequestResolver(ref);
-    final composer = ref.read(reqComposeProvider(requestId).notifier);
+    final isActiveReq = ref.read(activeReqIdProvider) == requestId;
+    //NOTE: use composer only when the request is active,otherwise it will throw error
+    ReqComposeNotifier? composer;
+    if (isActiveReq) {
+      composer = ref.read(reqComposeProvider(requestId).notifier);
+    }
 
     try {
       final req = await resolver.resolveForExecution(
@@ -25,7 +30,7 @@ class HttpService {
       );
       debugPrint('Executing request to URL: ${req.uri}');
 
-      composer.startSending();
+      composer?.startSending();
       final response = await sendRawHttp(
         method: req.request.method,
         url: req.uri,
@@ -33,7 +38,7 @@ class HttpService {
         // body: ctx.request.config.body,
         // body: _bodies[0],
         body: req.body,
-        useProxy: true,
+        useProxy: false,
         requestId: req.request.id,
       );
       debugPrint(
@@ -41,9 +46,8 @@ class HttpService {
       );
 
       // store into history
-      final activeReqId = ref.read(activeReqIdProvider);
-      if (activeReqId == requestId) {
-        composer.addHistoryEntry(response);
+      if (isActiveReq) {
+        composer?.addHistoryEntry(response);
       } else {
         ref.read(repositoryProvider).addHistoryEntry(response);
       }
@@ -94,7 +98,7 @@ class HttpService {
             .executeScript(scripts, response: response);
       }
 
-      composer.finishSending();
+      composer?.finishSending();
       return response;
     } catch (e, stack) {
       debugPrint("Error sending request: $e\n$stack");
@@ -113,14 +117,13 @@ class HttpService {
         errorMessage: e.toString(),
       );
 
-      final activeReqId = ref.read(activeReqIdProvider);
-      if (activeReqId == requestId) {
-        composer.addHistoryEntry(errorResponse);
+      if (isActiveReq) {
+        composer?.addHistoryEntry(errorResponse);
       } else {
         ref.read(repositoryProvider).addHistoryEntry(errorResponse);
       }
 
-      composer.setSendError(e.toString());
+      composer?.setSendError(e.toString());
       rethrow;
     }
   }
