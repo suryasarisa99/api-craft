@@ -120,6 +120,54 @@ class FileTreeNotifier extends Notifier<TreeData> {
 
   // --- ACTIONS ---
 
+  // Future<void> createItem(
+  //   String? parentId,
+  //   String name,
+  //   NodeType type, {
+  //   RequestType requestType = RequestType.http,
+  // }) async {
+  //   if (state.isLoading) return;
+
+  //   final typeStr = (type == NodeType.request) ? requestType.toString() : null;
+  //   final methodStr = (type == NodeType.request)
+  //       ? requestType == RequestType.ws
+  //             ? 'WS'
+  //             : 'GET'
+  //       : null;
+
+  //   final id = await _repo.createItem(
+  //     parentId: parentId,
+  //     name: name,
+  //     type: type,
+  //     requestType: typeStr,
+  //     method: methodStr,
+  //   );
+  //   late Node newItem;
+  //   if (NodeType.folder == type) {
+  //     newItem = FolderNode.fromMap({
+  //       'id': id,
+  //       'parent_id': parentId,
+  //       'name': name,
+  //       'children': [],
+  //     });
+  //   } else {
+  //     newItem = RequestNode.fromMap({
+  //       'id': id,
+  //       'parent_id': parentId,
+  //       'name': name,
+  //       'request_type': requestType.toString(),
+  //       'method': methodStr,
+  //     });
+  //   }
+
+  //   _addItem(newItem);
+  //   // check if we need to set active request
+  //   if (type == NodeType.request) {
+  //     _activeReqNotifier.setActiveId(id);
+  //   }
+  // }
+
+  // uses vs code like multiple folder creations by using `/`
   Future<void> createItem(
     String? parentId,
     String name,
@@ -128,43 +176,60 @@ class FileTreeNotifier extends Notifier<TreeData> {
   }) async {
     if (state.isLoading) return;
 
-    final typeStr = (type == NodeType.request) ? requestType.toString() : null;
     final methodStr = (type == NodeType.request)
         ? requestType == RequestType.ws
               ? 'WS'
               : 'GET'
         : null;
 
-    final id = await _repo.createItem(
-      parentId: parentId,
-      name: name,
-      type: type,
-      requestType: typeStr,
-      method: methodStr,
-    );
-    late Node newItem;
-    if (NodeType.folder == type) {
-      newItem = FolderNode.fromMap({
-        'id': id,
-        'parent_id': parentId,
-        'name': name,
-        'children': [],
-      });
-    } else {
-      newItem = RequestNode.fromMap({
-        'id': id,
-        'parent_id': parentId,
-        'name': name,
-        'request_type': requestType.toString(),
-        'method': methodStr,
-      });
+    final folderNames = name.split('/');
+    String? fileName;
+    if (NodeType.request == type) {
+      // remove last item in foldersNames, its a fileName
+      fileName = folderNames.removeLast();
     }
 
-    _addItem(newItem);
-    // check if we need to set active request
-    if (type == NodeType.request) {
-      _activeReqNotifier.setActiveId(id);
+    final List<Node> nodes = [];
+    final uuid = Uuid();
+
+    final ids = folderNames.map((e) => uuid.v4()).toList();
+    final childId = uuid.v4();
+    debugPrint(ids.toString());
+    for (int i = 0; i < folderNames.length; i++) {
+      nodes.add(
+        FolderNode(
+          id: ids[i],
+          parentId: i == 0 ? parentId : ids[i - 1],
+          children: i < folderNames.length - 1 ? [ids[i + 1]] : [childId],
+          name: folderNames[i],
+          config: FolderNodeConfig(),
+          sortOrder: 0,
+        ),
+      );
     }
+    if (fileName != null) {
+      nodes.add(
+        RequestNode(
+          id: childId,
+          parentId: ids.last,
+          name: fileName,
+          requestType: requestType,
+          method: methodStr!,
+          statusCode: null,
+          sortOrder: 0,
+          config: RequestNodeConfig(queryParameters: []),
+        ),
+      );
+    }
+
+    await _repo.createMany(nodes);
+
+    // direct mutation
+    for (final node in nodes) {
+      state.nodeMap[node.id] = node;
+    }
+    // it commits the state
+    _addItem(nodes.first);
   }
 
   Future<void> duplicateNode(Node node) async {
