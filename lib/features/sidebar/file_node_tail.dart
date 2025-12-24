@@ -40,10 +40,25 @@ class _FileTreeTileState extends ConsumerState<FileNodeTile>
 
   // Your Constants (Unchanged)
   // We cannot access 'widget.node.type' in initializer anymore, handled in build/initState logic
-  static const double _kIndentation = 6.0;
-  static const double _kIconSize = 16.0;
-  // static const double _kFolderIconSize = 17.0;
-  static const double _kSpacingBetweenArrowAndIcon = 2.0;
+  // Layout Constants for perfect alignment
+  static const double _kIndentStep = 14.0; // Indentation per depth level
+
+  // Header Item Padding
+  static const double _kItemHorizontalPadding = 4.0;
+
+  // Arrow / Icon Layout
+  static const double _kArrowBoxWidth =
+      16.0; // Width of the expanded/collapsed arrow container
+  static const double _kSpacingBetweenArrowAndIcon = 4.0;
+
+  // Calculated: The visual center of the arrow container
+  static const double _kArrowCenterOffset = _kArrowBoxWidth / 2;
+
+  // Tweakable: Shift the divider left/right.
+  // 0.0 means mathematically centered relative to the Arrow Box geometric center.
+  // Use _kDividerNudge to adjust for visual weight of the icon or sub-pixel aliasing.
+  static const double _kDividerLeftPadding = _kArrowCenterOffset;
+  static const double _kDividerNudge = 0.0; // Adjust this manually if needed.
 
   late final activeNode = ref.read(activeReqProvider);
 
@@ -230,7 +245,9 @@ class _FileTreeTileState extends ConsumerState<FileNodeTile>
           SizedBox(
             height: tileHeight,
             child: Padding(
-              padding: .only(right: 4, left: 4),
+              padding: const EdgeInsets.symmetric(
+                horizontal: _kItemHorizontalPadding,
+              ),
               child: Material(
                 borderRadius: BorderRadius.circular(4),
                 color: backgroundColor ?? Colors.transparent,
@@ -254,10 +271,8 @@ class _FileTreeTileState extends ConsumerState<FileNodeTile>
                             alpha: 0.05,
                           ),
                           child: Ink(
-                            padding: .only(
-                              left: (widget.depth == 0
-                                  ? 0
-                                  : (widget.depth * (_kIndentation + 6))),
+                            padding: EdgeInsets.only(
+                              left: widget.depth * _kIndentStep,
                             ),
                             child: Row(
                               children: [
@@ -267,16 +282,17 @@ class _FileTreeTileState extends ConsumerState<FileNodeTile>
                                   RotationTransition(
                                     turns: _iconTurns,
                                     child: SizedBox(
-                                      width: _kIconSize + 2,
+                                      width: _kArrowBoxWidth,
                                       child: Icon(
                                         Icons.keyboard_arrow_right_rounded,
-                                        size: _kIconSize + 2,
+                                        size:
+                                            _kArrowBoxWidth, // Fill the box for consistent alignment center
                                         color: textColor.withValues(alpha: 0.3),
                                       ),
                                     ),
                                   )
                                 else
-                                  const SizedBox(width: _kIconSize + 2),
+                                  const SizedBox(width: _kArrowBoxWidth),
                                 const SizedBox(
                                   width: _kSpacingBetweenArrowAndIcon,
                                 ),
@@ -352,15 +368,16 @@ class _FileTreeTileState extends ConsumerState<FileNodeTile>
                       child: Align(
                         alignment: Alignment.centerLeft,
                         child: Container(
-                          margin: EdgeInsets.only(
-                            left: widget.depth == 0
-                                ? 2 + (_kIconSize / 2) + 2
-                                : (widget.depth * (_kIndentation + 6.5)) +
-                                      (_kIconSize / 2) +
-                                      2,
-                          ),
                           width: 1,
                           color: theme.dividerColor.withValues(alpha: 0.4),
+                          margin: EdgeInsets.only(
+                            // Mathematical Center: (Depth * Step) + ArrowCenter - (DividerWidth / 2)
+                            left:
+                                _kItemHorizontalPadding +
+                                (widget.depth * _kIndentStep) +
+                                _kDividerLeftPadding +
+                                _kDividerNudge,
+                          ),
                         ),
                       ),
                     ),

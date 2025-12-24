@@ -19,65 +19,71 @@ class FileExplorerView extends ConsumerWidget {
     final theme = Theme.of(context);
     debugPrint("build:::file-explorer");
     return Scaffold(
-      body: ContextMenuWidget(
-        menuProvider: (_) async {
-          return getMenuProvider(ref: ref, context: context, isRoot: true);
-        },
-        child: CustomScrollView(
-          slivers: [
-            SliverList(
-              delegate: SliverChildBuilderDelegate((context, index) {
-                final id = rootList.ids[index];
-                return FocusTraversalGroup(
-                  policy: ReadingOrderTraversalPolicy(),
-                  child: FileNodeTile(
-                    key: ValueKey(id), // Important for performance
-                    nodeId: id, // Pass ID only
-                    isFirstNode: index == 0,
-                  ),
-                );
-              }, childCount: rootList.ids.length),
-            ),
-
-            // --- Drop Zone (Unchanged) ---
-            SliverFillRemaining(
-              hasScrollBody: false,
-              child: DragTarget<Node>(
-                onWillAcceptWithDetails: (details) => true,
-                onAcceptWithDetails: (details) {
-                  if (rootList.ids.isEmpty) return;
-
-                  // Fetch the actual node object for the target using the ID
-                  // We can use ref.read here safely
-                  final lastId = rootList.ids.last;
-                  final lastNode = ref.read(fileTreeProvider).nodeMap[lastId];
-
-                  if (lastNode != null) {
-                    ref
-                        .read(fileTreeProvider.notifier)
-                        .handleDrop(
-                          movedNode: details.data,
-                          targetNode: lastNode,
-                          slot: DropSlot.bottom,
-                        );
-                  }
-                },
-                builder: (context, candidateData, rejectedData) {
-                  final isHovering = candidateData.isNotEmpty;
-                  return Container(
-                    color: isHovering
-                        ? theme.colorScheme.primary.withValues(alpha: 0.1)
-                        : Colors.transparent,
-                    alignment: Alignment.topCenter,
-                    padding: const EdgeInsets.only(top: 2),
-                    child: isHovering
-                        ? Container(height: 2, color: theme.colorScheme.primary)
-                        : null,
+      body: Padding(
+        padding: const .only(top: 4),
+        child: ContextMenuWidget(
+          menuProvider: (_) async {
+            return getMenuProvider(ref: ref, context: context, isRoot: true);
+          },
+          child: CustomScrollView(
+            slivers: [
+              SliverList(
+                delegate: SliverChildBuilderDelegate((context, index) {
+                  final id = rootList.ids[index];
+                  return FocusTraversalGroup(
+                    policy: ReadingOrderTraversalPolicy(),
+                    child: FileNodeTile(
+                      key: ValueKey(id), // Important for performance
+                      nodeId: id, // Pass ID only
+                      isFirstNode: index == 0,
+                    ),
                   );
-                },
+                }, childCount: rootList.ids.length),
               ),
-            ),
-          ],
+
+              // --- Drop Zone (Unchanged) ---
+              SliverFillRemaining(
+                hasScrollBody: false,
+                child: DragTarget<Node>(
+                  onWillAcceptWithDetails: (details) => true,
+                  onAcceptWithDetails: (details) {
+                    if (rootList.ids.isEmpty) return;
+
+                    // Fetch the actual node object for the target using the ID
+                    // We can use ref.read here safely
+                    final lastId = rootList.ids.last;
+                    final lastNode = ref.read(fileTreeProvider).nodeMap[lastId];
+
+                    if (lastNode != null) {
+                      ref
+                          .read(fileTreeProvider.notifier)
+                          .handleDrop(
+                            movedNode: details.data,
+                            targetNode: lastNode,
+                            slot: DropSlot.bottom,
+                          );
+                    }
+                  },
+                  builder: (context, candidateData, rejectedData) {
+                    final isHovering = candidateData.isNotEmpty;
+                    return Container(
+                      color: isHovering
+                          ? theme.colorScheme.primary.withValues(alpha: 0.1)
+                          : Colors.transparent,
+                      alignment: Alignment.topCenter,
+                      padding: const EdgeInsets.only(top: 2),
+                      child: isHovering
+                          ? Container(
+                              height: 2,
+                              color: theme.colorScheme.primary,
+                            )
+                          : null,
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
