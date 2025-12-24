@@ -64,4 +64,18 @@ void main() {
     expect(result, anyElement(equals(['x-test', 'v1'])));
     expect(result, anyElement(equals(['x-test', 'v2'])));
   });
+
+  test('comma seperated headers with preserve case', () {
+    final input = [
+      ['Accept', 'text/html'],
+      ['Accept', 'application/xml'],
+    ];
+
+    final result = HeaderUtils.handleHeaders(input);
+    expect(result.length, 1);
+    expect(
+      result,
+      anyElement(equals(['Accept', 'text/html, application/xml'])),
+    );
+  });
 }

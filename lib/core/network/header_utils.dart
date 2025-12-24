@@ -53,51 +53,110 @@ Map<String, dynamic> listHeadersToMap(List<List<String>> headers) {
   return headerMap;
 }
 
-class HeaderUtils {
-  static List<List<String>> handleHeaders(List<List<String>> headers) {
-    final List<List<String>> result = [];
-    final Map<String, List<String>> headerMap = {};
+class _HeaderEntry {
+  String originalKey;
+  List<String> values;
 
-    for (var header in headers) {
+  _HeaderEntry(this.originalKey, this.values);
+}
+
+class HeaderUtils {
+  // static List<List<String>> handleHeaders(
+  //   List<List<String>> headers, {
+  //   bool preserveCase = false,
+  // }) {
+  //   final List<List<String>> result = [];
+  //   final Map<String, List<String>> headerMap = {};
+
+  //   for (var header in headers) {
+  //     final key = header[0].trim();
+  //     final value = header[1].trim();
+  //     final lowerKey = key.toLowerCase();
+  //     if (_isStrictDuplicateHeader(lowerKey)) {
+  //       if (headerMap.containsKey(lowerKey)) {
+  //         headerMap[lowerKey]!.add(value);
+  //       } else {
+  //         headerMap[lowerKey] = [value];
+  //       }
+  //     } else if (_isCommaSeparatedHeader(lowerKey)) {
+  //       if (headerMap.containsKey(lowerKey)) {
+  //         headerMap[lowerKey]![0] = '${headerMap[lowerKey]![0]}, $value';
+  //       } else {
+  //         headerMap[lowerKey] = [value];
+  //       }
+  //     } else if (_isStrictNonRepeatable(lowerKey)) {
+  //       // non-repeatable headers, overwrite existing
+  //       headerMap[lowerKey] = [value];
+  //     } else {
+  //       /// later provide a option to allow user to choose
+  //       /// for now, we just allow duplicate
+  //       if (headerMap.containsKey(lowerKey)) {
+  //         headerMap[lowerKey]!.add(value);
+  //       } else {
+  //         headerMap[lowerKey] = [value];
+  //       }
+  //     }
+  //   }
+
+  //   headerMap.forEach((key, values) {
+  //     for (var value in values) {
+  //       result.add([key, value]);
+  //     }
+  //   });
+
+  //   return result;
+  // }
+
+  // TODO: resolve headers key variables first and then merge headers, later resolve header values.
+  static List<List<String>> handleHeaders(
+    List<List<String>> headers, {
+    bool preserveCase = true,
+  }) {
+    final Map<String, _HeaderEntry> headerMap = {};
+
+    for (final header in headers) {
       final key = header[0].trim();
       final value = header[1].trim();
       final lowerKey = key.toLowerCase();
+
+      headerMap.putIfAbsent(lowerKey, () => _HeaderEntry(key, []));
+
+      final entry = headerMap[lowerKey]!;
+
+      // update casing only if preserveCase == false
+      if (!preserveCase) {
+        entry.originalKey = lowerKey;
+      }
+
       if (_isStrictDuplicateHeader(lowerKey)) {
-        if (headerMap.containsKey(lowerKey)) {
-          headerMap[lowerKey]!.add(value);
-        } else {
-          headerMap[lowerKey] = [value];
-        }
+        entry.values.add(value);
       } else if (_isCommaSeparatedHeader(lowerKey)) {
-        if (headerMap.containsKey(lowerKey)) {
-          headerMap[lowerKey]![0] = '${headerMap[lowerKey]![0]}, $value';
+        if (entry.values.isEmpty) {
+          entry.values.add(value);
         } else {
-          headerMap[lowerKey] = [value];
+          entry.values[0] = '${entry.values[0]}, $value';
         }
       } else if (_isStrictNonRepeatable(lowerKey)) {
-        // non-repeatable headers, overwrite existing
-        headerMap[lowerKey] = [value];
+        entry.values
+          ..clear()
+          ..add(value);
       } else {
-        /// later provide a option to allow user to choose
-        /// for now, we just allow duplicate
-        if (headerMap.containsKey(lowerKey)) {
-          headerMap[lowerKey]!.add(value);
-        } else {
-          headerMap[lowerKey] = [value];
-        }
+        entry.values.add(value);
       }
     }
 
-    headerMap.forEach((key, values) {
-      for (var value in values) {
-        result.add([key, value]);
+    final result = <List<String>>[];
+    for (final entry in headerMap.values) {
+      for (final value in entry.values) {
+        result.add([entry.originalKey, value]);
       }
-    });
+    }
 
     return result;
   }
 }
 
+// cookie can be repeated,to support old requests,user needs explicitly seperate by `;`
 const kNonRepeatedHeaders = [
   'host',
   'content-length',
