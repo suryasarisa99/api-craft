@@ -120,6 +120,8 @@ class _FileTreeTileState extends ConsumerState<FileNodeTile>
       ref.read(selectedNodesProvider.notifier).toggle(vNode.id);
       return;
     }
+    // request focus to it.
+    _focusNode.requestFocus();
 
     if (vNode.type == NodeType.folder) {
       setState(() {
@@ -213,7 +215,7 @@ class _FileTreeTileState extends ConsumerState<FileNodeTile>
 
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
-    final double tileHeight = vNode.type == NodeType.folder ? 32.0 : 28.0;
+    final double tileHeight = vNode.type == NodeType.folder ? 30.0 : 28.0;
 
     // --- WATCH REQUIRED PROVIDERS ---
     final activeNode = ref.watch(activeReqProvider);
@@ -229,10 +231,11 @@ class _FileTreeTileState extends ConsumerState<FileNodeTile>
         : theme.textTheme.bodyMedium?.color ?? Colors.grey;
 
     final Color? backgroundColor = isActive
-        ? cs.secondaryContainer.withValues(alpha: 0.6)
+        // ? cs.surfaceBright.withValues(alpha: 1)
+        ? const Color.fromARGB(150, 70, 70, 70)
         : isSelected
         ? cs.secondary.withValues(alpha: 0.10)
-        : null;
+        : Colors.transparent;
 
     return FileNodeDragWrapper(
       id: vNode.id,
@@ -248,21 +251,24 @@ class _FileTreeTileState extends ConsumerState<FileNodeTile>
               padding: const EdgeInsets.symmetric(
                 horizontal: _kItemHorizontalPadding,
               ),
-              child: Material(
-                borderRadius: BorderRadius.circular(4),
-                color: backgroundColor ?? Colors.transparent,
-                // color: Colors.transparent,
-                child: _contextMenuWrapper(
+              child: _contextMenuWrapper(
+                vNode: vNode,
+                isDirectory: isFolder,
+                child: focusWrapper(
+                  hasFocus: hasFocus,
                   vNode: vNode,
-                  isDirectory: isFolder,
-                  child: focusWrapper(
-                    hasFocus: hasFocus,
-                    vNode: vNode,
-                    child: Builder(
-                      builder: (context) {
-                        // final isFocused = Fd
-                        // focus.of(context).hasFocus;
-                        return InkWell(
+                  child: Builder(
+                    builder: (context) {
+                      final isFocused = Focus.of(context).hasFocus;
+                      return Material(
+                        borderRadius: BorderRadius.circular(4),
+                        elevation: 0,
+                        color: (isActive || !isFocused)
+                            ? backgroundColor
+                            : theme.colorScheme.primaryContainer.withValues(
+                                alpha: 0.6,
+                              ),
+                        child: InkWell(
                           borderRadius: BorderRadius.circular(4),
                           canRequestFocus: false,
                           autofocus: false,
@@ -270,13 +276,12 @@ class _FileTreeTileState extends ConsumerState<FileNodeTile>
                           hoverColor: theme.colorScheme.onSurface.withValues(
                             alpha: 0.05,
                           ),
-                          child: Ink(
+                          child: Padding(
                             padding: EdgeInsets.only(
                               left: widget.depth * _kIndentStep,
                             ),
                             child: Row(
                               children: [
-                                // SizedBox(width: _kIndentation),
                                 // A. ARROW
                                 if (isFolder)
                                   RotationTransition(
@@ -345,9 +350,9 @@ class _FileTreeTileState extends ConsumerState<FileNodeTile>
                               ],
                             ),
                           ),
-                        );
-                      },
-                    ),
+                        ),
+                      );
+                    },
                   ),
                 ),
               ),
@@ -364,7 +369,10 @@ class _FileTreeTileState extends ConsumerState<FileNodeTile>
                 child: Stack(
                   children: [
                     // vertical divider at left for children
-                    Positioned.fill(
+                    Positioned(
+                      top: 0,
+                      bottom: 0,
+                      left: 0,
                       child: Align(
                         alignment: Alignment.centerLeft,
                         child: Container(
