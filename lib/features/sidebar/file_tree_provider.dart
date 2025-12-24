@@ -182,7 +182,11 @@ class FileTreeNotifier extends Notifier<TreeData> {
               : 'GET'
         : null;
 
-    final folderNames = name.split('/');
+    final folderNames = name
+        .split('/')
+        .map((e) => e.trim())
+        .where((e) => e.isNotEmpty)
+        .toList();
     String? fileName;
     if (NodeType.request == type) {
       // remove last item in foldersNames, its a fileName
@@ -193,14 +197,18 @@ class FileTreeNotifier extends Notifier<TreeData> {
     final uuid = Uuid();
 
     final ids = folderNames.map((e) => uuid.v4()).toList();
-    final childId = uuid.v4();
+    final childId = fileName == null ? null : uuid.v4();
     debugPrint(ids.toString());
     for (int i = 0; i < folderNames.length; i++) {
       nodes.add(
         FolderNode(
           id: ids[i],
           parentId: i == 0 ? parentId : ids[i - 1],
-          children: i < folderNames.length - 1 ? [ids[i + 1]] : [childId],
+          children: i < folderNames.length - 1
+              ? [ids[i + 1]]
+              : childId == null
+              ? []
+              : [childId],
           name: folderNames[i],
           config: FolderNodeConfig(),
           sortOrder: 0,
@@ -210,8 +218,8 @@ class FileTreeNotifier extends Notifier<TreeData> {
     if (fileName != null) {
       nodes.add(
         RequestNode(
-          id: childId,
-          parentId: ids.last,
+          id: childId!,
+          parentId: ids.lastOrNull ?? parentId,
           name: fileName,
           requestType: requestType,
           method: methodStr!,
