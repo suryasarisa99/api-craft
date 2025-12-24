@@ -201,7 +201,14 @@ class FileTreeNotifier extends Notifier<TreeData> {
 
     for (final n in allNodes) {
       final newId = idMap[n.id]!;
-      final newParentId = n.parentId == null ? null : idMap[n.parentId]!;
+
+      /* fixes for copying subfolder
+      - when copying a subfolder, its parentId is not null, but the parentId is not in idMap.
+      - so we use ?? to fallback to the actual parentId. so new copy folder created in the same parent.
+      */
+      final newParentId = n.parentId == null
+          ? null
+          : idMap[n.parentId] ?? n.parentId;
 
       if (n is FolderNode) {
         duplicated.add(

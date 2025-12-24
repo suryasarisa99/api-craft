@@ -376,7 +376,8 @@ class _FileTreeTileState extends ConsumerState<FileNodeTile>
                                 _kItemHorizontalPadding +
                                 (widget.depth * _kIndentStep) +
                                 _kDividerLeftPadding +
-                                _kDividerNudge,
+                                _kDividerNudge -
+                                1,
                           ),
                         ),
                       ),
