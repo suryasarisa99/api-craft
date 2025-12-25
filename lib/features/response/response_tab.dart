@@ -93,12 +93,7 @@ class _ResponseTAbState extends ConsumerState<ResponseTAb>
               ],
             ),
           ),
-          Expanded(
-            child: WsResponseTab(
-              requestId: id,
-              scrollController: ScrollController(),
-            ),
-          ),
+          Expanded(child: WsResponseTab(requestId: id)),
         ],
       );
     }

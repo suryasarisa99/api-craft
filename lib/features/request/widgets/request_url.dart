@@ -194,6 +194,12 @@ class _UrlSuffixBtnState extends ConsumerState<UrlSuffixBtn> {
     }
   }
 
+  void sendMessage() {
+    final mssg = ref.read(reqComposeProvider(widget.id)).body;
+    if (mssg == null || mssg.isEmpty) return;
+    ref.read(wsRequestProvider(widget.id).notifier).sendMessage(mssg);
+  }
+
   void disconnectWs() {
     final wsNotifier = ref.read(wsRequestProvider(widget.id).notifier);
     wsNotifier.disconnect();
@@ -213,16 +219,11 @@ class _UrlSuffixBtnState extends ConsumerState<UrlSuffixBtn> {
           children: [
             IconButton(
               onPressed: disconnectWs,
-              icon:
-                  //  Icon(Icons.link_off)
-                  const SuryaThemeIcon(BulkRounded.cancelCircle),
+              icon: const SuryaThemeIcon(BulkRounded.cancelCircle),
             ),
             if (isConnected)
               IconButton(
-                onPressed: () {
-                  // handle send mssg
-                },
-                // icon: const Icon(Icons.send_rounded),
+                onPressed: sendMessage,
                 icon: Transform.rotate(
                   angle: 0.78,
                   child: const SuryaThemeIcon(BulkRounded.sent),

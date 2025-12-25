@@ -1,6 +1,5 @@
 import 'package:api_craft/core/models/models.dart';
 import 'package:api_craft/core/providers/providers.dart';
-import 'package:api_craft/core/widgets/ui/surya_theme_icon.dart';
 import 'package:api_craft/features/request/widgets/request_url.dart';
 import 'package:api_craft/core/utils/debouncer.dart';
 import 'package:api_craft/features/auth/auth_tab.dart';
@@ -8,13 +7,12 @@ import 'package:api_craft/features/request/widgets/tabs/headers_tab.dart';
 import 'package:api_craft/features/request/widgets/tabs/query_params.dart';
 import 'package:api_craft/features/request/widgets/tabs/body_tab.dart';
 import 'package:api_craft/features/request/widgets/tabs/script_tab.dart';
-import 'package:api_craft/features/request/widgets/tabs/ws_message_tab.dart';
+import 'package:api_craft/features/request/widgets/tabs/tab_titles.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lazy_load_indexed_stack/lazy_load_indexed_stack.dart';
 import 'package:api_craft/core/widgets/ui/custom_menu.dart';
 import 'package:flutter_popup/flutter_popup.dart';
-import 'package:suryaicons/bulk_rounded.dart';
 
 class ReqTabWrapper extends ConsumerWidget {
   const ReqTabWrapper({super.key});
@@ -41,9 +39,10 @@ class _RequestTabState extends ConsumerState<RequestTab>
     with SingleTickerProviderStateMixin {
   /// tabs
   late final List<Widget> children = [
-    widget.node.requestType == RequestType.ws
-        ? WsMessageTab(requestId: widget.node.id)
-        : BodyTab(id: widget.node.id),
+    // widget.node.requestType == RequestType.ws
+    //     ? WsMessageTab(requestId: widget.node.id)
+    //     :
+    BodyTab(id: widget.node.id),
     QueryParamsTab(id: widget.node.id),
     HeadersTab(id: widget.node.id),
     AuthTab(id: widget.node.id),
@@ -125,7 +124,42 @@ class _RequestTabState extends ConsumerState<RequestTab>
               ),
               tabs: [
                 if (widget.node.requestType == RequestType.ws)
-                  const Tab(text: "Message")
+                  WsBodyHeader(id: widget.node.id, popupKey: _menuKey)
+                // IgnorePointer(
+                //   child: MyCustomMenu.contentColumn(
+                //     popupKey: _menuKey,
+                //     useBtn: false,
+                //     items: [
+                //       CustomMenuIconItem.tick(
+                //         title: const Text("Json"),
+                //         value: "json",
+                //         checked: widget.node.config.bodyType == 'json',
+                //         onTap: (v) => ref
+                //             .read(_provider.notifier)
+                //             .updateBodyType('json'),
+                //       ),
+                //       // xml
+                //       CustomMenuIconItem.tick(
+                //         title: const Text("Xml"),
+                //         value: "xml",
+                //         checked: widget.node.config.bodyType == 'xml',
+                //         onTap: (v) => ref
+                //             .read(_provider.notifier)
+                //             .updateBodyType('xml'),
+                //       ),
+                //       // text
+                //       CustomMenuIconItem.tick(
+                //         title: const Text("Text"),
+                //         value: "text",
+                //         checked: widget.node.config.bodyType == 'text',
+                //         onTap: (v) => ref
+                //             .read(_provider.notifier)
+                //             .updateBodyType('text'),
+                //       ),
+                //     ],
+                //     child: const Tab(text: "Message"),
+                //   ),
+                // )
                 else
                   IgnorePointer(
                     child: MyCustomMenu.contentColumn(

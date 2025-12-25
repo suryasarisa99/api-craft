@@ -60,10 +60,8 @@ class _CFCodeEditorState extends State<CFCodeEditor> {
   }
 
   Mode? _getLanguage(String? lang) {
-    debugPrint('lang: $lang');
     if (lang == null) return null;
     final l = lang.toLowerCase();
-    debugPrint("l: $l, (l == 'form-urlencoded')  ${l == 'form-urlencoded'}");
     if (l == "form-urlencoded") return langKeyValue;
     if (l.contains('json')) return langJson;
     if (l.contains('xml') || l.contains('html')) return langXml;

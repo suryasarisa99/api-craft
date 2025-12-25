@@ -111,7 +111,7 @@ class Tables {
     websocketMessages:
         '''
       CREATE TABLE $websocketMessages (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id TEXT PRIMARY KEY,
         request_id TEXT NOT NULL,
         session_id TEXT,
         is_sent INTEGER NOT NULL, -- 0 or 1
@@ -162,7 +162,7 @@ class DatabaseHelper {
 
     final db = await openDatabase(
       path,
-      version: 2,
+      version: 3,
       onCreate: (db, version) async {
         await Tables.createAllTables(db);
         await _ensureDefaults(db);

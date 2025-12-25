@@ -484,7 +484,7 @@ class DbStorageRepository implements StorageRepository {
   Future<void> addWebSocketMessage(WebSocketMessage msg) async {
     final db = await _db;
     final map = msg.toMap();
-    map.remove('id');
+    // map.remove('id'); // We now provide ID from client
     await db.insert('websocket_messages', map);
   }
 
@@ -501,6 +501,7 @@ class DbStorageRepository implements StorageRepository {
       orderBy: 'timestamp DESC',
       limit: limit,
     );
+    debugPrint("db::get-websocket-messages for $sessionId: $result");
     return result.map((e) => WebSocketMessage.fromMap(e)).toList();
   }
 

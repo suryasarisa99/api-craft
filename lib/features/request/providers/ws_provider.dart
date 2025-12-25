@@ -64,7 +64,7 @@ class WsRequestNotifier extends StateNotifier<WsRequestState> {
   RequestResolver get _resolver => ref.read(requestResolverProvider);
 
   /// Connects to a WebSocket starting a new session
-  Future<void> connect(BuildContext context, {bool useProxy = true}) async {
+  Future<void> connect(BuildContext context, {bool useProxy = false}) async {
     if (state.isConnected || state.isConnecting) return;
 
     try {
@@ -184,7 +184,7 @@ class WsRequestNotifier extends StateNotifier<WsRequestState> {
     if (sessionId == null) return;
 
     final msg = WebSocketMessage(
-      id: null,
+      id: const Uuid().v4(),
       requestId: requestId,
       sessionId: sessionId,
       isSent: isSent,

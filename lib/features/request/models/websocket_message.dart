@@ -1,5 +1,5 @@
 class WebSocketMessage {
-  final int? id;
+  final String id;
   final String requestId;
   final String? sessionId;
   final bool isSent;
@@ -7,7 +7,7 @@ class WebSocketMessage {
   final DateTime timestamp;
 
   WebSocketMessage({
-    this.id,
+    required this.id,
     required this.requestId,
     this.sessionId,
     required this.isSent,
@@ -28,7 +28,7 @@ class WebSocketMessage {
 
   factory WebSocketMessage.fromMap(Map<String, dynamic> map) {
     return WebSocketMessage(
-      id: map['id'],
+      id: map['id'] as String,
       requestId: map['request_id'],
       sessionId: map['session_id'],
       isSent: map['is_sent'] == 1,
