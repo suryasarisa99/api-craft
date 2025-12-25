@@ -1,5 +1,6 @@
 import 'package:api_craft/core/models/models.dart';
 import 'package:api_craft/features/template-functions/functions/template_function_cookie.dart';
+import 'package:api_craft/features/template-functions/functions/template_function_ctx.dart';
 import 'package:api_craft/features/template-functions/functions/template_function_json.dart';
 import 'package:api_craft/features/template-functions/functions/template_function_prompt.dart';
 import 'package:api_craft/features/template-functions/functions/template_function_regex.dart';
@@ -38,15 +39,24 @@ Map<String, dynamic> getFnState(
 }
 
 final templates = [
+  // response
   responseBodyPath,
   responseBodyRaw,
   responseHeader,
-  promptFn,
+
+  // regex
   regexMatchFn,
   regexReplaceFn,
+
+  //other
+  promptFn,
   cookieValueFn,
   jsonPathFn,
   xmlPathFn,
+
+  // ctx
+  ctxWorkspaceIdFn,
+  ctxWorkspaceNameFn,
 ];
 
 Map<String, TemplateFunction> get templateFunctionRegistry {
