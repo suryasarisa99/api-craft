@@ -187,7 +187,8 @@ class _VariableTextFieldCustomState
 
   void updateField(String Function(String val) fn) {
     final val = fn(widget.controller?.text ?? '');
-    widget.controller?.text = val;
+    debugPrint("updated-field value: $val");
+    _controller.text = val;
     widget.onChanged?.call(val);
   }
 

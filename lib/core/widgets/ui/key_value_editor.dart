@@ -80,13 +80,17 @@ class _KeyValueEditorState extends State<KeyValueEditor> {
     _dispatchUpdate();
   }
 
-  void _showMultilineEdit(int index, KeyValueItem item) {
-    showDialog(
+  void _showMultilineEdit(int index, KeyValueItem item) async {
+    final value = await showDialog(
       context: context,
       builder: (ctx) {
         return MultilineEditDialog(initialValue: item.value);
       },
     );
+    debugPrint("value: $value");
+    if (value != null) {
+      _updateItem(index, item.copyWith(value: value));
+    }
   }
 
   @override

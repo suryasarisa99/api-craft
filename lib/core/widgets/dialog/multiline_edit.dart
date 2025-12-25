@@ -121,6 +121,8 @@ class _MultilineEditDialogState extends State<MultilineEditDialog> {
                                 contentPadding: EdgeInsets.all(4),
                                 border: InputBorder.none,
                                 isDense: true,
+                                enabledBorder: InputBorder.none,
+                                focusedBorder: InputBorder.none,
                               ),
                             ),
                           ),
@@ -135,11 +137,14 @@ class _MultilineEditDialogState extends State<MultilineEditDialog> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  FilledButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
-                    child: const Text("Done"),
+                  Padding(
+                    padding: const EdgeInsets.only(right: 15, bottom: 15),
+                    child: FilledButton(
+                      onPressed: () {
+                        Navigator.pop(context, _controller.text);
+                      },
+                      child: const Text("Done"),
+                    ),
                   ),
                 ],
               ),
