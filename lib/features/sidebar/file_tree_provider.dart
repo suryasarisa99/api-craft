@@ -3,15 +3,10 @@ import 'package:api_craft/core/providers/providers.dart';
 import 'package:api_craft/core/repository/storage_repository.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_riverpod/legacy.dart';
 import 'package:uuid/uuid.dart';
 
 // Configuration Provider (Database vs FileSystem)
 enum StorageMode { filesystem, database }
-
-final storageModeProvider = StateProvider<StorageMode>(
-  (ref) => StorageMode.filesystem,
-);
 
 class TreeData {
   final Map<String, Node> nodeMap;
@@ -112,60 +107,158 @@ class FileTreeNotifier extends Notifier<TreeData> {
     state = state.copyWith(nodeMap: map);
   }
 
-  void updateNode(Node node) {
+  // --- HYDRATION ---
+  Future<void> hydrateNode(String id) async {
+    final node = map[id];
+    if (node == null) return;
+    if (node.config.isDetailLoaded) return; // Already loaded
+    debugPrint("Hydrating node ${node.name}");
+    try {
+      final details = await _repo.getNodeDetails(id);
+      if (details.isNotEmpty) {
+        // Hydrate modifies the config object inside the node IN PLACE
+        // BUT for Riverpod to react, we might need to trigger an update if we were completely immutable.
+        // However, our Node.hydrate modifies existing config ref? No, let's look at Node.hydrate.
+        // Actually Node.hydrate updates properties of config.
+        // To play nice with Riverpod, we should probably treat it as a state change.
+        node.hydrate(details);
+        // Force state update to notify listeners
+        state = state.copyWith(nodeMap: Map.from(map));
+      }
+    } catch (e) {
+      debugPrint("Error hydrating node $id: $e");
+    }
+  }
+
+  Future<void> updateNode(Node node) async {
     final newMap = Map<String, Node>.from(map);
     newMap[node.id] = node;
     state = state.copyWith(nodeMap: newMap);
+
+    // Persist
+    await _repo.updateNode(node);
   }
 
-  // --- ACTIONS ---
+  // --- Granular Updates ---
 
-  // Future<void> createItem(
-  //   String? parentId,
-  //   String name,
-  //   NodeType type, {
-  //   RequestType requestType = RequestType.http,
-  // }) async {
-  //   if (state.isLoading) return;
+  void updateNodeName(String id, String name) {
+    final node = map[id];
+    if (node != null) updateNode(node.copyWith(name: name));
+  }
 
-  //   final typeStr = (type == NodeType.request) ? requestType.toString() : null;
-  //   final methodStr = (type == NodeType.request)
-  //       ? requestType == RequestType.ws
-  //             ? 'WS'
-  //             : 'GET'
-  //       : null;
+  void updateRequestMethod(String id, String method) {
+    final node = map[id];
+    if (node is RequestNode) updateNode(node.copyWith(method: method));
+  }
 
-  //   final id = await _repo.createItem(
-  //     parentId: parentId,
-  //     name: name,
-  //     type: type,
-  //     requestType: typeStr,
-  //     method: methodStr,
-  //   );
-  //   late Node newItem;
-  //   if (NodeType.folder == type) {
-  //     newItem = FolderNode.fromMap({
-  //       'id': id,
-  //       'parent_id': parentId,
-  //       'name': name,
-  //       'children': [],
-  //     });
-  //   } else {
-  //     newItem = RequestNode.fromMap({
-  //       'id': id,
-  //       'parent_id': parentId,
-  //       'name': name,
-  //       'request_type': requestType.toString(),
-  //       'method': methodStr,
-  //     });
-  //   }
+  void updateRequestUrl(String id, String url) {
+    final node = map[id];
+    if (node is RequestNode) updateNode(node.copyWith(url: url));
+  }
 
-  //   _addItem(newItem);
-  //   // check if we need to set active request
-  //   if (type == NodeType.request) {
-  //     _activeReqNotifier.setActiveId(id);
-  //   }
-  // }
+  void updateNodeDescription(String id, String description) {
+    final node = map[id];
+    if (node != null) {
+      updateNode(
+        node.copyWith(config: node.config.copyWith(description: description)),
+      );
+    }
+  }
+
+  void updateNodeHeaders(String id, List<KeyValueItem> headers) {
+    final node = map[id];
+    if (node != null) {
+      updateNode(node.copyWith(config: node.config.copyWith(headers: headers)));
+    }
+  }
+
+  void updateRequestQueryParameters(String id, List<KeyValueItem> params) {
+    final node = map[id];
+    if (node is RequestNode) {
+      updateNode(
+        node.copyWith(config: node.config.copyWith(queryParameters: params)),
+      );
+    }
+  }
+
+  void updateRequestScripts(String id, String scripts) {
+    final node = map[id];
+    if (node is RequestNode) {
+      // Scripts also need separate repo call if stored separately?
+      // updateNode handles node persistence which includes config.
+      // But ReqComposeProvider had `_repo.updateScripts`.
+      // Node.toMap usually includes scripts.
+      // Let's assume updateNode handles it, but previous code had specific call.
+      // I will trust updateNode does it (NodeConfig handles it).
+      updateNode(node.copyWith(config: node.config.copyWith(scripts: scripts)));
+      // If we need optimized partial update we can add it later.
+    }
+  }
+
+  void updateRequestBodyType(String id, String? type) {
+    final node = map[id];
+    if (node is RequestNode) {
+      var headers = List<KeyValueItem>.from(node.config.headers);
+      headers.removeWhere((h) => h.key.toLowerCase() == 'content-type');
+
+      if (type != null) {
+        String? contentType;
+        switch (type) {
+          case 'json':
+            contentType = 'application/json';
+            break;
+          case 'xml':
+            contentType = 'application/xml';
+            break;
+          case 'html':
+            contentType = 'text/html';
+            break;
+          case 'text':
+            contentType = 'text/plain';
+            break;
+          case 'form-urlencoded':
+            contentType = 'application/x-www-form-urlencoded';
+            break;
+          case 'multipart-form-data':
+            contentType = 'multipart/form-data';
+            break;
+        }
+
+        if (contentType != null) {
+          headers.add(KeyValueItem(key: 'Content-Type', value: contentType));
+        }
+      }
+
+      updateNode(
+        node.copyWith(
+          config: node.config.copyWith(bodyType: type, headers: headers),
+        ),
+      );
+    }
+  }
+
+  void updateNodeAuth(String id, AuthData auth) {
+    final node = map[id];
+    if (node != null) {
+      updateNode(node.copyWith(config: node.config.copyWith(auth: auth)));
+    }
+  }
+
+  void updateFolderVariables(String id, List<KeyValueItem> variables) {
+    final node = map[id];
+    if (node is FolderNode) {
+      updateNode(
+        node.copyWith(config: node.config.copyWith(variables: variables)),
+      );
+    }
+  }
+
+  void updateRequestStatusCode(String id, int statusCode) {
+    final node = map[id];
+    if (node is RequestNode) {
+      updateNode(node.copyWith(statusCode: statusCode));
+    }
+  }
 
   // uses vs code like multiple folder creations by using `/`
   Future<void> createItem(

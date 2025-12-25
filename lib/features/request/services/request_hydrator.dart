@@ -9,20 +9,14 @@ class RequestHydrator {
 
   StorageRepository get _repo => ref.read(repositoryProvider);
 
-  Future<void> hydrateNode(Node node) async {
-    if (node.config.isDetailLoaded) return;
-
-    final details = await _repo.getNodeDetails(node.id);
-    if (details.isNotEmpty) {
-      node.hydrate(details);
-      ref.read(fileTreeProvider.notifier).updateNode(node);
-    }
+  Future<void> hydrateNode(String id) async {
+    await ref.read(fileTreeProvider.notifier).hydrateNode(id);
   }
 
   Future<void> hydrateAncestors(Node node) async {
     Node? ptr = _parentOf(node);
     while (ptr != null) {
-      await hydrateNode(ptr);
+      await hydrateNode(ptr.id);
       ptr = _parentOf(ptr);
     }
   }

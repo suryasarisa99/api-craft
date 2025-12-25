@@ -1,6 +1,4 @@
-import 'package:api_craft/core/repository/storage_repository.dart';
-import 'package:api_craft/core/utils/debouncer.dart';
-import 'package:flutter/foundation.dart';
+import 'package:api_craft/features/request/providers/request_details_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:api_craft/core/models/models.dart';
 import 'package:api_craft/core/providers/providers.dart';
@@ -14,218 +12,85 @@ class ReqComposeNotifier extends Notifier<UiRequestContext> {
   final String id;
   ReqComposeNotifier(this.id);
 
-  Node get getNode =>
-      ref.read(fileTreeProvider.select((treeData) => treeData.nodeMap[id]!));
-
-  late final StorageRepository _repo = ref.read(repositoryProvider);
-
-  final bodyDebouncer = Debouncer(Duration(milliseconds: 500));
-
   @override
-  build() {
-    final treeState = ref.read(fileTreeProvider);
-    // if (treeState.isLoading) {
-    //   return null;
-    // }
-    final node = treeState.nodeMap[id]!;
-    if (node is RequestNode) {
-      // Sub-Env Changed
-      ref.listen(
-        environmentProvider.select((s) => s.selectedEnvironment),
-        (_, _) => _load(),
-      );
-      // Global Env Changed
-      ref.listen(
-        environmentProvider.select((s) => s.globalEnvironment),
-        (_, _) => _load(),
-      );
-      // Ancestor Changed
-      ref.listen(nodeUpdateTriggerProvider, (_, event) {
-        debugPrint("received trigger event");
-        if (event != null &&
-            _isAncestor(ref.read(fileTreeProvider).nodeMap[event.id]!)) {
-          debugPrint(
-            "ancestor updated (changes in parent/parents position changes)",
-          );
-          _load();
-        }
-      });
-      // Direct Parent Changed
-      ref.listen(
-        fileTreeProvider.select((tree) => tree.nodeMap[id]?.parentId),
-        (_, _) => _load(),
-      );
-    }
-    _load(true);
-    return UiRequestContext.empty(node);
+  UiRequestContext build() {
+    // 1. Watch Node
+    final node = ref.watch(
+      fileTreeProvider.select((treeData) => treeData.nodeMap[id]!),
+    );
+
+    // 2. Watch Details (Body,History & Inheritance Details)
+    final detailsState = ref.watch(requestDetailsProvider(id));
+
+    return UiRequestContext(
+      node: node,
+      body: detailsState.body,
+      inheritedHeaders: detailsState.inherit.headers,
+      effectiveAuth: detailsState.inherit.auth,
+      authSource: detailsState.inherit.authSource,
+      allVariables: detailsState.inherit.variables,
+      isLoading: detailsState.isLoading,
+      history: detailsState.history,
+      isSending: stateOrNull?.isSending ?? false,
+      sendStartTime: stateOrNull?.sendStartTime,
+      sendError: stateOrNull?.sendError,
+    );
   }
+  // --- ACTIONS (Delegate to appropriate provider) ---
 
-  Future<void> _load([bool initial = false]) async {
-    debugPrint("initial[$initial] : req-compose-provider loading for $id");
-    final resolver = RequestResolver(ref);
-    final ctx = await resolver.resolveForUi(id);
-    state = ctx.copyWith(isLoading: false);
+  FileTreeNotifier get _treeNotifier => ref.read(fileTreeProvider.notifier);
+  RequestDetailsNotifier get _detailsNotifier =>
+      ref.read(requestDetailsProvider(id).notifier);
 
-    if (ctx.node is RequestNode) {
-      final history = await ref
-          .read(repositoryProvider)
-          .getHistory(ctx.node.id);
-      state = state.copyWith(history: history);
-    }
-  }
-
-  bool _isAncestor(Node ancestor) {
-    Node? ptr = getParent(getNode);
-    while (ptr != null) {
-      if (ptr.id == ancestor.id) {
-        return true;
-      }
-      ptr = getParent(ptr);
-    }
-    return false;
-  }
-
-  FolderNode? getParent(Node node) {
-    return ref.read(fileTreeProvider).nodeMap[node.parentId] as FolderNode?;
-  }
-
-  Future<void> loadHistory() async {
-    final history = await _repo.getHistory(getNode.id);
-    state = state.copyWith(history: history);
-  }
-
-  /// Updates
   void updateName(String name) {
-    updateNode(getNode.copyWith(name: name));
+    _treeNotifier.updateNodeName(id, name);
   }
 
   void updateMethod(String method) {
-    updateNode((getNode as RequestNode).copyWith(method: method));
+    _treeNotifier.updateRequestMethod(id, method);
   }
 
   void updateUrl(String url) {
-    updateNode((getNode as RequestNode).copyWith(url: url));
+    _treeNotifier.updateRequestUrl(id, url);
   }
 
   void updateDescription(String description) {
-    // state = state.copyWith(node: state.node..config.description = description);
-    updateNode(
-      getNode.copyWith(
-        config: getNode.config.copyWith(description: description),
-      ),
-    );
+    _treeNotifier.updateNodeDescription(id, description);
   }
 
   void updateHeaders(List<KeyValueItem> headers) {
-    updateNode(
-      getNode.copyWith(config: getNode.config.copyWith(headers: headers)),
-    );
+    _treeNotifier.updateNodeHeaders(id, headers);
   }
 
   void updateQueryParameters(List<KeyValueItem> queryParameters) {
-    updateNode(
-      getNode.copyWith(
-        config: (getNode.config as RequestNodeConfig).copyWith(
-          queryParameters: queryParameters,
-        ),
-      ),
-    );
+    _treeNotifier.updateRequestQueryParameters(id, queryParameters);
   }
 
   void updateScripts(String scripts) {
-    updateNode(
-      (getNode as RequestNode).copyWith(
-        config: (getNode.config as RequestNodeConfig).copyWith(
-          scripts: scripts,
-        ),
-      ),
-    );
-    _repo.updateScripts(id, scripts);
+    _treeNotifier.updateRequestScripts(id, scripts);
   }
 
   void updateBody(String body) {
-    debugPrint("update body");
-    state = state.copyWith(body: body);
-    bodyDebouncer.run(() => _repo.updateRequestBody(id, body));
+    _detailsNotifier.updateBody(body);
   }
 
   void updateBodyType(String? type) {
-    var node = getNode as RequestNode;
-    var headers = List<KeyValueItem>.from(node.config.headers);
-
-    // Remove existing Content-Type
-    headers.removeWhere((h) => h.key.toLowerCase() == 'content-type');
-
-    if (type != null) {
-      String? contentType;
-      switch (type) {
-        case 'json':
-          contentType = 'application/json';
-          break;
-        case 'xml':
-          contentType = 'application/xml';
-          break;
-        case 'html':
-          contentType = 'text/html';
-          break;
-        case 'text':
-          contentType = 'text/plain';
-          break;
-        case 'form-urlencoded':
-          contentType = 'application/x-www-form-urlencoded';
-          break;
-        case 'multipart-form-data':
-          contentType = 'multipart/form-data';
-          break;
-      }
-
-      if (contentType != null) {
-        headers.add(KeyValueItem(key: 'Content-Type', value: contentType));
-      }
-    }
-
-    updateNode(
-      node.copyWith(
-        config: node.config.copyWith(bodyType: type, headers: headers),
-      ),
-    );
+    _treeNotifier.updateRequestBodyType(id, type);
   }
 
   void updateAuth(AuthData auth) {
-    // state = state.copyWith(node: state.node..config.auth = auth);
-    updateNode(getNode.copyWith(config: getNode.config.copyWith(auth: auth)));
+    _treeNotifier.updateNodeAuth(id, auth);
   }
 
   void updateVariables(List<KeyValueItem> variables) {
-    // state = state.copyWith(
-    //   node: (state.node as FolderNode)..config.variables = variables,
-    // );
-    updateNode(
-      getNode.copyWith(
-        config: (getNode.config as FolderNodeConfig).copyWith(
-          variables: variables,
-        ),
-      ),
-    );
+    _treeNotifier.updateFolderVariables(id, variables);
   }
 
   void addHistoryEntry(RawHttpResponse entry, {int limit = 10}) {
-    final currentHistory = state.history ?? [];
-    final updatedHistory = [entry, ...currentHistory];
-    if (updatedHistory.length > limit) {
-      updatedHistory.removeRange(limit, updatedHistory.length);
-    }
-    state = state.copyWith(history: updatedHistory);
-
-    // update node last status code
-    updateNode((getNode as RequestNode).copyWith(statusCode: entry.statusCode));
-    _repo.addHistoryEntry(entry);
-  }
-
-  void updateNode(Node node) {
-    // notify
-    ref.read(fileTreeProvider.notifier).updateNode(node);
-    state = state.copyWith(node: node);
+    // History State is managed by RequestDetailsProvider
+    _detailsNotifier.addHistoryEntry(entry, limit: limit);
+    // Ephemeral state for compose provider if any?
+    // UiRequestContext has history field, it will update when detailsState updates.
   }
 
   void startSending() {

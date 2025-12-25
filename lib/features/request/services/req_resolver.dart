@@ -3,6 +3,8 @@ import 'dart:developer';
 import 'package:api_craft/core/network/header_utils.dart';
 import 'package:api_craft/core/models/models.dart';
 import 'package:api_craft/core/providers/providers.dart';
+import 'package:api_craft/features/request/models/inherited_request_model.dart';
+import 'package:api_craft/features/request/providers/request_details_provider.dart';
 import 'package:api_craft/features/template-functions/models/template_placeholder_model.dart';
 import 'package:api_craft/features/template-functions/parsers/parse.dart';
 import 'package:api_craft/features/template-functions/parsers/utils.dart';
@@ -22,7 +24,7 @@ class RequestResolver {
   }
 
   /// ---------- UI RESOLUTION ----------
-  Future<UiRequestContext> resolveForUi(String requestId) async {
+  Future<InheritedRequest> resolveInherit(String requestId) async {
     debugPrint("resolve for ui: $requestId");
     //callstack
     late Node node;
@@ -32,23 +34,18 @@ class RequestResolver {
       log("error for id: $requestId: $e", stackTrace: StackTrace.current);
     }
 
-    await _hydrator.hydrateNode(node);
+    // await _hydrator.hydrateNode(node);
     await _hydrator.hydrateAncestors(node);
 
-    final body = await ref.read(repositoryProvider).getBody(requestId);
-    debugPrint("body: $body");
+    final inheritedHeaders = collectInheritedHeaders(node);
+    final authResult = resolveAuth(node);
+    final vars = mergeVariables(node);
 
-    final inheritedHeaders = _collectInheritedHeaders(node);
-    final authResult = _resolveAuth(node);
-    final vars = _mergeVariables(node);
-
-    return UiRequestContext(
-      node: node,
-      body: body,
-      inheritedHeaders: inheritedHeaders,
-      effectiveAuth: authResult.$1,
+    return InheritedRequest(
+      headers: inheritedHeaders,
+      auth: authResult.$1,
       authSource: authResult.$2,
-      allVariables: vars,
+      variables: vars,
     );
   }
 
@@ -61,7 +58,7 @@ class RequestResolver {
     final node =
         ref.read(fileTreeProvider.select((t) => t.nodeMap[requestId]))
             as RequestNode?;
-    final mergedVars = _mergeVariables(node);
+    final mergedVars = mergeVariables(node);
     final resolver = LazyVariableResolver(mergedVars, this);
     // resolve args values if string
     final resolvedArgs = <String, dynamic>{};
@@ -90,13 +87,13 @@ class RequestResolver {
         ref.read(fileTreeProvider.select((t) => t.nodeMap[requestId]!))
             as RequestNode;
 
-    await _hydrator.hydrateNode(node);
+    await _hydrator.hydrateNode(node.id);
     await _hydrator.hydrateAncestors(node);
     final body = await ref.read(repositoryProvider).getBody(requestId);
 
-    final inheritedHeaders = _collectInheritedHeaders(node);
-    final auth = _resolveAuth(node).$1;
-    final mergedVars = _mergeVariables(node);
+    final inheritedHeaders = collectInheritedHeaders(node);
+    final auth = resolveAuth(node).$1;
+    final mergedVars = mergeVariables(node);
     final resolver = LazyVariableResolver(mergedVars, this);
 
     final resolvedUrl = await resolveVariables(
@@ -222,7 +219,7 @@ class RequestResolver {
   }
 
   /// ---------- HELPERS ----------
-  List<KeyValueItem> _collectInheritedHeaders(Node node) {
+  List<KeyValueItem> collectInheritedHeaders(Node node) {
     final result = <KeyValueItem>[];
     Node? ptr = _parentOf(node);
     while (ptr != null) {
@@ -232,7 +229,7 @@ class RequestResolver {
     return result;
   }
 
-  (AuthData, Node?) _resolveAuth(Node node) {
+  (AuthData, Node?) resolveAuth(Node node) {
     final current = node.config.auth;
     if (current.type != AuthType.inherit) {
       return (current, node);
@@ -253,7 +250,7 @@ class RequestResolver {
     return (const AuthData(type: AuthType.noAuth), null);
   }
 
-  Map<String, VariableValue> _mergeVariables(Node? node) {
+  Map<String, VariableValue> mergeVariables(Node? node) {
     final result = <String, VariableValue>{};
 
     // 1. Start with Global Environment Variables (Always Active)

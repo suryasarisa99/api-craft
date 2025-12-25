@@ -45,7 +45,6 @@ final TemplateFunction promptFn = TemplateFunction(
           name: 'namespace',
           label: 'Namespace',
           defaultValue: '{{ctx.workspace.id()}}',
-          // defaultValue: 'test',
           optional: true,
         ),
         FormInputText(
