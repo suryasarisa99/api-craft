@@ -12,6 +12,8 @@ RawHttpResponse parseRawResponse(
   required DateTime requestSentTime,
   required int durationMs,
   required String requestId,
+  List<String> redirectUrls = const [],
+  String? finalUrl,
 }) {
   // Find the double CRLF separating headers from body
   int splitIndex = -1;
@@ -122,6 +124,8 @@ RawHttpResponse parseRawResponse(
     bodyBytes: rawBodyBytes,
     body: utf8.decode(rawBodyBytes, allowMalformed: true),
     bodyType: bodyType,
+    redirectUrls: redirectUrls,
+    finalUrl: finalUrl,
   );
 }
 

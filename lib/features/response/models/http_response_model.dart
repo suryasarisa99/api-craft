@@ -17,6 +17,8 @@ class RawHttpResponse {
   final String body;
   final String? bodyType;
   final String? errorMessage;
+  final List<String> redirectUrls;
+  final String? finalUrl;
 
   RawHttpResponse({
     required this.id,
@@ -32,6 +34,8 @@ class RawHttpResponse {
     required this.requestId,
 
     this.errorMessage,
+    this.redirectUrls = const [],
+    this.finalUrl,
   });
 
   factory RawHttpResponse.fromMap(Map<String, dynamic> map) {
@@ -57,6 +61,10 @@ class RawHttpResponse {
       bodyType: map['body_type'],
       body: map['body'],
       errorMessage: map['error_message'],
+      redirectUrls: (map['redirect_urls'] != null)
+          ? List<String>.from(jsonDecode(map['redirect_urls']))
+          : [],
+      finalUrl: map['final_url'],
     );
   }
 
@@ -75,6 +83,8 @@ class RawHttpResponse {
       'body_type': bodyType,
       'body_base64': base64.encode(bodyBytes),
       'error_message': errorMessage,
+      'redirect_urls': jsonEncode(redirectUrls),
+      'final_url': finalUrl,
     };
   }
 }

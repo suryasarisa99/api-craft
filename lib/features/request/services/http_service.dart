@@ -40,6 +40,7 @@ class HttpService {
         body: req.body,
         useProxy: false,
         requestId: req.request.id,
+        maxRedirects: 50,
       );
       debugPrint(
         'Response status: ${response.statusCode}: ${response.durationMs} ms',

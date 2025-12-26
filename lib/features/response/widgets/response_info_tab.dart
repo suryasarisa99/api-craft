@@ -21,8 +21,38 @@ class ResponseInfoTab extends StatelessWidget {
         _buildInfoRow("Time", "${response.durationMs} ms"),
         _buildInfoRow("Size", "$sizeInKb KB"),
         _buildInfoRow("Executed At", dateFormat.format(response.executeAt)),
+        if (response.finalUrl != null) _buildInfoRow("URL", response.finalUrl!),
         _buildInfoRow("Protocol", response.protocolVersion),
         _buildInfoRow("Body Type", response.bodyType ?? "Unknown"),
+        if (response.redirectUrls.isNotEmpty) ...[
+          const Divider(),
+          ExpansionTile(
+            title: Text(
+              "Redirects (${response.redirectUrls.length})",
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+            ),
+            dense: true,
+            tilePadding: .symmetric(horizontal: 8),
+            children: response.redirectUrls.map((url) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16.0,
+                  vertical: 4.0,
+                ),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: SelectableText(
+                    url,
+                    style: const TextStyle(
+                      fontFamily: 'monospace',
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ],
       ],
     );
   }
