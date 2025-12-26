@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:api_craft/core/models/models.dart';
 import 'package:api_craft/core/providers/providers.dart';
 import 'package:api_craft/core/providers/ref_provider.dart';
@@ -197,7 +199,8 @@ class _UrlSuffixBtnState extends ConsumerState<UrlSuffixBtn> {
   void sendMessage() {
     final mssg = ref.read(reqComposeProvider(widget.id)).body;
     if (mssg == null || mssg.isEmpty) return;
-    ref.read(wsRequestProvider(widget.id).notifier).sendMessage(mssg);
+    final x = jsonDecode(mssg);
+    ref.read(wsRequestProvider(widget.id).notifier).sendMessage(x['text']);
   }
 
   void disconnectWs() {

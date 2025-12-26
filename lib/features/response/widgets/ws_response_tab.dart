@@ -10,8 +10,9 @@ import 'package:intl/intl.dart';
 import 'package:multi_split_view/multi_split_view.dart';
 import 'package:suryaicons/bulk_rounded.dart';
 import 'package:xml/xml.dart';
+import 'package:flutter/services.dart';
 
-typedef WsMessageCallback = void Function(String id, String mssg);
+typedef WsMessageCallback = void Function(String? id, String? mssg);
 
 class WsResponseTab extends ConsumerStatefulWidget {
   final String requestId;
@@ -26,32 +27,86 @@ class _WsResponseTabState extends ConsumerState<WsResponseTab> {
   String? selectedId;
   final mssgsArea = Area(id: 1, min: 10, data: 'ws-messages');
   final detailArea = Area(id: 2, size: 200, data: 'ws-detail-mssg');
+  final FocusNode _focusNode = FocusNode();
 
   late final MultiSplitViewController _controller = MultiSplitViewController(
     areas: [mssgsArea],
   );
+
+  @override
+  void dispose() {
+    _focusNode.dispose();
+    super.dispose();
+  }
+
   void showDetailArea(bool show) {
     _controller.areas = [mssgsArea, if (show) detailArea];
   }
 
+  void _navigate(int direction) {
+    final state = ref.read(wsRequestProvider(widget.requestId));
+    final messages = state.messages;
+    if (messages.isEmpty) return;
+
+    int currentIndex = -1;
+    if (selectedId != null) {
+      currentIndex = messages.indexWhere((m) => m.id == selectedId);
+    }
+
+    int newIndex;
+    if (currentIndex == -1) {
+      if (direction > 0) {
+        newIndex = 0;
+      } else {
+        newIndex = messages.length - 1;
+      }
+    } else {
+      newIndex = currentIndex + direction;
+    }
+
+    if (newIndex >= 0 && newIndex < messages.length) {
+      final msg = messages[newIndex];
+      setState(() {
+        selectedId = msg.id;
+        mssg = msg.message;
+      });
+      showDetailArea(true);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return MultiSplitView(
-      axis: Axis.vertical,
-      controller: _controller,
-      builder: (context, area) {
-        switch (area.data) {
-          case 'ws-messages':
-            return buildMessages();
-          case 'ws-detail-mssg':
-            if (mssg == null) {
-              return const SizedBox.shrink();
-            }
-            return WsDetailMessage(mssg: mssg!);
-          default:
-            return const SizedBox.shrink();
+    return Focus(
+      focusNode: _focusNode,
+      autofocus: true,
+      onKeyEvent: (node, event) {
+        if (event is KeyUpEvent) return KeyEventResult.handled;
+        if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
+          _navigate(-1);
+          return KeyEventResult.handled;
+        } else if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
+          _navigate(1);
+          return KeyEventResult.handled;
         }
+        return KeyEventResult.ignored;
       },
+      child: MultiSplitView(
+        axis: Axis.vertical,
+        controller: _controller,
+        builder: (context, area) {
+          switch (area.data) {
+            case 'ws-messages':
+              return buildMessages();
+            case 'ws-detail-mssg':
+              if (mssg == null) {
+                return const SizedBox.shrink();
+              }
+              return WsDetailMessage(mssg: mssg!);
+            default:
+              return const SizedBox.shrink();
+          }
+        },
+      ),
     );
   }
 
@@ -71,11 +126,12 @@ class _WsResponseTabState extends ConsumerState<WsResponseTab> {
         return _MessageBubble(
           message: msg,
           onChanged: (id, v) {
+            _focusNode.requestFocus();
             setState(() {
               selectedId = id;
               mssg = v;
             });
-            showDetailArea(true);
+            showDetailArea(id != null);
           },
           selected: msg.id == selectedId,
         );
@@ -149,7 +205,7 @@ class _WsDetailMessageState extends State<WsDetailMessage> {
 class _MessageBubble extends StatelessWidget {
   final WebSocketMessage message;
   final bool selected;
-  final Function(String id, String mssg) onChanged;
+  final Function(String? id, String? mssg) onChanged;
 
   const _MessageBubble({
     required this.message,
@@ -169,8 +225,12 @@ class _MessageBubble extends StatelessWidget {
     return InkWell(
       borderRadius: BorderRadius.circular(4),
       onTap: () {
-        debugPrint("Selected message: ${message.id}");
-        onChanged(message.id, message.message);
+        if (selected) {
+          onChanged(null, null);
+        } else {
+          debugPrint("Selected message: ${message.id}");
+          onChanged(message.id, message.message);
+        }
       },
       child: Ink(
         decoration: BoxDecoration(
