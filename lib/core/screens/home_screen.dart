@@ -1,3 +1,5 @@
+import 'package:api_craft/core/constants/globals.dart';
+import 'package:api_craft/core/utils/debouncer.dart';
 import 'package:api_craft/core/widgets/ui/surya_theme_icon.dart';
 import 'package:api_craft/features/collection/collection_picker.dart';
 import 'package:api_craft/features/environment/environment_picker.dart';
@@ -5,6 +7,7 @@ import 'package:api_craft/features/request/widgets/request.dart';
 import 'package:api_craft/features/response/response_tab.dart';
 import 'package:api_craft/features/sidebar/sidebar.dart';
 import 'package:api_craft/core/widgets/ui/top_bar.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
 import 'package:multi_split_view/multi_split_view.dart';
@@ -21,46 +24,123 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen>
     with WidgetsBindingObserver {
-  bool isSidebarAutoClosed = false;
-  bool isSidebarManuallyClosed = false;
-  bool get isSidebarVisible => !isSidebarAutoClosed && !isSidebarManuallyClosed;
+  static const double sidebarMinWidth = 5;
   static const double sidebarThresholdWidth = 800;
   static double windowWidth = 1000;
+  static double sidebarInitialWidth = 250;
+
+  bool isSidebarAutoClosed = false;
+  bool isSidebarManuallyClosed = prefs.getBool('sidebar_closed') ?? false;
+  bool get isSidebarVisible => !isSidebarAutoClosed && !isSidebarManuallyClosed;
   final scaffoldKey = GlobalKey<ScaffoldState>();
   static const sideBarWidget = FileExplorerView();
-  final MultiSplitViewController _controller = MultiSplitViewController(
+  final debouncer = Debouncer(Duration(milliseconds: 500));
+
+  late final MultiSplitViewController _controller = MultiSplitViewController(
     areas: [
-      Area(id: 1, min: 2, size: 250, data: 'side-bar'),
-      Area(id: 2, flex: 1, data: 'request-tab'),
-      Area(id: 3, flex: 1, data: 'response-tab'),
+      Area(
+        id: 1,
+        min: sidebarMinWidth,
+        size: getInitialSidebarWidth(),
+        data: 'side-bar',
+      ),
+      Area(
+        id: 2,
+        flex: prefs.getDouble('request_flex') ?? 1,
+        data: 'request-tab',
+      ),
+      Area(
+        id: 3,
+        flex: prefs.getDouble('response_flex') ?? 1,
+        data: 'response-tab',
+      ),
     ],
   );
 
   @override
   void initState() {
     super.initState();
-
-    // Todo:  persist sidebar state and sizes
-    _controller.addListener(() {
-      final sidebarWidth = _controller.areas[0].size;
-      final reqFlex = _controller.areas[1].flex;
-      final resFlex = _controller.areas[2].flex;
-
-      debugPrint(
-        "Sidebar width: $sidebarWidth, Req flex: $reqFlex, Res flex: $resFlex",
-      );
-    });
-
+    _controller.addListener(_listener);
     WidgetsBinding.instance.addObserver(this);
-    _handleSizeChange();
+    final hk = HardwareKeyboard.instance;
+    hk.addHandler((event) {
+      if (event is KeyUpEvent) return false;
+      final ctrl = hk.isMetaPressed || hk.isControlPressed;
+      if (ctrl && event.logicalKey == LogicalKeyboardKey.keyB) {
+        debugPrint('Sidebar toggle');
+        if (isSidebarVisible) {
+          closeSidebar();
+        } else {
+          openSidebar();
+        }
+        return true;
+      }
+      return false;
+    });
+    _handleAutoToggleSidebar();
   }
 
   @override
   void didChangeMetrics() {
-    _handleSizeChange();
+    _handleAutoToggleSidebar();
   }
 
-  void _handleSizeChange() {
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  void _listener() {
+    final sidebarWidth = _controller.areas[0].size ?? 0;
+    final reqFlex = _controller.areas[1].flex;
+    final resFlex = _controller.areas[2].flex;
+
+    // key distinction: isSidebarVisible is TRUE during drag-to-close, but FALSE during toggle-close (checked before listener)
+    // Actually toggle sets manual=true immediately, so isSidebarVisible becomes false.
+    // So if width is small AND isSidebarVisible is true => It's a drag event.
+    final isDragClose =
+        sidebarWidth < (sidebarMinWidth + 2) && isSidebarVisible;
+
+    debouncer.run(() {
+      prefs.setDouble('sidebar_width', sidebarWidth);
+      prefs.setDouble('request_flex', reqFlex ?? 1);
+      prefs.setDouble('response_flex', resFlex ?? 1);
+
+      if (isDragClose) {
+        // User dragged to close -> Open should reset to default (250)
+        prefs.remove('last_valid_sidebar_width');
+        prefs.setBool('sidebar_closed', true);
+      } else {
+        // Normal state or Toggle Close
+        if (sidebarWidth > 100) {
+          prefs.setDouble('last_valid_sidebar_width', sidebarWidth);
+        }
+
+        if (sidebarWidth < sidebarMinWidth + 2) {
+          prefs.setBool('sidebar_closed', true);
+        } else {
+          prefs.setBool('sidebar_closed', false);
+        }
+      }
+    });
+
+    if (sidebarWidth < (sidebarMinWidth + 2) && isSidebarVisible) {
+      setState(() {
+        isSidebarManuallyClosed = true;
+      });
+    } else if (sidebarWidth > sidebarMinWidth + 2 && isSidebarManuallyClosed) {
+      setState(() {
+        isSidebarManuallyClosed = false;
+      });
+    }
+
+    debugPrint(
+      "Sidebar width: $sidebarWidth, Req flex: $reqFlex, Res flex: $resFlex",
+    );
+  }
+
+  void _handleAutoToggleSidebar() {
     final view = WidgetsBinding.instance.platformDispatcher.views.first;
     final width = view.physicalSize.width / view.devicePixelRatio;
     windowWidth = width;
@@ -68,22 +148,59 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     if (width < sidebarThresholdWidth && isSidebarVisible) {
       // small window + sidebar shows => auto close sidebar
       isSidebarAutoClosed = true;
-      _controller.areas[0].size = 0;
+      closeSidebar();
       setState(() {});
     } else if (width >= sidebarThresholdWidth && isSidebarAutoClosed) {
       // large window + sidebar auto closed => reopen sidebar
       isSidebarAutoClosed = false;
       // close scaffold may be if opened
       scaffoldKey.currentState?.closeDrawer();
-      _controller.areas[0].size = 250;
+      openSidebar();
       setState(() {});
     }
   }
 
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    super.dispose();
+  void closeSidebar() {
+    setState(() {
+      _controller.areas[0].size = 0;
+    });
+    prefs.setDouble('sidebar_width', 0);
+    prefs.setBool('sidebar_closed', true);
+  }
+
+  void openSidebar() {
+    double restoreWidth =
+        prefs.getDouble('last_valid_sidebar_width') ?? sidebarInitialWidth;
+    if (restoreWidth < 100) {
+      restoreWidth = sidebarInitialWidth;
+    }
+
+    setState(() {
+      _controller.areas[0].size = restoreWidth;
+    });
+    prefs.setDouble('sidebar_width', restoreWidth);
+    prefs.setBool('sidebar_closed', false);
+
+    // Also reset last valid if we just defaulted? No, keeping it is fine.
+  }
+
+  double getInitialSidebarWidth() {
+    if (isSidebarManuallyClosed) {
+      return 0;
+    }
+    // Restoration logic on startup
+    double width = prefs.getDouble('sidebar_width') ?? sidebarInitialWidth;
+
+    // If it was somehow saved as 0 but NOT marked as closed check last valid
+    if (width < 50) {
+      // Try to recover
+      width =
+          prefs.getDouble('last_valid_sidebar_width') ?? sidebarInitialWidth;
+    }
+
+    if (width < 50) width = sidebarInitialWidth;
+
+    return width;
   }
 
   @override
@@ -109,6 +226,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                     // sidebar shows
                     isSidebarManuallyClosed = true;
                     _controller.areas[0].size = 0;
+                    prefs.setBool('sidebar_closed', true);
                   } else {
                     // sidebar closed
                     if (smallWindow) {
@@ -116,7 +234,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                       scaffoldKey.currentState?.openDrawer();
                     } else {
                       isSidebarManuallyClosed = false;
-                      _controller.areas[0].size = 250;
+                      openSidebar();
+                      prefs.setBool('sidebar_closed', false);
                     }
                   }
                   setState(() {});
