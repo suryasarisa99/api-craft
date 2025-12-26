@@ -12,8 +12,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
 import 'package:multi_split_view/multi_split_view.dart';
 import 'package:suryaicons/bulk_rounded.dart';
-import 'package:suryaicons/duotone_rounded.dart';
-import 'package:suryaicons/twotone_rounded.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -25,8 +23,8 @@ class HomeScreen extends ConsumerStatefulWidget {
 class _HomeScreenState extends ConsumerState<HomeScreen>
     with WidgetsBindingObserver {
   static const double sidebarMinWidth = 5;
-  static const double sidebarThresholdWidth = 800;
-  static double windowWidth = 1200;
+  static const double sidebarThresholdWidth = 1000;
+  static double windowWidth = 1000;
   static double sidebarInitialWidth = 250;
 
   bool isSidebarAutoClosed = false;
@@ -60,6 +58,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   @override
   void initState() {
     super.initState();
+    debugPrint("isSidebarManuallyClosed: ${prefs.getBool('sidebar_closed')}");
     _controller.addListener(_listener);
     WidgetsBinding.instance.addObserver(this);
     final hk = HardwareKeyboard.instance;
@@ -136,25 +135,28 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     );
   }
 
-  void _handleAutoToggleSidebar() {
+  static double getWindowWidth() {
     final view = WidgetsBinding.instance.platformDispatcher.views.first;
-    final width = view.physicalSize.width / view.devicePixelRatio;
-    windowWidth = width;
+    return view.physicalSize.width / view.devicePixelRatio;
+  }
 
-    if (width < sidebarThresholdWidth && isSidebarVisible) {
+  void _handleAutoToggleSidebar() {
+    windowWidth = getWindowWidth();
+
+    if (windowWidth < sidebarThresholdWidth && isSidebarVisible) {
       // small window + sidebar shows => auto close sidebar
       isSidebarAutoClosed = true;
       closeSidebar();
       setState(() {});
-    } else if (width >= sidebarThresholdWidth) {
+    } else if (windowWidth >= sidebarThresholdWidth) {
       // large window + sidebar auto closed => reopen sidebar
       if (isSidebarAutoClosed) {
         isSidebarAutoClosed = false;
+        openSidebar();
+        setState(() {});
       }
       // close scaffold may be if opened
       scaffoldKey.currentState?.closeDrawer();
-      openSidebar();
-      setState(() {});
     }
   }
 
@@ -183,6 +185,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   }
 
   double getInitialSidebarWidth() {
+    debugPrint("isSidebarManuallyClosed--: $isSidebarManuallyClosed");
     if (isSidebarManuallyClosed) {
       return 0;
     }
@@ -224,7 +227,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       } else {
         openSidebar();
         isSidebarManuallyClosed = false;
-        prefs.setBool('sidebar_closed', false);
       }
     }
     setState(() {});
