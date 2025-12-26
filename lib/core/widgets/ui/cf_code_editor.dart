@@ -1,3 +1,4 @@
+import 'package:api_craft/core/utils/debouncer.dart';
 import 'package:api_craft/core/widgets/ui/key_value_lang.dart';
 import 'package:flutter/material.dart';
 import 'package:code_forge/code_forge.dart';
@@ -29,6 +30,7 @@ class CFCodeEditor extends StatefulWidget {
 
 class _CFCodeEditorState extends State<CFCodeEditor> {
   late CodeForgeController _controller;
+  final debouncer = Debouncer(Duration(milliseconds: 500));
 
   @override
   void initState() {
@@ -39,9 +41,11 @@ class _CFCodeEditorState extends State<CFCodeEditor> {
   }
 
   void _onChanged() {
-    if (widget.onChanged != null && _controller.text != widget.text) {
-      widget.onChanged!(_controller.text);
-    }
+    debouncer.run(() {
+      if (widget.onChanged != null && _controller.text != widget.text) {
+        widget.onChanged!(_controller.text);
+      }
+    });
   }
 
   @override

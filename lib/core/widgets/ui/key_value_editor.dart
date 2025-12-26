@@ -1,6 +1,7 @@
 import 'package:api_craft/core/widgets/dialog/input_dialog.dart';
 import 'package:api_craft/core/widgets/dialog/multiline_edit.dart';
 import 'package:api_craft/core/models/models.dart';
+import 'package:api_craft/core/widgets/ui/cf_code_editor.dart';
 import 'package:api_craft/core/widgets/ui/custom_input.dart';
 import 'package:api_craft/core/widgets/ui/custom_menu.dart';
 import 'package:desktop_drop/desktop_drop.dart';
@@ -51,6 +52,7 @@ class KeyValueEditor extends StatefulWidget {
 class _KeyValueEditorState extends State<KeyValueEditor> {
   bool _focusKeyField = true;
   String? _focusTargetId;
+  bool _isCodeEditor = false;
 
   void _dispatchUpdate() {
     widget.onChanged(widget.items);
@@ -61,6 +63,12 @@ class _KeyValueEditorState extends State<KeyValueEditor> {
       widget.items[index] = newItem;
     });
     _dispatchUpdate();
+  }
+
+  void _toggleEditor() {
+    setState(() {
+      _isCodeEditor = !_isCodeEditor;
+    });
   }
 
   /// value is character we typed in dummy item to add new row
@@ -102,57 +110,109 @@ class _KeyValueEditorState extends State<KeyValueEditor> {
   Widget build(BuildContext context) {
     debugPrint("rebuilding: InputItems");
     const itemHeight = 38.0;
+    final cs = Theme.of(context).colorScheme;
+    return Scaffold(
+      floatingActionButton: widget.mode == KeyValueEditorMode.multipart
+          ? null
+          : FloatingActionButton.small(
+              backgroundColor: cs.surfaceContainerHighest,
+              onPressed: _toggleEditor,
+              //show icon to toggle btn file edit or cell edit
+              child: Icon(
+                _isCodeEditor ? Icons.code : Icons.grid_view_rounded,
+                size: 16,
+              ),
+            ),
+      body: (_isCodeEditor && widget.mode != KeyValueEditorMode.multipart)
+          ? CFCodeEditor(
+              text: widget.items
+                  .where((e) => e.key.isNotEmpty || e.value.isNotEmpty)
+                  .map((e) {
+                    if (e.value.isNotEmpty) {
+                      return "${e.key}: ${e.value}";
+                    } else {
+                      return e.key;
+                    }
+                  })
+                  .join("\n"),
+              language: "form-urlencoded",
+              onChanged: (v) {
+                final lines = v.split("\n");
+                final items = lines.map((line) {
+                  final idx = line.indexOf(':');
 
-    return Padding(
-      padding: const .only(left: 8, right: 4),
-      child: FocusTraversalGroup(
-        child: ReorderableListView.builder(
-          padding: .only(bottom: 10),
-          itemCount: widget.items.length + 1,
-          itemExtent: itemHeight,
-          buildDefaultDragHandles: false,
-          onReorder: (oldIdx, newIdx) {
-            final fixedNewIdx = newIdx - 1;
-            if (oldIdx >= widget.items.length ||
-                fixedNewIdx > widget.items.length) {
-              return;
-            }
-            if (oldIdx == widget.items.length ||
-                fixedNewIdx == widget.items.length) {
-              return;
-            }
-            setState(() {
-              if (oldIdx < newIdx) newIdx -= 1;
-              final item = widget.items.removeAt(oldIdx);
-              widget.items.insert(newIdx, item);
-            });
-            _dispatchUpdate();
-          },
-          itemBuilder: (context, i) {
-            final isExtra = i == widget.items.length;
-            final item = isExtra ? null : widget.items[i];
-
-            return _KeyValueRow(
-              key: ValueKey(isExtra ? "extra_row" : item!.id),
-              index: i,
-              item: item,
-              isExtra: isExtra,
-              mode: widget.mode,
-              enableSuggestionsForKey: widget.enableSuggestionsForKey,
-              id: widget.id,
-              focusTargetId: _focusTargetId,
-              focusKeyField: _focusKeyField,
-              itemHeight: itemHeight,
-              onUpdate: (idx, newItem) => _updateItem(idx, newItem),
-              onRemove: (idx) => _removeItem(idx),
-              onAdd: (val, isKey) {
-                _focusKeyField = isKey ?? true;
-                _addNew(val, isKey);
+                  return KeyValueItem(
+                    key: idx == -1
+                        ? line.trim()
+                        : line.substring(0, idx).trim(),
+                    value: idx == -1 ? '' : line.substring(idx + 1).trim(),
+                  );
+                }).toList();
+                //need to update state.
+                widget.items.clear();
+                widget.items.addAll(items);
+                _dispatchUpdate();
               },
-            );
-          },
-        ),
-      ),
+            )
+          : Padding(
+              padding: const .only(left: 8, right: 4),
+              child: Column(
+                children: [
+                  Expanded(
+                    child: FocusTraversalGroup(
+                      child: ReorderableListView.builder(
+                        padding: .only(bottom: 10),
+                        itemCount: widget.items.length + 1,
+                        itemExtent: itemHeight,
+                        buildDefaultDragHandles: false,
+                        onReorder: (oldIdx, newIdx) {
+                          final fixedNewIdx = newIdx - 1;
+                          if (oldIdx >= widget.items.length ||
+                              fixedNewIdx > widget.items.length) {
+                            return;
+                          }
+                          if (oldIdx == widget.items.length ||
+                              fixedNewIdx == widget.items.length) {
+                            return;
+                          }
+                          setState(() {
+                            if (oldIdx < newIdx) newIdx -= 1;
+                            final item = widget.items.removeAt(oldIdx);
+                            widget.items.insert(newIdx, item);
+                          });
+                          _dispatchUpdate();
+                        },
+                        itemBuilder: (context, i) {
+                          final isExtra = i == widget.items.length;
+                          final item = isExtra ? null : widget.items[i];
+
+                          return _KeyValueRow(
+                            key: ValueKey(isExtra ? "extra_row" : item!.id),
+                            index: i,
+                            item: item,
+                            isExtra: isExtra,
+                            mode: widget.mode,
+                            enableSuggestionsForKey:
+                                widget.enableSuggestionsForKey,
+                            id: widget.id,
+                            focusTargetId: _focusTargetId,
+                            focusKeyField: _focusKeyField,
+                            itemHeight: itemHeight,
+                            onUpdate: (idx, newItem) =>
+                                _updateItem(idx, newItem),
+                            onRemove: (idx) => _removeItem(idx),
+                            onAdd: (val, isKey) {
+                              _focusKeyField = isKey ?? true;
+                              _addNew(val, isKey);
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
     );
   }
 }
@@ -407,7 +467,7 @@ class _KeyValueRowState extends State<_KeyValueRow> {
                     onPressed: () {
                       widget.onUpdate(
                         widget.index,
-                        item.copyWith(filePath: 'null),
+                        item.copyWith(filePath: null),
                       );
                     },
                   ),
@@ -435,7 +495,10 @@ class _KeyValueRowState extends State<_KeyValueRow> {
             checked: formItem?.type == 'text',
             value: 'type_text',
             onTap: (_) {
-              final newItem = formItem!.copyWith(type: 'text', resetFilename: true);
+              final newItem = formItem!.copyWith(
+                type: 'text',
+                resetFilename: true,
+              );
               widget.onUpdate(widget.index, newItem);
             },
           ),
@@ -451,51 +514,47 @@ class _KeyValueRowState extends State<_KeyValueRow> {
           menuDivider,
         ],
 
-        // if (isMultipart && isFormItem && formItem!.type == 'file') ...[
-        CustomMenuIconItem(
-          title: Text(
-            'Set Filename',
-            style: TextStyle(color: notFile ? disabledClr : null),
-          ),
-          value: 'filename',
-          disabled: notFile,
-          // onTap: (_) => _showSimpleEditDialog(
-          //   'Set Filename',
-          //   formItem!.fileName ?? '',
-          //   (v) {
-          //     widget.onUpdate(widget.index, formItem.copyWith(fileName: v));
-          //   },
-          // ),
-          onTap: (_) => showInputDialog(
-            context: context,
-            title: 'Set Filename',
-            placeholder: 'Filename',
-            initialValue: formItem!.fileName,
-            onConfirmed: (v) {
-              widget.onUpdate(widget.index, formItem.copyWith(fileName: v));
-            },
-          ),
-        ),
-        CustomMenuIconItem(
-          title: Text(
-            'Content-Type',
-            style: TextStyle(color: notFile ? disabledClr : null),
-          ),
-          value: 'content_type',
-          disabled: notFile,
-          onTap: (_) => showInputDialog(
-            context: context,
-            title: 'Set Content-Type',
-            placeholder: 'Content-Type',
-            initialValue: formItem!.contentType,
-            onConfirmed: (v) {
-              widget.onUpdate(widget.index, formItem.copyWith(contentType: v));
-            },
-          ),
-        ),
-        menuDivider,
+        if (isMultipart) ...[
+          CustomMenuIconItem(
+            title: Text(
+              'Set Filename',
+              style: TextStyle(color: notFile ? disabledClr : null),
+            ),
+            value: 'filename',
+            disabled: notFile,
 
-        // ],
+            onTap: (_) => showInputDialog(
+              context: context,
+              title: 'Set Filename',
+              placeholder: 'Filename',
+              initialValue: formItem!.fileName,
+              onConfirmed: (v) {
+                widget.onUpdate(widget.index, formItem.copyWith(fileName: v));
+              },
+            ),
+          ),
+          CustomMenuIconItem(
+            title: Text(
+              'Content-Type',
+              style: TextStyle(color: notFile ? disabledClr : null),
+            ),
+            value: 'content_type',
+            disabled: notFile,
+            onTap: (_) => showInputDialog(
+              context: context,
+              title: 'Set Content-Type',
+              placeholder: 'Content-Type',
+              initialValue: formItem!.contentType,
+              onConfirmed: (v) {
+                widget.onUpdate(
+                  widget.index,
+                  formItem.copyWith(contentType: v),
+                );
+              },
+            ),
+          ),
+          menuDivider,
+        ],
         CustomMenuIconItem(
           title: Text(
             'Edit Multiline',

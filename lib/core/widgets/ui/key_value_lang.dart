@@ -1,5 +1,3 @@
-// GENERATED CODE - DO NOT MODIFY BY HAND
-
 import 'package:re_highlight/re_highlight.dart';
 
 final langKeyValue = Mode(
@@ -12,16 +10,11 @@ final langKeyValue = Mode(
     // Key: at the start of a line (non-space up to colon)
     Mode(
       className: 'attr', // highlight as attribute name
-      begin: r'^[ \t]*[^\s:#][^:]*?(?=\s*:)',
+      begin: r'^[ \t]*[^\s:#][^:\n]*',
     ),
     // Colon and space (punctuation)
     Mode(className: 'punctuation', begin: r'\s*:\s*', relevance: 0),
     // Value: anything after first colon (possibly quoted)
-    Mode(
-      className: 'string',
-      begin: r'(:\s*)(.*)$',
-      beginScope: {2: 'string'},
-      relevance: 0,
-    ),
+    Mode(className: 'string', begin: r'.+$', relevance: 0),
   ],
 );
