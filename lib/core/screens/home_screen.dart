@@ -26,7 +26,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     with WidgetsBindingObserver {
   static const double sidebarMinWidth = 5;
   static const double sidebarThresholdWidth = 800;
-  static double windowWidth = 1000;
+  static double windowWidth = 1200;
   static double sidebarInitialWidth = 250;
 
   bool isSidebarAutoClosed = false;
@@ -68,11 +68,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       final ctrl = hk.isMetaPressed || hk.isControlPressed;
       if (ctrl && event.logicalKey == LogicalKeyboardKey.keyB) {
         debugPrint('Sidebar toggle');
-        if (isSidebarVisible) {
-          closeSidebar();
-        } else {
-          openSidebar();
-        }
+        toggleSidebar();
         return true;
       }
       return false;
@@ -150,9 +146,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       isSidebarAutoClosed = true;
       closeSidebar();
       setState(() {});
-    } else if (width >= sidebarThresholdWidth && isSidebarAutoClosed) {
+    } else if (width >= sidebarThresholdWidth) {
       // large window + sidebar auto closed => reopen sidebar
-      isSidebarAutoClosed = false;
+      if (isSidebarAutoClosed) {
+        isSidebarAutoClosed = false;
+      }
       // close scaffold may be if opened
       scaffoldKey.currentState?.closeDrawer();
       openSidebar();
@@ -203,6 +201,35 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     return width;
   }
 
+  void toggleSidebar() {
+    final smallWindow = windowWidth < sidebarThresholdWidth;
+
+    bool isDrawerOpen = scaffoldKey.currentState?.isDrawerOpen ?? false;
+    if (isDrawerOpen) {
+      scaffoldKey.currentState?.closeDrawer();
+      return;
+    }
+
+    if (isSidebarVisible) {
+      // sidebar shows
+      isSidebarManuallyClosed = true;
+      _controller.areas[0].size = 0;
+      prefs.setBool('sidebar_closed', true);
+      scaffoldKey.currentState?.closeDrawer();
+    } else {
+      // sidebar closed
+      if (smallWindow) {
+        // use drawer for small window
+        scaffoldKey.currentState?.openDrawer();
+      } else {
+        openSidebar();
+        isSidebarManuallyClosed = false;
+        prefs.setBool('sidebar_closed', false);
+      }
+    }
+    setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
     debugPrint("HomeScreen rebuild");
@@ -220,26 +247,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             right: [],
             left: [
               IconButton(
-                onPressed: () {
-                  final smallWindow = windowWidth < sidebarThresholdWidth;
-                  if (isSidebarVisible) {
-                    // sidebar shows
-                    isSidebarManuallyClosed = true;
-                    _controller.areas[0].size = 0;
-                    prefs.setBool('sidebar_closed', true);
-                  } else {
-                    // sidebar closed
-                    if (smallWindow) {
-                      // use drawer for small window
-                      scaffoldKey.currentState?.openDrawer();
-                    } else {
-                      isSidebarManuallyClosed = false;
-                      openSidebar();
-                      prefs.setBool('sidebar_closed', false);
-                    }
-                  }
-                  setState(() {});
-                },
+                onPressed: toggleSidebar,
                 // icon: Icon(
                 //   isSidebarVisible ? Icons.chevron_left : Icons.chevron_right,
                 // ),
