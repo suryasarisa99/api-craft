@@ -314,10 +314,16 @@ class FileTreeNotifier extends Notifier<TreeData> {
           parentId: ids.lastOrNull ?? parentId,
           name: fileName,
           requestType: requestType,
+
           method: methodStr!,
           statusCode: null,
           sortOrder: 0,
-          config: RequestNodeConfig(queryParameters: []),
+          config: RequestNodeConfig(
+            queryParameters: [],
+            bodyType: requestType == RequestType.ws
+                ? BodyType.text
+                : BodyType.noBody,
+          ),
         ),
       );
     }

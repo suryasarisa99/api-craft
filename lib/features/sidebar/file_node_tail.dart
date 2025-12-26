@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:api_craft/core/models/models.dart';
 import 'package:api_craft/core/providers/providers.dart';
 import 'package:api_craft/core/widgets/ui/surya_theme_icon.dart';
+import 'package:api_craft/features/response/utils/status_code_clr.dart';
 import 'package:api_craft/features/sidebar/context_menu.dart';
 import 'package:api_craft/features/sidebar/providers/sidebar_search_provider.dart';
 import 'package:api_craft/features/sidebar/sidebar.dart';
@@ -400,11 +401,13 @@ class _FileTreeTileState extends ConsumerState<FileNodeTile>
                                 ),
                                 if (vNode.statusCode != null)
                                   Text(
-                                    vNode.statusCode.toString(),
+                                    vNode.statusCode == 0
+                                        ? "ERR"
+                                        : vNode.statusCode.toString(),
                                     style: TextStyle(
                                       fontSize: 12,
-                                      color: textColor.withValues(alpha: 0.6),
-                                      fontWeight: FontWeight.w400,
+                                      color: statusCodeColor(vNode.statusCode!),
+                                      fontWeight: FontWeight.w500,
                                     ),
                                   ),
                                 SizedBox(width: 8),

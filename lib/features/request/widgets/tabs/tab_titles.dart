@@ -8,7 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 class BodyType {
   static const noBody = "No Body";
   static const formUrlEncoded = "URL-Encoded";
-  static const formMultipart = "Multipart Form";
+  static const formMultipart = "Multipart";
   static const json = "JSON";
   static const text = "Text";
   static const xml = "XML";
@@ -46,7 +46,9 @@ class BodyHeader extends ConsumerWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(wsBodyTypes[currBodyType] ?? "Body"),
+              Text(
+                currBodyType == BodyType.noBody ? "Body" : currBodyType ?? '',
+              ),
               const Icon(Icons.arrow_drop_down, size: 16),
             ],
           ),
@@ -70,7 +72,8 @@ class BodyHeader extends ConsumerWidget {
   }
 }
 
-const wsBodyTypes = {"json": "Json", "xml": "Xml", "text": "Text"};
+// const wsBodyTypes = {"json": "Json", "xml": "Xml", "text": "Text"};
+const wsBodyTypes = [BodyType.json, BodyType.xml, BodyType.text];
 
 class WsBodyHeader extends ConsumerWidget {
   final GlobalKey<CustomPopupState> popupKey;
@@ -84,20 +87,21 @@ class WsBodyHeader extends ConsumerWidget {
         id,
       ).select((d) => (d.node.config as RequestNodeConfig).bodyType),
     );
+    debugPrint("bodyType: $bodyType");
     String? displayMssg;
-    if (bodyType == null || bodyType == "text") {
+    if (bodyType == null || bodyType == BodyType.text) {
       displayMssg = "Message";
     } else {
-      displayMssg = wsBodyTypes[bodyType]!;
+      displayMssg = bodyType;
     }
     return IgnorePointer(
       child: MyCustomMenu.contentColumn(
         popupKey: popupKey,
         useBtn: false,
-        items: wsBodyTypes.keys
+        items: wsBodyTypes
             .map(
               (e) => CustomMenuIconItem.tick(
-                title: Text(wsBodyTypes[e]!),
+                title: Text(e),
                 value: e,
                 checked: bodyType == e,
                 onTap: (v) =>
