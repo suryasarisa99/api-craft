@@ -4,6 +4,8 @@ import 'package:api_craft/core/models/models.dart';
 import 'package:api_craft/core/widgets/ui/cf_code_editor.dart';
 import 'package:api_craft/core/widgets/ui/custom_input.dart';
 import 'package:api_craft/core/widgets/ui/custom_menu.dart';
+import 'package:api_craft/core/widgets/ui/variable_text_field.dart';
+import 'package:api_craft/core/widgets/ui/variable_text_field_custom.dart';
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:dotted_decoration/dotted_decoration.dart';
 import 'package:file_picker/file_picker.dart';
@@ -106,6 +108,35 @@ class _KeyValueEditorState extends State<KeyValueEditor> {
     _dispatchUpdate();
   }
 
+  void _onTextChange(String v) {
+    final lines = v.split("\n");
+    final items = lines.map((line) {
+      final idx = line.indexOf(':');
+
+      return KeyValueItem(
+        key: idx == -1 ? line.trim() : line.substring(0, idx).trim(),
+        value: idx == -1 ? '' : line.substring(idx + 1).trim(),
+      );
+    }).toList();
+    //need to update state.
+    widget.items.clear();
+    widget.items.addAll(items);
+    _dispatchUpdate();
+  }
+
+  String get _toText {
+    return widget.items
+        .where((e) => e.key.isNotEmpty || e.value.isNotEmpty)
+        .map((e) {
+          if (e.value.isNotEmpty) {
+            return "${e.key}: ${e.value}";
+          } else {
+            return e.key;
+          }
+        })
+        .join("\n");
+  }
+
   @override
   Widget build(BuildContext context) {
     debugPrint("rebuilding: InputItems");
@@ -124,35 +155,26 @@ class _KeyValueEditorState extends State<KeyValueEditor> {
               ),
             ),
       body: (_isCodeEditor && widget.mode != KeyValueEditorMode.multipart)
-          ? CFCodeEditor(
-              text: widget.items
-                  .where((e) => e.key.isNotEmpty || e.value.isNotEmpty)
-                  .map((e) {
-                    if (e.value.isNotEmpty) {
-                      return "${e.key}: ${e.value}";
-                    } else {
-                      return e.key;
-                    }
-                  })
-                  .join("\n"),
-              language: "form-urlencoded",
-              onChanged: (v) {
-                final lines = v.split("\n");
-                final items = lines.map((line) {
-                  final idx = line.indexOf(':');
+          ?
+            // CFCodeEditor(
+            //     text: _toText,
+            //     language: "form-urlencoded",
+            //     onChanged: _onTextChange,
+            //   )
+            VariableTextFieldCustom(
+              initialValue: _toText,
 
-                  return KeyValueItem(
-                    key: idx == -1
-                        ? line.trim()
-                        : line.substring(0, idx).trim(),
-                    value: idx == -1 ? '' : line.substring(idx + 1).trim(),
-                  );
-                }).toList();
-                //need to update state.
-                widget.items.clear();
-                widget.items.addAll(items);
-                _dispatchUpdate();
-              },
+              id: widget.id,
+              isKeyVal: true,
+              onChanged: _onTextChange,
+              textStyle: TextStyle(fontSize: 18, height: 1.6),
+              decoration: InputDecoration(
+                border: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                errorBorder: InputBorder.none,
+                disabledBorder: InputBorder.none,
+              ),
             )
           : Padding(
               padding: const .only(left: 8, right: 4),

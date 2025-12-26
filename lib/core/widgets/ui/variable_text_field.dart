@@ -1,51 +1,181 @@
 // import 'dart:math';
 
-// import 'package:api_craft/widgets/examples/at_text.dart';
-// import 'package:api_craft/widgets/ui/filter.dart';
-// import 'package:api_craft/widgets/ui/variable_text_builder.dart';
+// import 'package:api_craft/core/providers/filter_provider.dart';
+// import 'package:api_craft/core/widgets/ui/filter.dart';
+// import 'package:api_craft/core/widgets/ui/key_valu_text_builder.dart';
+// import 'package:api_craft/core/widgets/ui/variable_text_builder.dart';
+// import 'package:api_craft/features/environment/environment_editor_dialog.dart';
+// import 'package:api_craft/features/environment/environment_provider.dart';
+// import 'package:api_craft/features/request/providers/req_compose_provider.dart';
+// import 'package:api_craft/features/sidebar/context_menu.dart';
+// import 'package:api_craft/features/template-functions/models/template_placeholder_model.dart';
+// import 'package:api_craft/features/template-functions/parsers/parse.dart';
+// import 'package:api_craft/features/template-functions/parsers/utils.dart';
+// import 'package:api_craft/features/template-functions/widget/form_popup_widget.dart';
 // import 'package:extended_text_field/extended_text_field.dart';
 // import 'package:flutter/material.dart';
+// import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-// class VariableTextField extends StatefulWidget {
+// class VariableTextFieldX extends ConsumerStatefulWidget {
 //   final String? initialValue;
+//   // null id for global variables.
+//   final String? id;
 //   final TextEditingController? controller;
-//   final Function(String)? onChanged;
-//   const VariableTextField({
+//   final ValueChanged<String>? onChanged;
+//   final ValueChanged<String>? onSubmitted;
+//   final FocusNode? focusNode;
+//   final InputDecoration? decoration;
+//   final String? placeHolder;
+//   final KeyEventResult Function(FocusNode, KeyEvent)? onKeyEvent;
+//   final bool enableUrlSuggestions;
+//   final bool enableSuggestions;
+//   final int? maxLines;
+//   final int? minLines;
+//   final bool isKeyVal;
+//   const VariableTextFieldX({
+//     super.key,
 //     this.initialValue,
 //     this.controller,
 //     this.onChanged,
-//     super.key,
+//     this.focusNode,
+//     required this.id,
+//     this.decoration,
+//     this.placeHolder,
+//     this.onKeyEvent,
+//     this.onSubmitted,
+//     this.enableSuggestions = true,
+//     this.enableUrlSuggestions = false,
+//     this.maxLines = 1,
+//     this.minLines,
+//     this.isKeyVal = false,
 //   });
 
 //   @override
-//   State<VariableTextField> createState() => _VariableTextFieldState();
+//   ConsumerState<VariableTextFieldX> createState() => _VariableTextFieldXState();
 // }
 
-// class _VariableTextFieldState extends State<VariableTextField> {
+// class _VariableTextFieldXState extends ConsumerState<VariableTextFieldX> {
 //   late final TextEditingController _controller =
 //       widget.controller ?? TextEditingController(text: widget.initialValue);
 //   final FocusNode _focusNode = FocusNode();
-//   late VariableTextBuilder _variableBuilder;
-//   // late MySpecialTextSpanBuilder _variableBuilder;
+//   late SpecialTextSpanBuilder _variableBuilder;
 //   int latestCursorPos = 0;
 //   final fontSize = 16.0;
 
 //   @override
 //   void initState() {
 //     super.initState();
-//     _variableBuilder = VariableTextBuilder(
-//       builderOnTap: (dynamic parameter) {
-//         debugPrint("Variable clicked in UI: $parameter");
+
+//     if (widget.isKeyVal) {
+//       _variableBuilder = KeyValueTextBuilder(
+//         builderOnTap: handleVariableTap,
+//         builderTextStyle: TextStyle(
+//           fontWeight: FontWeight.bold,
+//           fontSize: fontSize,
+//           color: const Color.fromARGB(255, 254, 145, 223),
+//           backgroundColor: const Color.fromARGB(68, 63, 21, 63),
+//         ),
+//       );
+//     } else {
+//       _variableBuilder = VariableTextBuilder(
+//         builderOnTap: handleVariableTap,
+//         builderTextStyle: TextStyle(
+//           fontWeight: FontWeight.bold,
+//           fontSize: fontSize,
+//           color: const Color.fromARGB(255, 254, 145, 223),
+//           backgroundColor: const Color.fromARGB(68, 63, 21, 63),
+//         ),
+//       );
+//     }
+//   }
+
+//   void handleVariableTap({
+//     required bool isVariable,
+//     required String name,
+//     required String rawContent,
+//     required int from,
+//     required int to,
+//   }) {
+//     debugPrint("Variable clicked in UI: $name");
+
+//     if (isVariable) {
+//       final (variable, source) = getVariable(name);
+//       final isGlobalEnv = widget.id == null;
+//       /*
+//       source null means the variable is global variable
+//       widget.id null means the text field is from keyvalue editor of global environment
+//       */
+
+//       if (variable != null) {
+//         debugPrint("Variable source ID: $source, value: $variable");
+//         if (source == null) {
+//           if (isGlobalEnv) {
+//             return;
+//           }
+//           showDialog(
+//             context: context,
+//             builder: (_) => const EnvironmentEditorDialog(),
+//           );
+//         }
+//         if (source == "global-env") {
+//           showDialog(
+//             context: context,
+//             builder: (_) => const EnvironmentEditorDialog(globalActive: true),
+//           );
+//         } else if (source == "sub-env") {
+//           showDialog(
+//             context: context,
+//             builder: (_) => const EnvironmentEditorDialog(),
+//           );
+//         } else {
+//           showFolderConfigDialog(
+//             context: context,
+//             ref: ref,
+//             id: source!,
+//             tabIndex: 3,
+//           );
+//         }
+//       } else {
 //         ScaffoldMessenger.of(
 //           context,
-//         ).showSnackBar(SnackBar(content: Text('Edit variable: $parameter')));
-//       },
-//       builderTextStyle: TextStyle(
-//         fontWeight: FontWeight.bold,
-//         fontSize: fontSize,
-//         backgroundColor: const Color(0x5F763417),
-//       ),
-//     );
+//         ).showSnackBar(SnackBar(content: Text('variable: $name not found')));
+//       }
+//     } else {
+//       // function
+//       debugPrint("Function clicked in UI: $name,from: $from, to: $to");
+//       final templateFn = getTemplateFunctionByName(name);
+//       if (templateFn == null) {
+//         ScaffoldMessenger.of(
+//           context,
+//         ).showSnackBar(SnackBar(content: Text('function: $name not found')));
+//         return;
+//       }
+//       final fnPlaceholder =
+//           TemplateParser.parseContent(rawContent, start: from, end: to)
+//               as TemplateFnPlaceholder;
+//       showDialog(
+//         context: context,
+//         builder: (context) => FormPopupWidget(
+//           fnPlaceholder: fnPlaceholder,
+//           templateFn: templateFn,
+//           id: widget.id,
+//           updateField: updateField,
+//         ),
+//       );
+//     }
+//   }
+
+//   (String? variable, String? source) getVariable(String name) {
+//     if (widget.id != null) {
+//       final x = ref.read(reqComposeProvider(widget.id!)).allVariables[name];
+//       return (x?.value, x?.sourceId);
+//     }
+//     final x = ref
+//         .read(environmentProvider)
+//         .selectedEnvironment
+//         ?.variables
+//         .firstWhere((e) => e.key == name);
+//     return (x?.value, null);
 //   }
 
 //   String displayStringForOption(FillOptions option) {
@@ -61,6 +191,17 @@
 //     _controller.selection = TextSelection.fromPosition(
 //       TextPosition(offset: latestCursorPos),
 //     );
+//   }
+
+//   FilterService get _filterService {
+//     return ref.read(filterServiceProvider(widget.id));
+//   }
+
+//   void updateField(String Function(String val) fn) {
+//     final val = fn(widget.controller?.text ?? '');
+//     debugPrint("updated-field value: $val");
+//     _controller.text = val;
+//     widget.onChanged?.call(val);
 //   }
 
 //   Widget optionsViewBuilder(
@@ -243,7 +384,7 @@
 //     return Autocomplete<FillOptions>(
 //       focusNode: _focusNode,
 //       textEditingController: _controller,
-//       optionsBuilder: FilterService.getOptions,
+//       optionsBuilder: _filterService.getOptions,
 //       displayStringForOption: displayStringForOption,
 //       optionsViewBuilder: optionsViewBuilder,
 //       fieldViewBuilder:
@@ -266,6 +407,11 @@
 //               },
 //               canRequestFocus: true,
 //               autofocus: true,
+//               maxLines: widget.isKeyVal ? null : widget.maxLines,
+//               minLines: widget.isKeyVal ? null : widget.minLines,
+//               textAlignVertical: TextAlignVertical.top,
+
+//               expands: widget.isKeyVal,
 //               decoration: const InputDecoration(
 //                 border: OutlineInputBorder(),
 //                 isDense: true,

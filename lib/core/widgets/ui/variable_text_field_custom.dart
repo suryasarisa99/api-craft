@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:api_craft/core/providers/filter_provider.dart';
 import 'package:api_craft/core/providers/providers.dart';
+import 'package:api_craft/core/widgets/ui/key_valu_text_builder.dart';
 import 'package:api_craft/features/environment/environment_editor_dialog.dart';
 import 'package:api_craft/features/sidebar/context_menu.dart';
 import 'package:api_craft/features/template-functions/models/template_placeholder_model.dart';
@@ -30,6 +31,8 @@ class VariableTextFieldCustom extends ConsumerStatefulWidget {
   final bool enableSuggestions;
   final int? maxLines;
   final int? minLines;
+  final bool isKeyVal;
+  final TextStyle? textStyle;
 
   const VariableTextFieldCustom({
     super.key,
@@ -46,6 +49,8 @@ class VariableTextFieldCustom extends ConsumerStatefulWidget {
     this.enableUrlSuggestions = false,
     this.maxLines = 1,
     this.minLines,
+    this.isKeyVal = false,
+    this.textStyle,
   });
 
   @override
@@ -61,28 +66,39 @@ class _VariableTextFieldCustomState
   late final FocusNode _focusNode = widget.focusNode ?? FocusNode();
   final LayerLink _layerLink = LayerLink();
 
-  late VariableTextBuilder _variableBuilder;
+  late SpecialTextSpanBuilder _variableBuilder;
 
   OverlayEntry? _overlayEntry;
   List<FillOptions> _options = [];
   int _highlightedIndex = 0;
 
-  final double fontSize = 14.0;
+  late final double fontSize = widget.textStyle?.fontSize ?? 15;
 
   @override
   void initState() {
     super.initState();
 
-    _variableBuilder = VariableTextBuilder(
-      builderOnTap: handleVariableTap,
-      builderTextStyle: TextStyle(
-        fontWeight: FontWeight.bold,
-        fontSize: fontSize,
-        color: const Color.fromARGB(255, 254, 145, 223),
-        backgroundColor: const Color.fromARGB(68, 63, 21, 63),
-      ),
-    );
-
+    if (widget.isKeyVal) {
+      _variableBuilder = KeyValueTextBuilder(
+        builderOnTap: handleVariableTap,
+        builderTextStyle: TextStyle(
+          fontWeight: FontWeight.bold,
+          fontSize: fontSize,
+          color: const Color.fromARGB(255, 254, 145, 223),
+          backgroundColor: const Color.fromARGB(68, 63, 21, 63),
+        ),
+      );
+    } else {
+      _variableBuilder = VariableTextBuilder(
+        builderOnTap: handleVariableTap,
+        builderTextStyle: TextStyle(
+          fontWeight: FontWeight.bold,
+          fontSize: fontSize,
+          color: const Color.fromARGB(255, 254, 145, 223),
+          backgroundColor: const Color.fromARGB(68, 63, 21, 63),
+        ),
+      );
+    }
     // close on focus lost
     if (!widget.enableSuggestions) return;
     _focusNode.addListener(() {
@@ -444,12 +460,15 @@ class _VariableTextFieldCustomState
           controller: _controller,
           focusNode: _focusNode,
           specialTextSpanBuilder: _variableBuilder,
-          style: TextStyle(fontSize: fontSize, height: 1.4),
+          style: widget.textStyle ?? TextStyle(fontSize: fontSize, height: 1.4),
           autofocus: true,
+
+          // textAlignVertical: TextAlignVertical.top,
           onChanged: _onTextChanged,
           onSubmitted: widget.onSubmitted,
-          maxLines: widget.maxLines,
-          minLines: widget.minLines,
+          maxLines: widget.isKeyVal ? null : widget.maxLines,
+          minLines: widget.isKeyVal ? null : widget.minLines,
+          expands: widget.isKeyVal,
           decoration:
               widget.decoration ??
               InputDecoration(

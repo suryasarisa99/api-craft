@@ -38,29 +38,21 @@ class VariableText extends SpecialText {
       result = variableName;
     }
 
-    // return SpecialTextSpan(
-    //   actualText: toString(),
-    //   text: result,
-    //   deleteAll: true,
-    //   start: start,
-    //   style: textStyle?.copyWith(fontWeight: FontWeight.bold),
-    //   recognizer: TapGestureRecognizer()
-    //     ..onTap = () {
-    //       debugPrint("tapped a variable: $variableName");
-    //       customOnTap?.call(variableName);
-    //     },
-    // );
+    const verticalPadding = 1.5;
     return ExtendedWidgetSpan(
-      alignment: PlaceholderAlignment.baseline,
+      alignment: PlaceholderAlignment.middle,
       actualText: toString(),
       start: start,
       baseline: TextBaseline.alphabetic,
       child: MouseRegion(
         cursor: SystemMouseCursors.click,
         child: Container(
+          height: (textStyle?.fontSize ?? 14) + (verticalPadding * 2),
           clipBehavior: Clip.hardEdge,
-          // transformAlignment: Alignment.center,
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
+          padding: const EdgeInsets.symmetric(
+            horizontal: 4,
+            vertical: verticalPadding,
+          ),
           decoration: BoxDecoration(
             color: textStyle?.backgroundColor,
             borderRadius: BorderRadius.circular(4),
@@ -88,10 +80,13 @@ class VariableText extends SpecialText {
             },
             child: Text(
               result,
+              strutStyle: StrutStyle(height: 0.5),
               style: textStyle?.copyWith(
                 fontWeight: FontWeight.w400,
-                fontSize: 13,
+                fontSize: (textStyle?.fontSize ?? 14),
                 backgroundColor: Colors.transparent,
+                letterSpacing: 0.9,
+                height: 0.8,
               ),
             ),
           ),

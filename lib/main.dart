@@ -128,7 +128,7 @@ class MainApp extends StatelessWidget {
         iconTheme: IconThemeData(color: Colors.grey),
         inputDecorationTheme: InputDecorationThemeData(
           isDense: true,
-          contentPadding: EdgeInsets.symmetric(horizontal: 6, vertical: 9),
+          contentPadding: EdgeInsets.symmetric(horizontal: 6, vertical: 7),
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(6.0)),
           enabledBorder: OutlineInputBorder(
             borderSide: BorderSide(color: Color.fromARGB(255, 66, 66, 66)),

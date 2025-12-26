@@ -126,7 +126,7 @@ class _RequestUrlState extends ConsumerState<RequestUrl> {
                 border: OutlineInputBorder(),
                 isDense: true,
                 contentPadding: EdgeInsets.symmetric(
-                  vertical: 10.0,
+                  vertical: 0.0,
                   horizontal: 12.0,
                 ),
               ),

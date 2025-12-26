@@ -30,7 +30,7 @@ class CFCodeEditor extends StatefulWidget {
 
 class _CFCodeEditorState extends State<CFCodeEditor> {
   late CodeForgeController _controller;
-  final debouncer = Debouncer(Duration(milliseconds: 500));
+  final debouncer = DebouncerFlush(Duration(milliseconds: 500));
 
   @override
   void initState() {
@@ -58,6 +58,7 @@ class _CFCodeEditorState extends State<CFCodeEditor> {
 
   @override
   void dispose() {
+    debouncer.flush();
     _controller.removeListener(_onChanged);
     _controller.dispose();
     super.dispose();
