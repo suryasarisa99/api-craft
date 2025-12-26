@@ -26,7 +26,7 @@ class VisualNode {
     required this.children,
   });
 
-  factory VisualNode.fromNode(Node node) {
+  factory VisualNode.fromNode(Node node, {List<String>? overrideChildren}) {
     return VisualNode(
       id: node.id,
       name: node.name,
@@ -35,7 +35,8 @@ class VisualNode {
       method: node is RequestNode ? node.method : null,
       sortOrder: node.sortOrder,
       parentId: node.parentId,
-      children: node is FolderNode ? node.children : const [],
+      children:
+          overrideChildren ?? (node is FolderNode ? node.children : const []),
     );
   }
 

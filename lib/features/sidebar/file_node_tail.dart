@@ -4,6 +4,7 @@ import 'package:api_craft/core/models/models.dart';
 import 'package:api_craft/core/providers/providers.dart';
 import 'package:api_craft/core/widgets/ui/surya_theme_icon.dart';
 import 'package:api_craft/features/sidebar/context_menu.dart';
+import 'package:api_craft/features/sidebar/providers/sidebar_search_provider.dart';
 import 'package:api_craft/features/sidebar/sidebar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -261,6 +262,17 @@ class _FileTreeTileState extends ConsumerState<FileNodeTile>
     final vNode = ref.watch(visualNodeProvider(widget.nodeId));
 
     if (vNode == null) return const SizedBox.shrink();
+
+    // Search Expansion Override
+    final filteredTree = ref.watch(filteredTreeProvider);
+    if (filteredTree != null && vNode.type == NodeType.folder) {
+      if (filteredTree.expandedNodes.contains(vNode.id)) {
+        if (!_isExpanded) {
+          _isExpanded = true;
+          _controller.value = 1.0;
+        }
+      }
+    }
 
     final theme = Theme.of(context);
     final cs = theme.colorScheme;

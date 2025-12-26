@@ -3,32 +3,52 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:api_craft/core/models/models.dart';
 // import your fileTreeProvider here
 
+import 'package:api_craft/features/sidebar/providers/sidebar_search_provider.dart';
+
 // 1. Optimized Provider for a Single Tile
-// Returns null if node doesn't exist.
+// Returns null if node doesn't exist OR if it is filtered out (though UI shouldn't request it if parent didn't list it).
 final visualNodeProvider = Provider.autoDispose.family<VisualNode?, String>((
   ref,
   nodeId,
 ) {
-  // Select ONLY the specific node from the map.
-  // This prevents the provider from running if OTHER nodes change.
   final node = ref.watch(fileTreeProvider.select((s) => s.nodeMap[nodeId]));
-
   if (node == null) return null;
 
-  // Convert to VisualNode.
-  // Riverpod will compare this new VisualNode with the previous one.
-  // If only URL changed, VisualNode equality returns TRUE, and UI update is BLOCKED.
-  return VisualNode.fromNode(node);
+  // Filter Logic
+  final filteredTree = ref.watch(filteredTreeProvider);
+
+  // If Filter is active, we might modify the 'children' list in the VisualNode
+  // so the UI only renders visible children.
+  List<String> children = node is FolderNode ? node.children : [];
+
+  if (filteredTree != null) {
+    if (!filteredTree.visibleNodes.contains(nodeId)) {
+      // Ideally shouldn't happen if parent filtering works, but for safety:
+      return null;
+    }
+    // Filter children
+    children = children
+        .where((id) => filteredTree.visibleNodes.contains(id))
+        .toList();
+  }
+
+  return VisualNode.fromNode(node, overrideChildren: children);
 });
 
 // 2. Optimized Provider for the Root List
 final rootIdsProvider = Provider.autoDispose<RootList>((ref) {
-  // We watch the whole tree state because adding/removing nodes affects roots
   final treeState = ref.watch(fileTreeProvider);
+  final filteredTree = ref.watch(filteredTreeProvider);
 
-  final roots = treeState.nodeMap.values
+  var roots = treeState.nodeMap.values
       .where((n) => n.parentId == null)
       .toList();
+
+  if (filteredTree != null) {
+    roots = roots
+        .where((n) => filteredTree.visibleNodes.contains(n.id))
+        .toList();
+  }
 
   // Sort logic (Must match Drag Logic)
   roots.sort((a, b) {
@@ -37,6 +57,5 @@ final rootIdsProvider = Provider.autoDispose<RootList>((ref) {
     return a.name.toLowerCase().compareTo(b.name.toLowerCase());
   });
 
-  // Return wrapped list to enforce content equality
   return RootList(roots.map((n) => n.id).toList());
 });

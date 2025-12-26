@@ -3,6 +3,7 @@ import 'package:api_craft/core/providers/providers.dart';
 import 'package:api_craft/features/sidebar/context_menu.dart';
 import 'package:api_craft/features/sidebar/file_node_tail.dart';
 import 'package:api_craft/features/sidebar/providers/clipboard_provider.dart';
+import 'package:api_craft/features/sidebar/providers/sidebar_search_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -58,72 +59,175 @@ class FileExplorerView extends ConsumerWidget {
             }
           },
         },
-        child: Padding(
-          padding: const EdgeInsets.only(top: 4),
-          child: ContextMenuWidget(
-            menuProvider: (_) async {
-              return getMenuProvider(ref: ref, context: context, isRoot: true);
-            },
-            child: FocusTraversalGroup(
-              policy: ReadingOrderTraversalPolicy(),
-              child: CustomScrollView(
-                slivers: [
-                  SliverList(
-                    delegate: SliverChildBuilderDelegate((context, index) {
-                      final id = rootList.ids[index];
-                      return FileNodeTile(
-                        key: ValueKey(id), // Important for performance
-                        nodeId: id, // Pass ID only
-                        isFirstNode: index == 0,
-                      );
-                    }, childCount: rootList.ids.length),
-                  ),
-
-                  // --- Drop Zone ---
-                  SliverFillRemaining(
-                    hasScrollBody: false,
-                    child: DragTarget<Node>(
-                      onWillAcceptWithDetails: (details) => true,
-                      onAcceptWithDetails: (details) {
-                        if (rootList.ids.isEmpty) return;
-
-                        final lastId = rootList.ids.last;
-                        final lastNode = ref
-                            .read(fileTreeProvider)
-                            .nodeMap[lastId];
-
-                        if (lastNode != null) {
-                          ref
-                              .read(fileTreeProvider.notifier)
-                              .handleDrop(
-                                movedNode: details.data,
-                                targetNode: lastNode,
-                                slot: DropSlot.bottom,
-                              );
-                        }
-                      },
-                      builder: (context, candidateData, rejectedData) {
-                        final isHovering = candidateData.isNotEmpty;
-                        return Container(
-                          color: isHovering
-                              ? theme.colorScheme.primary.withValues(alpha: 0.1)
-                              : Colors.transparent,
-                          alignment: Alignment.topCenter,
-                          padding: const EdgeInsets.only(top: 2),
-                          child: isHovering
-                              ? Container(
-                                  height: 2,
-                                  color: theme.colorScheme.primary,
-                                )
-                              : null,
-                        );
-                      },
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Consumer(
+                builder: (context, ref, child) {
+                  final searchState = ref.watch(sidebarSearchProvider);
+                  return SizedBox(
+                    // height: 36,
+                    child: TextField(
+                      onChanged: (val) => ref
+                          .read(sidebarSearchProvider.notifier)
+                          .setQuery(val),
+                      style: theme.textTheme.bodyMedium,
+                      decoration: InputDecoration(
+                        hintText: 'Search files...',
+                        hintStyle: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.textTheme.bodyMedium?.color?.withValues(
+                            alpha: 0.5,
+                          ),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                        ), // Vertical center
+                        prefixIcon: Icon(
+                          Icons.search,
+                          size: 16,
+                          color: theme.iconTheme.color?.withValues(alpha: 0.7),
+                        ),
+                        suffixIconConstraints: const BoxConstraints(
+                          maxWidth: 120,
+                        ),
+                        suffixIcon: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (searchState.query.isNotEmpty)
+                              GestureDetector(
+                                onTap: () {
+                                  ref
+                                      .read(sidebarSearchProvider.notifier)
+                                      .setQuery('');
+                                },
+                                child: const Icon(Icons.close, size: 16),
+                              ),
+                            const SizedBox(width: 4),
+                            Tooltip(
+                              message: "Search Folders",
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(4),
+                                onTap: () => ref
+                                    .read(sidebarSearchProvider.notifier)
+                                    .toggleSearchFolders(),
+                                child: Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: BoxDecoration(
+                                    color: searchState.searchFolders
+                                        ? theme.colorScheme.primary.withValues(
+                                            alpha: 0.2,
+                                          )
+                                        : Colors.transparent,
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Icon(
+                                    Icons.folder_open,
+                                    size: 16,
+                                    color: searchState.searchFolders
+                                        ? theme.colorScheme.primary
+                                        : theme.iconTheme.color?.withValues(
+                                            alpha: 0.5,
+                                          ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                          ],
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(color: theme.dividerColor),
+                        ),
+                        filled: true,
+                        fillColor: theme.colorScheme.surfaceContainerHighest
+                            .withValues(alpha: 0.3),
+                      ),
                     ),
-                  ),
-                ],
+                  );
+                },
               ),
             ),
-          ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.only(top: 0),
+                child: ContextMenuWidget(
+                  menuProvider: (_) async {
+                    return getMenuProvider(
+                      ref: ref,
+                      context: context,
+                      isRoot: true,
+                    );
+                  },
+                  child: FocusTraversalGroup(
+                    policy: ReadingOrderTraversalPolicy(),
+                    child: CustomScrollView(
+                      slivers: [
+                        SliverList(
+                          delegate: SliverChildBuilderDelegate((
+                            context,
+                            index,
+                          ) {
+                            final id = rootList.ids[index];
+                            return FileNodeTile(
+                              key: ValueKey(id), // Important for performance
+                              nodeId: id, // Pass ID only
+                              isFirstNode: index == 0,
+                            );
+                          }, childCount: rootList.ids.length),
+                        ),
+
+                        // --- Drop Zone ---
+                        SliverFillRemaining(
+                          hasScrollBody: false,
+                          child: DragTarget<Node>(
+                            onWillAcceptWithDetails: (details) => true,
+                            onAcceptWithDetails: (details) {
+                              if (rootList.ids.isEmpty) return;
+
+                              final lastId = rootList.ids.last;
+                              final lastNode = ref
+                                  .read(fileTreeProvider)
+                                  .nodeMap[lastId];
+
+                              if (lastNode != null) {
+                                ref
+                                    .read(fileTreeProvider.notifier)
+                                    .handleDrop(
+                                      movedNode: details.data,
+                                      targetNode: lastNode,
+                                      slot: DropSlot.bottom,
+                                    );
+                              }
+                            },
+                            builder: (context, candidateData, rejectedData) {
+                              final isHovering = candidateData.isNotEmpty;
+                              return Container(
+                                color: isHovering
+                                    ? theme.colorScheme.primary.withValues(
+                                        alpha: 0.1,
+                                      )
+                                    : Colors.transparent,
+                                alignment: Alignment.topCenter,
+                                padding: const EdgeInsets.only(top: 2),
+                                child: isHovering
+                                    ? Container(
+                                        height: 2,
+                                        color: theme.colorScheme.primary,
+                                      )
+                                    : null,
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
