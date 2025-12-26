@@ -3,7 +3,7 @@ import 'package:api_craft/core/models/models.dart';
 class ResolvedRequestContext {
   final RequestNode request;
   final Uri uri;
-  final String? body;
+  final dynamic body;
   final List<List<String>> headers;
   final AuthData auth;
   final Map<String, VariableValue> variables;

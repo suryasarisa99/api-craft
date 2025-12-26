@@ -1,13 +1,17 @@
+import 'dart:async';
+import 'dart:convert';
 import 'dart:developer';
+import 'dart:io';
 
 import 'package:api_craft/core/network/header_utils.dart';
 import 'package:api_craft/core/models/models.dart';
 import 'package:api_craft/core/providers/providers.dart';
 import 'package:api_craft/features/request/models/inherited_request_model.dart';
-import 'package:api_craft/features/request/providers/request_details_provider.dart';
+import 'package:api_craft/features/request/widgets/tabs/tab_titles.dart';
 import 'package:api_craft/features/template-functions/models/template_placeholder_model.dart';
 import 'package:api_craft/features/template-functions/parsers/parse.dart';
 import 'package:api_craft/features/template-functions/parsers/utils.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -16,8 +20,6 @@ class RequestResolver {
   late final RequestHydrator _hydrator = RequestHydrator(ref);
 
   RequestResolver(this.ref);
-
-  // _LazyVariableResolver? _lazyResolver;
 
   FolderNode? _parentOf(Node node) {
     return ref.read(fileTreeProvider).nodeMap[node.parentId] as FolderNode?;
@@ -89,12 +91,20 @@ class RequestResolver {
 
     await _hydrator.hydrateNode(node.id);
     await _hydrator.hydrateAncestors(node);
-    final body = await ref.read(repositoryProvider).getBody(requestId);
+    final bodyStr = await ref.read(repositoryProvider).getBody(requestId);
 
     final inheritedHeaders = collectInheritedHeaders(node);
     final auth = resolveAuth(node).$1;
     final mergedVars = mergeVariables(node);
     final resolver = LazyVariableResolver(mergedVars, this);
+
+    // Resolve Body & Content-Type Headers
+    final (resolvedBody, contentHeaders) = await _resolveBody(
+      bodyStr,
+      node.config.bodyType,
+      resolver,
+      context,
+    );
 
     final resolvedUrl = await resolveVariables(
       node.url,
@@ -116,7 +126,8 @@ class RequestResolver {
     );
     final fullUri = _handleUri(uri, queryParams);
 
-    final headers = await Future.wait(
+    // Headers Handling
+    final rawHeaders = await Future.wait(
       _handleHeaders(node.config.headers, inheritedHeaders).map((h) async {
         return [
           await resolveVariables(h[0], resolver, context: context),
@@ -124,6 +135,16 @@ class RequestResolver {
         ];
       }).toList(),
     );
+
+    // Merge generated content headers (e.g. multipart boundary)
+    final headers = List<List<String>>.from(rawHeaders);
+    if (contentHeaders != null) {
+      for (final ch in contentHeaders) {
+        // Remove existing header with same key (case-insensitive)
+        headers.removeWhere((h) => h[0].toLowerCase() == ch[0].toLowerCase());
+        headers.add(ch);
+      }
+    }
 
     // Inject Cookies
     final envState = ref.read(environmentProvider);
@@ -172,10 +193,6 @@ class RequestResolver {
       ),
     );
 
-    final resolvedBody = body == null
-        ? null
-        : await resolveVariables(body, resolver, context: context);
-
     // After all resolution, we can get only the variables that were actually used
     final finalResolvedVars = <String, VariableValue>{};
     for (final key in resolver.resolvedKeys) {
@@ -195,6 +212,173 @@ class RequestResolver {
       auth: resolvedAuth,
       variables: finalResolvedVars,
     );
+  }
+
+  Future<(dynamic, List<List<String>>?)> _resolveBody(
+    dynamic body,
+    String? bodyType,
+    LazyVariableResolver resolver,
+    BuildContext context,
+  ) async {
+    if (body == null) return (null, null);
+
+    // If bodyType is 'No Body', return null
+    if (bodyType == BodyType.noBody || bodyType == null) {
+      return (null, null);
+    }
+
+    // Attempt to parse JSON structure
+    Map<String, dynamic>? jsonBody;
+    if (body is String && body.isNotEmpty) {
+      try {
+        final decoded = jsonDecode(body);
+        if (decoded is Map<String, dynamic>) {
+          jsonBody = decoded;
+        }
+      } catch (_) {
+        // Not JSON, treat as legacy raw text if applicable
+      }
+    } else if (body is Map<String, dynamic>) {
+      jsonBody = body;
+    }
+
+    // If we successfully parsed the storage JSON, we MUST use its keys.
+    // If keys are missing (e.g. switching types without typing), treat as empty.
+
+    // 1. Binary File
+    if (bodyType == BodyType.binaryFile) {
+      if (jsonBody != null) {
+        final path = jsonBody['file'] as String?;
+        if (path != null && path.isNotEmpty) {
+          final file = File(path);
+          if (await file.exists()) {
+            final bytes = await file.readAsBytes();
+            return (bytes, null);
+          }
+        }
+        return (null, null);
+      }
+      return (null, null);
+    }
+
+    // 2. Form Data (Multipart)
+    if (bodyType == BodyType.formMultipart) {
+      final List<dynamic>? formList = jsonBody?['form'] as List?;
+      final items =
+          formList?.map((e) => FormDataItem.fromMap(e)).toList() ?? [];
+
+      if (items.isEmpty) return (null, null);
+
+      final formMap = <String, dynamic>{};
+      for (final item in items) {
+        if (!item.isEnabled) continue;
+        final key = await resolveVariables(
+          item.key,
+          resolver,
+          context: context,
+        );
+
+        if (item.type == 'text') {
+          final val = await resolveVariables(
+            item.value,
+            resolver,
+            context: context,
+          );
+          formMap[key] = val;
+        } else if (item.type == 'file') {
+          if (item.filePath != null && item.filePath!.isNotEmpty) {
+            final file = File(item.filePath!);
+            if (await file.exists()) {
+              final fileName = item.fileName?.isNotEmpty == true
+                  ? item.fileName
+                  : item.filePath!.split(Platform.pathSeparator).last;
+
+              formMap[key] = await MultipartFile.fromFile(
+                item.filePath!,
+                filename: fileName,
+                contentType:
+                    item.contentType != null && item.contentType!.isNotEmpty
+                    ? DioMediaType.parse(item.contentType!)
+                    : null,
+              );
+            }
+          }
+        }
+      }
+
+      if (formMap.isEmpty) return (null, null);
+
+      final formData = FormData.fromMap(formMap);
+      // Read bytes from stream. We use Dio's FormData to easily construct the multipart structure.
+      final bytes = <int>[];
+      await for (final chunk in formData.finalize()) {
+        bytes.addAll(chunk);
+      }
+
+      final headers = [
+        ['Content-Type', 'multipart/form-data; boundary=${formData.boundary}'],
+        ['Content-Length', bytes.length.toString()],
+      ];
+      return (bytes, headers);
+    }
+
+    // 3. Form Data (URL Encoded)
+    if (bodyType == BodyType.formUrlEncoded) {
+      final List<dynamic>? formList = jsonBody?['form'] as List?;
+      final items =
+          formList?.map((e) => FormDataItem.fromMap(e)).toList() ?? [];
+
+      if (items.isEmpty) return (null, null);
+
+      final parts = <String>[];
+      for (final item in items) {
+        if (!item.isEnabled) continue;
+        final key = await resolveVariables(
+          item.key,
+          resolver,
+          context: context,
+        );
+        final val = await resolveVariables(
+          item.value,
+          resolver,
+          context: context,
+        );
+
+        parts.add(
+          '${Uri.encodeQueryComponent(key)}=${Uri.encodeQueryComponent(val)}',
+        );
+      }
+
+      if (parts.isEmpty) return (null, null);
+
+      final str = parts.join('&');
+      return (
+        str,
+        [
+          ['Content-Type', 'application/x-www-form-urlencoded'],
+        ],
+      );
+    }
+
+    // 4. Raw Text (JSON/XML/Text)
+    // If we have valid storage JSON, take 'text' (or empty if missing)
+    if (jsonBody != null) {
+      final text = jsonBody['text'] as String?;
+      final resolved = await resolveVariables(
+        text ?? '',
+        resolver,
+        context: context,
+      );
+      return (resolved, null);
+    }
+
+    // Fallback: If body was NOT valid JSON storage map, assume it's legacy raw text
+    if (body is String) {
+      final resolved = await resolveVariables(body, resolver, context: context);
+      return (resolved, null);
+    }
+
+    return (null, null);
   }
 
   bool domainMatches(Uri uri, CookieDef c) {
@@ -297,20 +481,6 @@ class RequestResolver {
     return result;
   }
 
-  /// Old way only handles variables
-  // final _variableRegExp = RegExp(r'{{\s*([a-zA-Z0-9_-]+)\s*}}');
-  // final _variableRegExp = RegExp(r'{{\s*([^{}\s]+)\s*}}');
-  // String _resolveVariables(String text, Map<String, VariableValue> values) {
-  //   // Match all {{variable}} patterns
-  //   return text.replaceAllMapped(_variableRegExp, (match) {
-  //     final key = match.group(1);
-  //     if (key != null && values.containsKey(key)) {
-  //       return values[key]!.value; // Replace with value
-  //     }
-  //     return match.group(0)!; // leave as is if no value found
-  //   });
-  // }
-
   /// New way handles variables and functions
   Future<String> resolveVariables(
     String text,
@@ -412,37 +582,6 @@ class RequestResolver {
           )
         : url;
   }
-
-  // Uri _handleUri2(Uri url, List<List<String>> params) {
-  //   final buffer = StringBuffer();
-
-  //   // 1️⃣ Existing query from URL (as-is, but normalized)
-  //   if (url.hasQuery) {
-  //     final existing = url.query.split('&').where((e) => e.isNotEmpty);
-  //     for (final q in existing) {
-  //       if (buffer.isNotEmpty) buffer.write('&');
-  //       buffer.write(q);
-  //     }
-  //   }
-
-  //   // 2️⃣ Append KV params (duplicates allowed)
-  //   for (final p in params) {
-  //     if (p.length != 2) continue;
-
-  //     final key = p[0];
-  //     if (key.isEmpty) continue;
-
-  //     final value = p[1];
-
-  //     if (buffer.isNotEmpty) buffer.write('&');
-  //     buffer.write(
-  //       '${Uri.encodeQueryComponent(key)}=${Uri.encodeQueryComponent(value)}',
-  //     );
-  //   }
-
-  //   // 3️⃣ Replace query
-  //   return buffer.isEmpty ? url : url.replace(query: buffer.toString());
-  // }
 }
 
 class LazyVariableResolver {

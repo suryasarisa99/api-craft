@@ -3,6 +3,7 @@
 #
 
 list(APPEND FLUTTER_PLUGIN_LIST
+  desktop_drop
   flutter_js
   irondash_engine_context
   screen_retriever_linux

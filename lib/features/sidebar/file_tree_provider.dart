@@ -1,6 +1,7 @@
 import 'package:api_craft/core/models/models.dart';
 import 'package:api_craft/core/providers/providers.dart';
 import 'package:api_craft/core/repository/storage_repository.dart';
+import 'package:api_craft/features/request/widgets/tabs/tab_titles.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
@@ -204,22 +205,19 @@ class FileTreeNotifier extends Notifier<TreeData> {
       if (type != null) {
         String? contentType;
         switch (type) {
-          case 'json':
+          case BodyType.json:
             contentType = 'application/json';
             break;
-          case 'xml':
+          case BodyType.xml:
             contentType = 'application/xml';
             break;
-          case 'html':
-            contentType = 'text/html';
-            break;
-          case 'text':
+          case BodyType.text:
             contentType = 'text/plain';
             break;
-          case 'form-urlencoded':
+          case BodyType.formUrlEncoded:
             contentType = 'application/x-www-form-urlencoded';
             break;
-          case 'multipart-form-data':
+          case BodyType.formMultipart:
             contentType = 'multipart/form-data';
             break;
         }

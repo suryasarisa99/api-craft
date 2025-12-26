@@ -1,5 +1,9 @@
 PODS:
+  - desktop_drop (0.0.1):
+    - FlutterMacOS
   - device_info_plus (0.0.1):
+    - FlutterMacOS
+  - file_picker (0.0.1):
     - FlutterMacOS
   - flutter_js (0.0.1):
     - FlutterMacOS
@@ -25,7 +29,9 @@ PODS:
     - FlutterMacOS
 
 DEPENDENCIES:
+  - desktop_drop (from `Flutter/ephemeral/.symlinks/plugins/desktop_drop/macos`)
   - device_info_plus (from `Flutter/ephemeral/.symlinks/plugins/device_info_plus/macos`)
+  - file_picker (from `Flutter/ephemeral/.symlinks/plugins/file_picker/macos`)
   - flutter_js (from `Flutter/ephemeral/.symlinks/plugins/flutter_js/macos`)
   - FlutterMacOS (from `Flutter/ephemeral`)
   - irondash_engine_context (from `Flutter/ephemeral/.symlinks/plugins/irondash_engine_context/macos`)
@@ -38,8 +44,12 @@ DEPENDENCIES:
   - window_manager (from `Flutter/ephemeral/.symlinks/plugins/window_manager/macos`)
 
 EXTERNAL SOURCES:
+  desktop_drop:
+    :path: Flutter/ephemeral/.symlinks/plugins/desktop_drop/macos
   device_info_plus:
     :path: Flutter/ephemeral/.symlinks/plugins/device_info_plus/macos
+  file_picker:
+    :path: Flutter/ephemeral/.symlinks/plugins/file_picker/macos
   flutter_js:
     :path: Flutter/ephemeral/.symlinks/plugins/flutter_js/macos
   FlutterMacOS:
@@ -62,7 +72,9 @@ EXTERNAL SOURCES:
     :path: Flutter/ephemeral/.symlinks/plugins/window_manager/macos
 
 SPEC CHECKSUMS:
+  desktop_drop: 1eeeb9484299585770b6461e4f3d60950e99efa2
   device_info_plus: 1b14eed9bf95428983aed283a8d51cce3d8c4215
+  file_picker: e716a70a9fe5fd9e09ebc922d7541464289443af
   flutter_js: c664361655af1d8fc24e278c7d086e9cbe0d68bc
   FlutterMacOS: d0db08ddef1a9af05a5ec4b724367152bb0500b1
   irondash_engine_context: da62996ee25616d2f01bbeb85dc115d813359478

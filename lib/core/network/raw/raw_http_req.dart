@@ -99,17 +99,20 @@ Future<RawHttpResponse> sendRawHttp({
     }
 
     // 5. Body Preparation
+    // 5. Body Preparation
     List<int> bodyBytesToSend = [];
     if (body != null) {
-      if (headers?.any((h) => h[0].toLowerCase() == 'content-length') ??
-          false) {
-        // User provided content-length
-      } else if (body is String) {
+      if (body is String) {
         bodyBytesToSend = utf8.encode(body);
       } else if (body is List<int>) {
         bodyBytesToSend = body;
       }
-      buffer.write('Content-Length: ${bodyBytesToSend.length}\r\n');
+
+      final hasContentLength =
+          headers?.any((h) => h[0].toLowerCase() == 'content-length') ?? false;
+      if (!hasContentLength) {
+        buffer.write('Content-Length: ${bodyBytesToSend.length}\r\n');
+      }
     }
 
     buffer.write('\r\n'); // End of headers

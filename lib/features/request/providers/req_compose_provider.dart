@@ -25,6 +25,7 @@ class ReqComposeNotifier extends Notifier<UiRequestContext> {
     return UiRequestContext(
       node: node,
       body: detailsState.body,
+      bodyData: detailsState.bodyData,
       inheritedHeaders: detailsState.inherit.headers,
       effectiveAuth: detailsState.inherit.auth,
       authSource: detailsState.inherit.authSource,
@@ -70,8 +71,16 @@ class ReqComposeNotifier extends Notifier<UiRequestContext> {
     _treeNotifier.updateRequestScripts(id, scripts);
   }
 
-  void updateBody(String body) {
-    _detailsNotifier.updateBody(body);
+  void updateBodyText(String text) {
+    _detailsNotifier.updateBodyText(text);
+  }
+
+  void updateBodyFile(String path) {
+    _detailsNotifier.updateBodyFile(path);
+  }
+
+  void updateBodyForm(List<FormDataItem> items) {
+    _detailsNotifier.updateBodyForm(items);
   }
 
   void updateBodyType(String? type) {

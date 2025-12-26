@@ -130,6 +130,7 @@ class CustomMenuIconItem extends StatelessWidget {
   final String value;
   final void Function(String value)? onTap;
   final Widget? icon;
+  final bool disabled;
 
   const CustomMenuIconItem({
     super.key,
@@ -137,6 +138,7 @@ class CustomMenuIconItem extends StatelessWidget {
     required this.value,
     this.onTap,
     this.icon,
+    this.disabled = false,
   });
 
   const CustomMenuIconItem.tick({
@@ -145,6 +147,7 @@ class CustomMenuIconItem extends StatelessWidget {
     required this.value,
     this.onTap,
     bool checked = false,
+    this.disabled = false,
   }) : icon = checked == true
            ? const Icon(
                Icons.check_rounded,
@@ -159,10 +162,12 @@ class CustomMenuIconItem extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 4),
       child: InkWell(
         borderRadius: BorderRadius.circular(4),
-        onTap: () {
-          Navigator.of(context).pop(value);
-          onTap?.call(value);
-        },
+        onTap: disabled
+            ? null
+            : () {
+                Navigator.of(context).pop(value);
+                onTap?.call(value);
+              },
         child: Ink(
           padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
           width: double.infinity,

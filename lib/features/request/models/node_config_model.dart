@@ -167,3 +167,67 @@ class KeyValueItem {
     );
   }
 }
+
+class FormDataItem extends KeyValueItem {
+  final String type; // 'text' or 'file'
+  final String? filePath;
+  final String? fileName;
+  final String? contentType;
+
+  FormDataItem({
+    super.id,
+    super.key,
+    super.value,
+    super.isEnabled,
+    this.type = 'text',
+    this.filePath,
+    this.fileName,
+    this.contentType,
+  });
+
+  factory FormDataItem.fromMap(Map<String, dynamic> map) {
+    return FormDataItem(
+      id: map['id'],
+      key: map['key'] ?? '',
+      value: map['value'] ?? '',
+      isEnabled: map['isEnabled'] ?? true,
+      type: map['type'] ?? 'text',
+      filePath: map['filePath'],
+      fileName: map['fileName'],
+      contentType: map['contentType'],
+    );
+  }
+
+  @override
+  Map<String, dynamic> toMap() => {
+    ...super.toMap(),
+    'type': type,
+    'filePath': filePath,
+    'fileName': fileName,
+    'contentType': contentType,
+  };
+
+  @override
+  FormDataItem copyWith({
+    String? key,
+    String? value,
+    bool? isEnabled,
+    String? type,
+    String? filePath,
+    String? fileName,
+    String? contentType,
+
+    // aditional
+    bool resetFilename = false,
+  }) {
+    return FormDataItem(
+      id: id,
+      key: key ?? this.key,
+      value: value ?? this.value,
+      isEnabled: isEnabled ?? this.isEnabled,
+      type: type ?? this.type,
+      filePath: resetFilename ? null : (filePath ?? this.filePath),
+      contentType: contentType ?? this.contentType,
+    );
+  }
+}
