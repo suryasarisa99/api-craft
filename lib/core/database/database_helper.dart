@@ -162,7 +162,7 @@ class DatabaseHelper {
 
     final db = await openDatabase(
       path,
-      version: 3,
+      version: 1,
       onCreate: (db, version) async {
         await Tables.createAllTables(db);
         await _ensureDefaults(db);

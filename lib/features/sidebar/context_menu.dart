@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:api_craft/features/sidebar/providers/clipboard_provider.dart';
 
 import 'package:api_craft/core/widgets/dialog/input_dialog.dart';
 import 'package:api_craft/features/request/models/node_model.dart';
@@ -32,9 +33,37 @@ FutureOr<Menu?> getMenuProvider({
   );
 }
 
-// requires current node
 List<MenuElement> _getCommonMenuActions(WidgetRef ref, Node node) {
   return [
+    MenuSeparator(),
+    MenuAction(
+      title: 'Copy',
+      callback: () {
+        final selected = ref.read(selectedNodesProvider);
+        final nodesToCopy = selected.contains(node.id) ? selected : {node.id};
+        ref.read(clipboardProvider.notifier).copy(nodesToCopy);
+      },
+    ),
+    MenuAction(
+      title: 'Cut',
+      callback: () {
+        final selected = ref.read(selectedNodesProvider);
+        final nodesToCut = selected.contains(node.id) ? selected : {node.id};
+        ref.read(clipboardProvider.notifier).cut(nodesToCut);
+      },
+    ),
+    if (ref.watch(clipboardProvider).isNotEmpty)
+      MenuAction(
+        title: 'Paste',
+        callback: () {
+          final clipboard = ref.read(clipboardProvider);
+          if (clipboard.isNotEmpty) {
+            ref
+                .read(fileTreeProvider.notifier)
+                .paste(clipboard, targetId: node.id);
+          }
+        },
+      ),
     MenuSeparator(),
     MenuAction(
       title: 'Duplicate',
@@ -45,7 +74,13 @@ List<MenuElement> _getCommonMenuActions(WidgetRef ref, Node node) {
     MenuAction(
       title: 'Delete',
       callback: () {
-        ref.read(fileTreeProvider.notifier).deleteNode(node);
+        // Smart Delete: If selection contains this node, delete ALl selected.
+        // Otherwise just delete this node.
+        final selected = ref.read(selectedNodesProvider);
+        final nodesToDelete = selected.contains(node.id)
+            ? selected.toList()
+            : [node.id];
+        ref.read(fileTreeProvider.notifier).deleteNodes(nodesToDelete);
       },
     ),
   ];
@@ -107,6 +142,18 @@ List<MenuElement> _getFolderSpecificMenuActions({
         title: 'Configure Folder',
         callback: () async {
           showFolderConfigDialog(context: context, ref: ref, id: node.id);
+        },
+      ),
+    if (ref.watch(clipboardProvider).isNotEmpty)
+      MenuAction(
+        title: 'Paste',
+        callback: () {
+          final clipboard = ref.read(clipboardProvider);
+          if (clipboard.isNotEmpty) {
+            ref
+                .read(fileTreeProvider.notifier)
+                .paste(clipboard, targetId: parentId);
+          }
         },
       ),
   ];

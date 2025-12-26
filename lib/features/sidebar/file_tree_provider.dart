@@ -1,6 +1,7 @@
 import 'package:api_craft/core/models/models.dart';
 import 'package:api_craft/core/providers/providers.dart';
 import 'package:api_craft/core/repository/storage_repository.dart';
+import 'package:api_craft/features/sidebar/providers/clipboard_provider.dart';
 import 'package:api_craft/features/request/widgets/tabs/tab_titles.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -432,26 +433,66 @@ class FileTreeNotifier extends Notifier<TreeData> {
   }
 
   Future<void> deleteNode(Node node) async {
-    if (state.isLoading) return;
-    final idsToDelete = getDeleteNodesIds(node);
-    await _repo.deleteItems(idsToDelete);
+    await deleteNodes([node.id]);
+  }
 
-    for (final id in idsToDelete) {
-      map.remove(id);
+  Future<void> deleteNodes(List<String> nodeIds) async {
+    if (state.isLoading) return;
+
+    // 1. Expand selection to include ALL descendants (Recursive)
+    final allIdsToDelete = <String>{};
+    for (final id in nodeIds) {
+      final node = map[id];
+      if (node != null) {
+        allIdsToDelete.addAll(getDeleteNodesIds(node));
+      }
     }
 
-    _updateParent(
-      parentId: node.parentId,
-      updateFn: (parent) {
-        final newChildrenIds = parent.children
-            .where((id) => id != node.id)
-            .toList();
-        return parent.copyWith(children: newChildrenIds);
-      },
-    );
-    // 3. Clear active request if needed
+    // 2. Repo Delete
+    await _repo.deleteItems(allIdsToDelete.toList());
+
+    // 3. Local State Update
+    // We need to remove them from map AND update their parents children lists.
+    // Optimization: Group by parent?
+    // Or just brute force update parents?
+
+    // Let's identify unique parents of the Top-Level deleted nodes to minimize updates.
+    // The `getDeleteNodesIds` returns the subtree. We only need to detach from parents of the roots of these subtrees.
+    // But `nodeIds` might contain children of other nodes in `nodeIds`.
+    // Smart logic: Only update parents of nodes whose parent is NOT being deleted.
+
+    final currentMap = Map<String, Node>.from(state.nodeMap);
+    final parentsToUpdate = <String>{};
+
+    for (final id in allIdsToDelete) {
+      final node = currentMap[id];
+      if (node != null && node.parentId != null) {
+        // If parent is NOT in delete list, we must update it
+        if (!allIdsToDelete.contains(node.parentId)) {
+          parentsToUpdate.add(node.parentId!);
+        }
+      }
+      currentMap.remove(id);
+    }
+
+    state = state.copyWith(nodeMap: currentMap);
+
+    // 4. Update Parents
+    for (final pId in parentsToUpdate) {
+      _updateParent(
+        parentId: pId,
+        updateFn: (parent) {
+          final newChildren = parent.children
+              .where((cId) => !allIdsToDelete.contains(cId))
+              .toList();
+          return parent.copyWith(children: newChildren);
+        },
+      );
+    }
+
+    // 5. Clear active ID if deleted
     final activeId = ref.read(activeReqIdProvider);
-    if (activeId != null && activeId == node.id) {
+    if (activeId != null && allIdsToDelete.contains(activeId)) {
       _activeReqNotifier.setActiveId(null);
     }
   }
@@ -589,6 +630,174 @@ class FileTreeNotifier extends Notifier<TreeData> {
           list.insert(index + 1, movedId);
         }
       }
+    }
+  }
+
+  Future<void> paste(ClipboardState clipboard, {String? targetId}) async {
+    if (clipboard.isEmpty) return;
+
+    final targetNode = targetId != null ? map[targetId] : null;
+
+    // If target is a folder, paste INSIDE.
+    // If target is a file, paste into its PARENT.
+    // If target is null, paste to ROOT.
+    String? destinationParentId;
+    if (targetNode is FolderNode) {
+      destinationParentId = targetId;
+    } else if (targetNode != null) {
+      destinationParentId = targetNode.parentId;
+    }
+
+    if (clipboard.action == ClipboardAction.copy) {
+      // Loop and Duplicate
+      for (final id in clipboard.nodeIds) {
+        final node = map[id];
+        if (node != null) {
+          await _duplicateNodeToParent(node, destinationParentId);
+        }
+      }
+    } else {
+      // Move (Cut)
+      // We must be careful about order if multiple items are moved.
+      // And we must ensure we don't move a parent into its own child (cycle).
+      // The cycle check is handled in handleDrop, but here we trust _moveNodeToParent?
+      // _moveNodeToParent doesn't check cycles. We should add a check.
+
+      for (final id in clipboard.nodeIds) {
+        final node = map[id];
+        if (node != null) {
+          // Cycle check
+          if (destinationParentId != null) {
+            var ptr = map[destinationParentId];
+            bool cycle = false;
+            while (ptr != null) {
+              if (ptr.id == node.id) {
+                cycle = true;
+                break;
+              }
+              ptr = map[ptr.parentId];
+            }
+            if (cycle) continue; // Skip moving parent into child
+          }
+
+          // 1. Repo Move
+          await _repo.moveItem(node.id, destinationParentId);
+
+          // 2. Local State Update
+          await _moveNodeToParent(node, destinationParentId);
+        }
+      }
+    }
+    ref.read(clipboardProvider.notifier).clear();
+  }
+
+  Future<void> _duplicateNodeToParent(Node node, String? parentId) async {
+    if (node is FolderNode) {
+      await _duplicateFolderToParent(node, parentId);
+    } else {
+      final newNode = node.copyWith(
+        id: const Uuid().v4(),
+        parentId: parentId,
+        forceNullParent: parentId == null,
+        name: node
+            .name, // Keep same name or add copy? VS Code keeps same name on copy-paste to other folder
+        config: node.config.clone(),
+      );
+      await _repo.createOne(newNode);
+      _addItem(newNode);
+    }
+  }
+
+  Future<void> _duplicateFolderToParent(
+    FolderNode node,
+    String? targetParentId,
+  ) async {
+    final allNodes = [node, ...getChildrenNodes(node)];
+    final idMap = <String, String>{};
+    for (final n in allNodes) idMap[n.id] = const Uuid().v4();
+
+    final duplicated = <Node>[];
+    for (final n in allNodes) {
+      final newId = idMap[n.id]!;
+      // If it's the root being moved, use targetParentId.
+      // Else calculate new parent based on idMap
+      String? newParentId;
+      if (n.id == node.id) {
+        newParentId = targetParentId;
+      } else {
+        newParentId = n.parentId == null
+            ? null
+            : idMap[n.parentId] ?? n.parentId;
+      }
+
+      if (n is FolderNode) {
+        duplicated.add(
+          n.copyWith(
+            id: newId,
+            parentId: newParentId,
+            forceNullParent: newParentId == null,
+            children: n.children.map((c) => idMap[c]!).toList(),
+            config: n.config.clone(),
+          ),
+        );
+      } else {
+        duplicated.add(
+          n.copyWith(
+            id: newId,
+            parentId: newParentId,
+            forceNullParent: newParentId == null,
+            config: n.config.clone(),
+          ),
+        );
+      }
+    }
+
+    await _repo.createMany(duplicated);
+
+    // Update local state is tricky for bulk.
+    // Easiest is to add them to map and update the parent of the root copy.
+    for (final n in duplicated) map[n.id] = n;
+
+    // Update destination parent to include the new root copy
+    _updateParent(
+      parentId: targetParentId,
+      updateFn: (parent) =>
+          parent.copyWith(children: [...parent.children, idMap[node.id]!]),
+    );
+
+    // Add to map (triggers commit if root)
+    if (targetParentId == null) {
+      state = state.copyWith(nodeMap: map);
+    }
+  }
+
+  Future<void> _moveNodeToParent(Node node, String? newParentId) async {
+    // 1. Remove from old parent
+    if (node.parentId != null) {
+      _updateParent(
+        parentId: node.parentId,
+        updateFn: (p) => p.copyWith(
+          children: p.children.where((c) => c != node.id).toList(),
+        ),
+      );
+    }
+
+    // 2. Update Node self
+    final updatedNode = node.copyWith(
+      parentId: newParentId,
+      forceNullParent: newParentId == null,
+    );
+    map[node.id] = updatedNode;
+
+    // 3. Add to new parent
+    if (newParentId != null) {
+      _updateParent(
+        parentId: newParentId,
+        updateFn: (p) => p.copyWith(children: [...p.children, node.id]),
+      );
+    } else {
+      // Moved to root, force refresh
+      state = state.copyWith(nodeMap: map);
     }
   }
 }

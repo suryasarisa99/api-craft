@@ -121,7 +121,15 @@ class _FileTreeTileState extends ConsumerState<FileNodeTile>
       return;
     }
     // request focus to it.
-    _focusNode.requestFocus();
+    if (_isExpanded) {
+      // delay because while closing folder,focus goes to its children,so after animation completes focus should go to parent
+      Future.delayed(
+        const Duration(milliseconds: 10),
+        () => _focusNode.requestFocus(),
+      );
+    } else {
+      _focusNode.requestFocus();
+    }
 
     if (vNode.type == NodeType.folder) {
       setState(() {
@@ -171,6 +179,11 @@ class _FileTreeTileState extends ConsumerState<FileNodeTile>
       onKeyEvent: (FocusNode node, KeyEvent keyEvent) {
         if (keyEvent is KeyUpEvent) return KeyEventResult.ignored;
         final k = keyEvent.logicalKey;
+        final hk = HardwareKeyboard.instance;
+        final isShift = hk.isShiftPressed;
+        final isCtrl = Platform.isMacOS
+            ? hk.isMetaPressed
+            : hk.isControlPressed;
 
         if (k == LogicalKeyboardKey.arrowDown) {
           FocusScope.of(context).nextFocus();
@@ -200,6 +213,42 @@ class _FileTreeTileState extends ConsumerState<FileNodeTile>
           return KeyEventResult.handled;
         }
         return KeyEventResult.ignored;
+      },
+      onFocusChange: (hasFocus) {
+        if (hasFocus) {
+          final hk = HardwareKeyboard.instance;
+          final isShift = hk.isShiftPressed;
+          final isCtrl = Platform.isMacOS
+              ? hk.isMetaPressed
+              : hk.isControlPressed;
+
+          if (isShift) {
+            // Range Selection (simulated via Multi-Select add)
+            // User requested to unselect if already selected, so we use toggle logic manually if needed
+            // But 'toggle' in provider does exactly that: remove if present, add if not.
+            ref.read(selectedNodesProvider.notifier).toggle(vNode.id);
+          } else if (!isCtrl) {
+            // Normal Navigation -> Single Select
+            // Unless we want to separate Focus from Selection?
+            // Standard file exploers select on focus.
+            ref
+                .read(selectedNodesProvider.notifier)
+                .select(vNode.id, multi: false);
+
+            // Also set as active request?
+            // Existing logic in _handleTap:
+            // } else {
+            //   ref.read(activeReqIdProvider.notifier).setActiveId(vNode.id);
+            //   ref.read(selectedNodesProvider.notifier).clear();
+            // }
+            // Maybe we should just select it visually and let user Enter to open?
+            // For now, let's just update selectedNodesProvider.
+            // If it's a file, maybe activeReqIdProvider calls logic to open tab?
+            // if (vNode.type == NodeType.request) {
+            //   ref.read(activeReqIdProvider.notifier).setActiveId(vNode.id);
+            // }
+          }
+        }
       },
       child: child,
     );

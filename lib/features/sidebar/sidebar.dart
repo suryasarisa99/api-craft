@@ -2,7 +2,9 @@ import 'package:api_craft/core/models/models.dart';
 import 'package:api_craft/core/providers/providers.dart';
 import 'package:api_craft/features/sidebar/context_menu.dart';
 import 'package:api_craft/features/sidebar/file_node_tail.dart';
+import 'package:api_craft/features/sidebar/providers/clipboard_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:super_context_menu/super_context_menu.dart';
 
@@ -12,78 +14,114 @@ class FileExplorerView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final rootList = ref.watch(rootIdsProvider);
-
     final isLoading = ref.watch(fileTreeProvider.select((s) => s.isLoading));
 
     if (isLoading) return const Center(child: CircularProgressIndicator());
     final theme = Theme.of(context);
-    debugPrint("build:::file-explorer");
+
     return Scaffold(
-      body: Padding(
-        padding: const .only(top: 4),
-        child: ContextMenuWidget(
-          menuProvider: (_) async {
-            return getMenuProvider(ref: ref, context: context, isRoot: true);
+      body: CallbackShortcuts(
+        bindings: {
+          const SingleActivator(LogicalKeyboardKey.keyC, meta: true): () {
+            final selected = ref.read(selectedNodesProvider);
+            if (selected.isNotEmpty) {
+              ref.read(clipboardProvider.notifier).copy(selected);
+            }
           },
-          child: FocusTraversalGroup(
-            policy: ReadingOrderTraversalPolicy(),
-            child: CustomScrollView(
-              slivers: [
-                SliverList(
-                  delegate: SliverChildBuilderDelegate((context, index) {
-                    final id = rootList.ids[index];
-                    return FileNodeTile(
-                      key: ValueKey(id), // Important for performance
-                      nodeId: id, // Pass ID only
-                      isFirstNode: index == 0,
-                    );
-                  }, childCount: rootList.ids.length),
-                ),
-
-                // --- Drop Zone (Unchanged) ---
-                SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: DragTarget<Node>(
-                    onWillAcceptWithDetails: (details) => true,
-                    onAcceptWithDetails: (details) {
-                      if (rootList.ids.isEmpty) return;
-
-                      // Fetch the actual node object for the target using the ID
-                      // We can use ref.read here safely
-                      final lastId = rootList.ids.last;
-                      final lastNode = ref
-                          .read(fileTreeProvider)
-                          .nodeMap[lastId];
-
-                      if (lastNode != null) {
-                        ref
-                            .read(fileTreeProvider.notifier)
-                            .handleDrop(
-                              movedNode: details.data,
-                              targetNode: lastNode,
-                              slot: DropSlot.bottom,
-                            );
-                      }
-                    },
-                    builder: (context, candidateData, rejectedData) {
-                      final isHovering = candidateData.isNotEmpty;
-                      return Container(
-                        color: isHovering
-                            ? theme.colorScheme.primary.withValues(alpha: 0.1)
-                            : Colors.transparent,
-                        alignment: Alignment.topCenter,
-                        padding: const EdgeInsets.only(top: 2),
-                        child: isHovering
-                            ? Container(
-                                height: 2,
-                                color: theme.colorScheme.primary,
-                              )
-                            : null,
+          const SingleActivator(LogicalKeyboardKey.keyX, meta: true): () {
+            debugPrint('Cut');
+            final selected = ref.read(selectedNodesProvider);
+            if (selected.isNotEmpty) {
+              ref.read(clipboardProvider.notifier).cut(selected);
+            }
+          },
+          const SingleActivator(LogicalKeyboardKey.keyV, meta: true): () {
+            final clipboard = ref.read(clipboardProvider);
+            if (clipboard.isNotEmpty) {
+              // Determine target from selection
+              final selected = ref.read(selectedNodesProvider);
+              final targetId = selected.isNotEmpty ? selected.last : null;
+              ref
+                  .read(fileTreeProvider.notifier)
+                  .paste(clipboard, targetId: targetId);
+            }
+          },
+          const SingleActivator(LogicalKeyboardKey.escape): () {
+            ref.read(selectedNodesProvider.notifier).clear();
+          },
+          const SingleActivator(LogicalKeyboardKey.delete): () {
+            final selected = ref.read(selectedNodesProvider);
+            if (selected.isNotEmpty) {
+              ref
+                  .read(fileTreeProvider.notifier)
+                  .deleteNodes(selected.toList());
+            }
+          },
+        },
+        child: Padding(
+          padding: const EdgeInsets.only(top: 4),
+          child: ContextMenuWidget(
+            menuProvider: (_) async {
+              return getMenuProvider(ref: ref, context: context, isRoot: true);
+            },
+            child: FocusTraversalGroup(
+              policy: ReadingOrderTraversalPolicy(),
+              child: CustomScrollView(
+                slivers: [
+                  SliverList(
+                    delegate: SliverChildBuilderDelegate((context, index) {
+                      final id = rootList.ids[index];
+                      return FileNodeTile(
+                        key: ValueKey(id), // Important for performance
+                        nodeId: id, // Pass ID only
+                        isFirstNode: index == 0,
                       );
-                    },
+                    }, childCount: rootList.ids.length),
                   ),
-                ),
-              ],
+
+                  // --- Drop Zone ---
+                  SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: DragTarget<Node>(
+                      onWillAcceptWithDetails: (details) => true,
+                      onAcceptWithDetails: (details) {
+                        if (rootList.ids.isEmpty) return;
+
+                        final lastId = rootList.ids.last;
+                        final lastNode = ref
+                            .read(fileTreeProvider)
+                            .nodeMap[lastId];
+
+                        if (lastNode != null) {
+                          ref
+                              .read(fileTreeProvider.notifier)
+                              .handleDrop(
+                                movedNode: details.data,
+                                targetNode: lastNode,
+                                slot: DropSlot.bottom,
+                              );
+                        }
+                      },
+                      builder: (context, candidateData, rejectedData) {
+                        final isHovering = candidateData.isNotEmpty;
+                        return Container(
+                          color: isHovering
+                              ? theme.colorScheme.primary.withValues(alpha: 0.1)
+                              : Colors.transparent,
+                          alignment: Alignment.topCenter,
+                          padding: const EdgeInsets.only(top: 2),
+                          child: isHovering
+                              ? Container(
+                                  height: 2,
+                                  color: theme.colorScheme.primary,
+                                )
+                              : null,
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -120,7 +158,6 @@ class _FileNodeTileState extends ConsumerState<FileNodeDragWrapper> {
 
   @override
   Widget build(BuildContext context) {
-    // return widget.child;
     return _buildDragWrapper(widget.child);
   }
 
@@ -174,16 +211,11 @@ class _FileNodeTileState extends ConsumerState<FileNodeDragWrapper> {
         // 1. Cannot drop onto self
         if (movedNode.id == targetNode.id) return false;
 
-        // 2. CRITICAL FIX: Cycle Detection (Parent into Child Subfolder)
+        // 2. Cycle Detection
         final treeMap = ref.read(fileTreeProvider).nodeMap;
-
         Node? ptr = targetNode;
         while (ptr != null) {
-          // If we find the movedNode while walking up from target,
-          // it means target is a descendant of movedNode.
           if (ptr.id == movedNode.id) return false;
-
-          // Move up
           if (ptr.parentId == null) break;
           ptr = treeMap[ptr.parentId];
         }
@@ -195,13 +227,9 @@ class _FileNodeTileState extends ConsumerState<FileNodeDragWrapper> {
         final localOffset = box.globalToLocal(details.offset);
         final double dy = localOffset.dy;
 
-        // --- KEY LOGIC CHANGE ---
-        // If folder is OPEN, we only interact with the Header (30px).
-        // If the cursor is below 30px (over the children), we cancel the
-        // parent's drop slot so the children can handle the event.
+        // If folder is OPEN, only interact with Header (30px)
         if (node is FolderNode && widget.isOpen) {
           if (dy > kTileHeight) {
-            debugPrint("Dropping over children, cancel parent drop slot");
             if (_currentDropSlot != null) {
               setState(() => _currentDropSlot = null);
             }
@@ -209,7 +237,6 @@ class _FileNodeTileState extends ConsumerState<FileNodeDragWrapper> {
           }
         }
 
-        // Determine height to use for percentage calculation
         final activeHeight = (node is FolderNode && widget.isOpen)
             ? kTileHeight
             : box.size.height;
@@ -218,16 +245,14 @@ class _FileNodeTileState extends ConsumerState<FileNodeDragWrapper> {
         DropSlot newSlot;
 
         if (node is FolderNode) {
-          // Folder Logic
           if (percent < 0.05) {
             newSlot = DropSlot.top;
           } else if (percent > 0.95) {
             newSlot = DropSlot.bottom;
           } else {
-            newSlot = DropSlot.center; // Middle 50% is "Drop Inside"
+            newSlot = DropSlot.center;
           }
         } else {
-          // File Logic (50/50 split)
           if (percent < 0.5) {
             newSlot = DropSlot.top;
           } else {
@@ -249,7 +274,6 @@ class _FileNodeTileState extends ConsumerState<FileNodeDragWrapper> {
       },
       builder: (context, candidateData, rejectedData) {
         return Stack(
-          // Allows indicators to render slightly outside bounds if needed
           clipBehavior: Clip.none,
           children: [
             draggable,
@@ -264,10 +288,6 @@ class _FileNodeTileState extends ConsumerState<FileNodeDragWrapper> {
     final color = theme.colorScheme.primary;
     const double borderThick = 2.0;
 
-    // --- INDICATOR POSITIONING ---
-    // If Open: Position relative to Header (top 30px).
-    // If Closed/File: Position relative to full widget.
-
     if (_currentDropSlot == DropSlot.top) {
       return Positioned(
         top: 0,
@@ -279,8 +299,6 @@ class _FileNodeTileState extends ConsumerState<FileNodeDragWrapper> {
     }
 
     if (_currentDropSlot == DropSlot.bottom) {
-      // Logic: If open, the "bottom" of the header is at kTileHeight.
-      // If closed, "bottom" is at bottom: 0.
       if (node is FolderNode && widget.isOpen) {
         return Positioned(
           top: kTileHeight - borderThick,
@@ -300,8 +318,7 @@ class _FileNodeTileState extends ConsumerState<FileNodeDragWrapper> {
       }
     }
 
-    // DropSlot.center (Inside Folder)
-    // Only highlight the HEADER (30px) if open, otherwise highlight full box
+    // DropSlot.center
     if (node is FolderNode && widget.isOpen) {
       return Positioned(
         top: 0,
@@ -318,7 +335,6 @@ class _FileNodeTileState extends ConsumerState<FileNodeDragWrapper> {
       );
     }
 
-    // Default Fill (Closed folder)
     return Positioned.fill(
       child: Container(
         decoration: BoxDecoration(

@@ -3,6 +3,7 @@ export '../../features/request/models/node_config_model.dart';
 export '../../features/collection/collection_model.dart';
 export 'resolve_config_model.dart';
 export '../../features/sidebar/models/visual_model.dart';
+export '../../features/sidebar/models/clipboard_models.dart';
 export '../../features/auth/auth_model.dart';
 export '../../features/response/models/http_response_model.dart';
 export 'environment_model.dart';
