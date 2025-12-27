@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:api_craft/features/response/models/http_response_model.dart';
 import 'package:api_craft/features/response/response_tab.dart';
+import 'package:api_craft/features/response/widgets/json_viewer.dart';
 import 'package:api_craft/features/response/widgets/image_viewer.dart';
 import 'package:api_craft/features/response/widgets/hex_viewer.dart';
 import 'package:flutter/material.dart';
@@ -49,6 +50,26 @@ class ResponseBodyTab extends StatelessWidget {
   Widget build(BuildContext context) {
     if (mode == BodyViewMode.hex) {
       return HexViewer(bytes: response.bodyBytes);
+    }
+    if (mode == BodyViewMode.json) {
+      try {
+        final jsonObj = jsonDecode(response.body);
+        if (jsonObj is Map<String, dynamic>) {
+          return JsonViewer(jsonObj: jsonObj);
+        } else if (jsonObj is List) {
+          // Wrap list in a map to display it, or use JsonViewer for lists if supported
+          // flutter_json_view supports maps/lists differently usually, but let's check basic usage
+          // JsonView.map is used in JsonViewer. Let's create a JsonList wrapper or just show as map
+          return JsonViewer(jsonObj: {'root': jsonObj});
+        }
+      } catch (e) {
+        return Center(
+          child: Text(
+            "Invalid JSON",
+            style: TextStyle(color: Theme.of(context).colorScheme.error),
+          ),
+        );
+      }
     }
 
     final contentType = _contentType;

@@ -13,8 +13,11 @@ import 'package:lazy_load_indexed_stack/lazy_load_indexed_stack.dart';
 import 'package:api_craft/core/models/models.dart';
 import 'package:api_craft/features/request/providers/ws_provider.dart';
 import 'package:api_craft/features/response/widgets/ws_response_tab.dart';
+import 'package:flutter/services.dart';
+import 'package:file_picker/file_picker.dart';
+import 'dart:io';
 
-enum BodyViewMode { pretty, raw, hex }
+enum BodyViewMode { pretty, raw, hex, json }
 
 class ResponseTAb extends ConsumerStatefulWidget {
   const ResponseTAb({super.key});
@@ -128,70 +131,138 @@ class _ResponseTAbState extends ConsumerState<ResponseTAb>
       children: [
         SizedBox(
           height: 32,
-          child: TabBar(
-            controller: _tabController,
-            isScrollable: true,
-            tabAlignment: TabAlignment.start,
-            dividerColor: Colors.transparent,
-            labelStyle: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w400,
-            ),
-            onTap: (index) {
-              if (index == 0 && _index == 0) {
-                _menuKey.currentState?.show();
-              }
-              setState(() {
-                _index = index;
-              });
-            },
-            tabs: [
-              IgnorePointer(
-                child: MyCustomMenu.contentColumn(
-                  popupKey: _menuKey,
-                  useBtn: false,
-                  items: [
-                    CustomMenuIconItem.tick(
-                      title: const Text("Pretty"),
-                      value: "pretty",
-                      checked: _bodyViewMode == BodyViewMode.pretty,
-                      onTap: (_) =>
-                          setState(() => _bodyViewMode = BodyViewMode.pretty),
-                    ),
-                    CustomMenuIconItem.tick(
-                      title: const Text("Raw"),
-                      value: "raw",
-                      checked: _bodyViewMode == BodyViewMode.raw,
-                      onTap: (_) =>
-                          setState(() => _bodyViewMode = BodyViewMode.raw),
-                    ),
-                    CustomMenuIconItem.tick(
-                      title: const Text("Hex"),
-                      value: "hex",
-                      checked: _bodyViewMode == BodyViewMode.hex,
-                      onTap: (_) =>
-                          setState(() => _bodyViewMode = BodyViewMode.hex),
-                    ),
-                  ],
-                  child: Tab(
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          _bodyViewMode == BodyViewMode.pretty
-                              ? "Pretty"
-                              : _bodyViewMode == BodyViewMode.raw
-                              ? "Raw"
-                              : "Hex",
+          child: Stack(
+            children: [
+              TabBar(
+                controller: _tabController,
+                isScrollable: true,
+                tabAlignment: TabAlignment.start,
+                dividerColor: Colors.transparent,
+                labelStyle: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w400,
+                ),
+                onTap: (index) {
+                  if (index == 0 && _index == 0) {
+                    _menuKey.currentState?.show();
+                  }
+                  setState(() {
+                    _index = index;
+                  });
+                },
+                tabs: [
+                  IgnorePointer(
+                    child: MyCustomMenu.contentColumn(
+                      popupKey: _menuKey,
+                      useBtn: false,
+                      items: [
+                        CustomMenuIconItem.tick(
+                          title: const Text("Pretty"),
+                          value: "pretty",
+                          checked: _bodyViewMode == BodyViewMode.pretty,
+                          onTap: (_) => setState(
+                            () => _bodyViewMode = BodyViewMode.pretty,
+                          ),
                         ),
-                        const Icon(Icons.arrow_drop_down, size: 16),
+                        CustomMenuIconItem.tick(
+                          title: const Text("Raw"),
+                          value: "raw",
+                          checked: _bodyViewMode == BodyViewMode.raw,
+                          onTap: (_) =>
+                              setState(() => _bodyViewMode = BodyViewMode.raw),
+                        ),
+                        CustomMenuIconItem.tick(
+                          title: const Text("Hex"),
+                          value: "hex",
+                          checked: _bodyViewMode == BodyViewMode.hex,
+                          onTap: (_) =>
+                              setState(() => _bodyViewMode = BodyViewMode.hex),
+                        ),
+                        CustomMenuIconItem.tick(
+                          title: const Text("Json"),
+                          value: "json",
+                          checked: _bodyViewMode == BodyViewMode.json,
+                          onTap: (_) =>
+                              setState(() => _bodyViewMode = BodyViewMode.json),
+                        ),
                       ],
+                      child: Tab(
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              _bodyViewMode == BodyViewMode.pretty
+                                  ? "Pretty"
+                                  : _bodyViewMode == BodyViewMode.raw
+                                  ? "Raw"
+                                  : _bodyViewMode == BodyViewMode.hex
+                                  ? "Hex"
+                                  : "Json",
+                            ),
+                            const Icon(Icons.arrow_drop_down, size: 16),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
+                  const Tab(text: "Headers"),
+                  const Tab(text: "Info"),
+                ],
+              ),
+              Positioned(
+                right: 8,
+                top: 0,
+                bottom: 0,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    MyCustomMenu.contentColumn(
+                      popupKey: GlobalKey<CustomPopupState>(),
+                      items: [
+                        CustomMenuIconItem(
+                          onTap: (_) async {
+                            await Clipboard.setData(
+                              ClipboardData(text: response.body),
+                            );
+                          },
+                          title: Text("Copy"),
+                          value: "copy",
+                        ),
+                        CustomMenuIconItem(
+                          onTap: (_) async {
+                            String? outputFile = await FilePicker.platform
+                                .saveFile(
+                                  dialogTitle: 'Save Response Body',
+                                  fileName: 'response',
+                                );
+
+                            if (outputFile != null) {
+                              try {
+                                final file = File(outputFile);
+                                await file.writeAsBytes(response.bodyBytes);
+                              } catch (e) {
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text("Failed to save file: $e"),
+                                      backgroundColor: Theme.of(
+                                        context,
+                                      ).colorScheme.error,
+                                    ),
+                                  );
+                                }
+                              }
+                            }
+                          },
+                          title: Text("Save"),
+                          value: "save",
+                        ),
+                      ],
+                      child: Icon(Icons.more_vert, size: 16),
+                    ),
+                  ],
                 ),
               ),
-              const Tab(text: "Headers"),
-              const Tab(text: "Info"),
             ],
           ),
         ),

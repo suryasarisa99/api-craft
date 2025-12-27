@@ -56,9 +56,9 @@ class HexViewer extends StatelessWidget {
             }
             // Add extra spacing after each byte, and more after 8 bytes
             if (i == 7) {
-              hexWidgets.add(const SizedBox(width: 16));
+              hexWidgets.add(const SizedBox(width: 12));
             } else {
-              hexWidgets.add(const SizedBox(width: 4));
+              hexWidgets.add(const SizedBox(width: 3));
             }
           }
 
@@ -77,11 +77,14 @@ class HexViewer extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Offset Column
-              SizedBox(width: 75, child: Text(offset, style: offsetStyle)),
-              const SizedBox(width: 16),
+              SizedBox(
+                width: 75,
+                child: Text(offset, textAlign: .justify, style: offsetStyle),
+              ),
+              const SizedBox(width: 12),
               // Hex Data Column
               Row(children: hexWidgets),
-              const SizedBox(width: 16),
+              const SizedBox(width: 12),
               // ASCII Column
               Expanded(child: Text(asciiBuffer.toString(), style: asciiStyle)),
             ],
