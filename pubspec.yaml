@@ -46,7 +46,10 @@ dependencies:
   desktop_drop: ^0.7.0
   mime: ^2.0.0
   flutter_svg: ^2.2.3
-  flutter_json_view: ^1.1.5
+  json_explorer: ^0.1.2
+  provider: ^6.1.5+1
+  scrollable_positioned_list: ^0.3.8
+  url_launcher: ^6.3.2
 
 dev_dependencies:
   flutter_test:

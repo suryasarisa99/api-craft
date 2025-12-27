@@ -54,14 +54,7 @@ class ResponseBodyTab extends StatelessWidget {
     if (mode == BodyViewMode.json) {
       try {
         final jsonObj = jsonDecode(response.body);
-        if (jsonObj is Map<String, dynamic>) {
-          return JsonViewer(jsonObj: jsonObj);
-        } else if (jsonObj is List) {
-          // Wrap list in a map to display it, or use JsonViewer for lists if supported
-          // flutter_json_view supports maps/lists differently usually, but let's check basic usage
-          // JsonView.map is used in JsonViewer. Let's create a JsonList wrapper or just show as map
-          return JsonViewer(jsonObj: {'root': jsonObj});
-        }
+        return Expanded(child: JsonPreviewer(code: jsonObj));
       } catch (e) {
         return Center(
           child: Text(
