@@ -87,6 +87,26 @@ class _CFCodeEditorState extends State<CFCodeEditor> {
       readOnly: widget.readOnly,
       enableGutter: true,
       enableFolding: true,
+      hoverDetailsStyle: HoverDetailsStyle(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+        backgroundColor: Colors.black,
+        focusColor: Colors.black,
+        hoverColor: Colors.black,
+        splashColor: Colors.black,
+        textStyle: TextStyle(color: Colors.white, fontSize: 12),
+      ),
+      suggestionStyle: SuggestionStyle(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(4),
+          side: BorderSide(color: const Color.fromARGB(255, 108, 108, 108)),
+        ),
+        backgroundColor: Colors.black,
+        focusColor: Colors.black,
+        hoverColor: Colors.black,
+        splashColor: Colors.black,
+        textStyle: TextStyle(color: Colors.white, fontSize: 12),
+      ),
+      lineWrap: true,
       textStyle: TextStyle(fontFamily: 'monospace', fontSize: widget.fontSize),
     );
   }

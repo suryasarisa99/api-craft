@@ -14,7 +14,7 @@ import 'package:api_craft/core/models/models.dart';
 import 'package:api_craft/features/request/providers/ws_provider.dart';
 import 'package:api_craft/features/response/widgets/ws_response_tab.dart';
 
-enum BodyViewMode { pretty, raw }
+enum BodyViewMode { pretty, raw, hex }
 
 class ResponseTAb extends ConsumerStatefulWidget {
   const ResponseTAb({super.key});
@@ -165,6 +165,13 @@ class _ResponseTAbState extends ConsumerState<ResponseTAb>
                       onTap: (_) =>
                           setState(() => _bodyViewMode = BodyViewMode.raw),
                     ),
+                    CustomMenuIconItem.tick(
+                      title: const Text("Hex"),
+                      value: "hex",
+                      checked: _bodyViewMode == BodyViewMode.hex,
+                      onTap: (_) =>
+                          setState(() => _bodyViewMode = BodyViewMode.hex),
+                    ),
                   ],
                   child: Tab(
                     child: Row(
@@ -173,7 +180,9 @@ class _ResponseTAbState extends ConsumerState<ResponseTAb>
                         Text(
                           _bodyViewMode == BodyViewMode.pretty
                               ? "Pretty"
-                              : "Raw",
+                              : _bodyViewMode == BodyViewMode.raw
+                              ? "Raw"
+                              : "Hex",
                         ),
                         const Icon(Icons.arrow_drop_down, size: 16),
                       ],
