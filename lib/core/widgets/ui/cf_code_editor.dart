@@ -1,5 +1,7 @@
 import 'package:api_craft/core/utils/debouncer.dart';
+import 'package:api_craft/core/widgets/ui/finder.dart';
 import 'package:api_craft/core/widgets/ui/key_value_lang.dart';
+import 'package:api_craft/main.dart';
 import 'package:flutter/material.dart';
 import 'package:code_forge/code_forge.dart';
 import 'package:re_highlight/re_highlight.dart';
@@ -78,8 +80,9 @@ class _CFCodeEditorState extends State<CFCodeEditor> {
   Widget build(BuildContext context) {
     final theme = Map<String, TextStyle>.from(atomOneDarkTheme);
     theme['root'] = theme['root']!.copyWith(
-      backgroundColor: Colors.transparent,
+      backgroundColor: const Color.fromARGB(255, 33, 33, 33),
     );
+    final cs = Theme.of(context).colorScheme;
     return CodeForge(
       controller: _controller,
       language: _getLanguage(widget.language),
@@ -87,6 +90,7 @@ class _CFCodeEditorState extends State<CFCodeEditor> {
       readOnly: widget.readOnly,
       enableGutter: true,
       enableFolding: true,
+      finderBuilder: (_, controller) => FindPanelView(controller: controller),
       hoverDetailsStyle: HoverDetailsStyle(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
         backgroundColor: Colors.black,
@@ -95,16 +99,30 @@ class _CFCodeEditorState extends State<CFCodeEditor> {
         splashColor: Colors.black,
         textStyle: TextStyle(color: Colors.white, fontSize: 12),
       ),
-      suggestionStyle: SuggestionStyle(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(4),
-          side: BorderSide(color: const Color.fromARGB(255, 108, 108, 108)),
+      selectionStyle: CodeSelectionStyle(selectionColor: Colors.blueGrey),
+      // suggestionStyle: SuggestionStyle(
+      //   shape: RoundedRectangleBorder(
+      //     borderRadius: BorderRadius.circular(4),
+      //     side: BorderSide(color: const Color.fromARGB(255, 108, 108, 108)),
+      //   ),
+      //   backgroundColor: Colors.red,
+      //   focusColor: Colors.black,
+      //   hoverColor: Colors.green,
+      //   splashColor: Colors.black,
+      //   textStyle: TextStyle(color: Colors.white, fontSize: 12),
+      // ),
+      matchHighlightStyle: MatchHighlightStyle(
+        currentMatchStyle: TextStyle(
+          backgroundColor: Color.fromARGB(255, 131, 79, 132),
         ),
-        backgroundColor: Colors.black,
-        focusColor: Colors.black,
-        hoverColor: Colors.black,
-        splashColor: Colors.black,
-        textStyle: TextStyle(color: Colors.white, fontSize: 12),
+        otherMatchStyle: TextStyle(
+          backgroundColor: Color.fromARGB(
+            255,
+            143,
+            86,
+            145,
+          ).withValues(alpha: 0.4),
+        ),
       ),
       lineWrap: true,
       textStyle: TextStyle(fontFamily: 'monospace', fontSize: widget.fontSize),

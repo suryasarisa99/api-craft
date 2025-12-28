@@ -36,7 +36,9 @@ dependencies:
   # flutter_highlight: ^0.7.0
   # highlight: ^0.7.0
   intl: ^0.19.0
-  code_forge: ^1.5.0
+  code_forge: ^4.0.0
+  # code_forge: 
+  #   path: ../../git/code_forge
   re_highlight: ^0.0.3
   flutter_js: ^0.8.1
   web_socket_channel: ^3.0.3
