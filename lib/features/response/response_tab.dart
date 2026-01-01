@@ -1,15 +1,12 @@
-import 'dart:async';
 import 'package:api_craft/core/providers/providers.dart';
-import 'package:api_craft/core/utils/formatters.dart';
 
 import 'package:api_craft/core/widgets/ui/custom_menu.dart';
 import 'package:api_craft/core/widgets/ui/surya_theme_icon.dart';
-import 'package:api_craft/features/request/providers/request_details_provider.dart';
 import 'package:api_craft/features/response/response_headers.dart';
 import 'package:api_craft/features/response/response_provider.dart';
-import 'package:api_craft/features/response/utils/status_code_clr.dart';
 import 'package:api_craft/features/response/widgets/response_body_tab.dart';
 import 'package:api_craft/features/response/widgets/response_info_tab.dart';
+import 'package:api_craft/features/response/widgets/response_status_bar.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -19,12 +16,7 @@ import 'package:lazy_load_indexed_stack/lazy_load_indexed_stack.dart';
 import 'package:api_craft/core/models/models.dart';
 import 'package:api_craft/features/request/providers/ws_provider.dart';
 import 'package:api_craft/features/response/widgets/ws_response_tab.dart';
-import 'package:flutter/services.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:suryaicons/bulk_rounded.dart';
-import 'dart:io';
-
-import 'package:suryaicons/suryaicons.dart';
 
 enum BodyViewMode { pretty, raw, hex, json }
 
@@ -70,37 +62,78 @@ class _ResponseTAbState extends ConsumerState<ResponseTAb>
     final sendError = ref.watch(
       reqComposeProvider(id).select((d) => d.sendError),
     );
-    final sendStartTime = ref.watch(
-      reqComposeProvider(id).select((d) => d.sendStartTime),
-    );
+    // final sendStartTime = ref.watch(
+    //   reqComposeProvider(id).select((d) => d.sendStartTime),
+    // );
 
     final response = ref.watch(responseProvider(id));
 
     if (node.requestType == RequestType.ws) {
       final wsState = ref.watch(wsRequestProvider(id));
 
-      Color statusColor = Colors.grey;
-      String statusText = "Disconnected";
+      Color statusColor = Colors.transparent;
+      String statusText = "No Response";
+
       if (wsState.isConnected) {
         statusColor = Colors.green;
         statusText = "Connected";
       } else if (wsState.isConnecting) {
         statusColor = Colors.orange;
         statusText = "Connecting...";
+      } else if (wsState.messages.isNotEmpty) {
+        statusColor = Colors.red;
+        statusText = "Disconnected";
       }
 
       return Column(
         children: [
-          Container(
-            padding: const EdgeInsets.all(8.0),
-            color: Colors.grey.shade900,
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
             child: Row(
               children: [
-                Icon(Icons.circle, color: statusColor, size: 12),
-                const SizedBox(width: 8),
-                Text(statusText),
+                if (statusColor != Colors.transparent)
+                  Icon(Icons.circle, color: statusColor, size: 10),
+                if (statusColor != Colors.transparent) const SizedBox(width: 8),
+                Text(
+                  statusText,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
                 const Spacer(),
                 Text("${wsState.messages.length} Messages"),
+                const SizedBox(width: 8),
+                MyCustomMenu.contentColumn(
+                  popupKey: GlobalKey<CustomPopupState>(),
+                  items: [
+                    CustomMenuIconItem(
+                      icon: const SuryaThemeIcon(BulkRounded.delete01),
+                      title: const Text("Clear History"),
+                      value: "clear_history",
+                      onTap: (_) {
+                        ref
+                            .read(wsRequestProvider(id).notifier)
+                            .clearHistoryRequest();
+                      },
+                    ),
+                    const LabeledDivider(text: "Sessions"),
+                    ...wsState.history.mapIndexed((i, session) {
+                      final isSelected =
+                          wsState.selectedSessionId == session.id;
+                      return CustomMenuIconItem.tick(
+                        checked: isSelected,
+                        title: Text(
+                          "${session.startTime.toString().split('.')[0]}",
+                        ),
+                        value: session.id,
+                        onTap: (_) {
+                          ref
+                              .read(wsRequestProvider(id).notifier)
+                              .selectSession(session.id);
+                        },
+                      );
+                    }),
+                  ],
+                  child: Icon(Icons.more_vert, size: 16),
+                ),
               ],
             ),
           ),
@@ -109,279 +142,136 @@ class _ResponseTAbState extends ConsumerState<ResponseTAb>
       );
     }
 
-    if (isSending) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const CircularProgressIndicator(),
-            const SizedBox(height: 16),
-            const Text("Sending Request..."),
-            if (sendStartTime != null) _ResponseTimer(startTime: sendStartTime),
-          ],
-        ),
-      );
-    }
+    // HTTP VIEW
 
-    if (sendError != null) {
-      return _ErrorSearch(error: sendError);
-    }
-
-    if (response?.errorMessage != null) {
-      return _ErrorSearch(error: response!.errorMessage!);
-    }
-
-    if (response == null) {
-      return const Center(child: Text("No Response Available"));
-    }
+    // Always show status bar if we have ANY meaningful state (sending, error, or response)
+    // If absolutely nothing (fresh start), maybe show persistent empty bar or "No Response" text?
+    // User asked "info bar shows always for all http requests even if it get error sending request."
 
     return Column(
       children: [
-        SizedBox(
-          height: 32,
-          child: Stack(
-            children: [
-              TabBar(
-                controller: _tabController,
-                isScrollable: true,
-                tabAlignment: TabAlignment.start,
-                dividerColor: Colors.transparent,
-                labelStyle: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w400,
-                ),
-                onTap: (index) {
-                  if (index == 0 && _index == 0) {
-                    _menuKey.currentState?.show();
-                  }
-                  setState(() {
-                    _index = index;
-                  });
-                },
-                tabs: [
-                  IgnorePointer(
-                    child: MyCustomMenu.contentColumn(
-                      popupKey: _menuKey,
-                      useBtn: false,
-                      items: [
-                        CustomMenuIconItem.tick(
-                          title: const Text("Pretty"),
-                          value: "pretty",
-                          checked: _bodyViewMode == BodyViewMode.pretty,
-                          onTap: (_) => setState(
-                            () => _bodyViewMode = BodyViewMode.pretty,
+        // 1. Status Bar
+        ResponseStatusBar(
+          requestId: id,
+          response: response,
+          isSending: isSending,
+          error: sendError ?? response?.errorMessage,
+        ),
+
+        // 2. Content Area
+        if (isSending)
+          const Expanded(child: Center(child: CircularProgressIndicator()))
+        else if (sendError != null)
+          Expanded(child: _ErrorSearch(error: sendError))
+        else if (response?.errorMessage != null)
+          Expanded(child: _ErrorSearch(error: response!.errorMessage!))
+        else if (response == null)
+          const Expanded(child: Center(child: Text("No Response Available")))
+        else
+          Expanded(
+            child: Column(
+              children: [
+                SizedBox(
+                  height: 32,
+                  child: TabBar(
+                    controller: _tabController,
+                    isScrollable: true,
+                    tabAlignment: TabAlignment.start,
+                    dividerColor: Colors.transparent,
+                    labelStyle: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w400,
+                    ),
+                    onTap: (index) {
+                      if (index == 0 && _index == 0) {
+                        _menuKey.currentState?.show();
+                      }
+                      setState(() {
+                        _index = index;
+                      });
+                    },
+                    tabs: [
+                      IgnorePointer(
+                        child: MyCustomMenu.contentColumn(
+                          popupKey: _menuKey,
+                          useBtn: false,
+                          items: [
+                            CustomMenuIconItem.tick(
+                              title: const Text("Pretty"),
+                              value: "pretty",
+                              checked: _bodyViewMode == BodyViewMode.pretty,
+                              onTap: (_) => setState(
+                                () => _bodyViewMode = BodyViewMode.pretty,
+                              ),
+                            ),
+                            CustomMenuIconItem.tick(
+                              title: const Text("Raw"),
+                              value: "raw",
+                              checked: _bodyViewMode == BodyViewMode.raw,
+                              onTap: (_) => setState(
+                                () => _bodyViewMode = BodyViewMode.raw,
+                              ),
+                            ),
+                            CustomMenuIconItem.tick(
+                              title: const Text("Hex"),
+                              value: "hex",
+                              checked: _bodyViewMode == BodyViewMode.hex,
+                              onTap: (_) => setState(
+                                () => _bodyViewMode = BodyViewMode.hex,
+                              ),
+                            ),
+                            CustomMenuIconItem.tick(
+                              title: const Text("Json"),
+                              value: "json",
+                              checked: _bodyViewMode == BodyViewMode.json,
+                              onTap: (_) => setState(
+                                () => _bodyViewMode = BodyViewMode.json,
+                              ),
+                            ),
+                          ],
+                          child: Tab(
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  _bodyViewMode == BodyViewMode.pretty
+                                      ? "Pretty"
+                                      : _bodyViewMode == BodyViewMode.raw
+                                      ? "Raw"
+                                      : _bodyViewMode == BodyViewMode.hex
+                                      ? "Hex"
+                                      : "Json",
+                                ),
+                                const Icon(Icons.arrow_drop_down, size: 16),
+                              ],
+                            ),
                           ),
                         ),
-                        CustomMenuIconItem.tick(
-                          title: const Text("Raw"),
-                          value: "raw",
-                          checked: _bodyViewMode == BodyViewMode.raw,
-                          onTap: (_) =>
-                              setState(() => _bodyViewMode = BodyViewMode.raw),
-                        ),
-                        CustomMenuIconItem.tick(
-                          title: const Text("Hex"),
-                          value: "hex",
-                          checked: _bodyViewMode == BodyViewMode.hex,
-                          onTap: (_) =>
-                              setState(() => _bodyViewMode = BodyViewMode.hex),
-                        ),
-                        CustomMenuIconItem.tick(
-                          title: const Text("Json"),
-                          value: "json",
-                          checked: _bodyViewMode == BodyViewMode.json,
-                          onTap: (_) =>
-                              setState(() => _bodyViewMode = BodyViewMode.json),
-                        ),
-                      ],
-                      child: Tab(
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              _bodyViewMode == BodyViewMode.pretty
-                                  ? "Pretty"
-                                  : _bodyViewMode == BodyViewMode.raw
-                                  ? "Raw"
-                                  : _bodyViewMode == BodyViewMode.hex
-                                  ? "Hex"
-                                  : "Json",
-                            ),
-                            const Icon(Icons.arrow_drop_down, size: 16),
-                          ],
-                        ),
                       ),
-                    ),
+                      const Tab(text: "Headers"),
+                      const Tab(text: "Info"),
+                    ],
                   ),
-                  const Tab(text: "Headers"),
-                  const Tab(text: "Info"),
-                ],
-              ),
-              Positioned(
-                right: 8,
-                top: 0,
-                bottom: 0,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    MyCustomMenu.contentColumn(
-                      popupKey: GlobalKey<CustomPopupState>(),
-                      items: [
-                        CustomMenuIconItem(
-                          icon: const SuryaThemeIcon(BulkRounded.copy01),
-                          onTap: (_) async {
-                            await Clipboard.setData(
-                              ClipboardData(text: response.body),
-                            );
-                          },
-                          title: Text("Copy"),
-                          value: "copy",
-                        ),
-                        CustomMenuIconItem(
-                          icon: const SuryaThemeIcon(BulkRounded.download01),
-                          onTap: (_) async {
-                            String? outputFile = await FilePicker.platform
-                                .saveFile(
-                                  dialogTitle: 'Save Response Body',
-                                  fileName: 'response',
-                                );
-
-                            if (outputFile != null) {
-                              try {
-                                final file = File(outputFile);
-                                await file.writeAsBytes(response.bodyBytes);
-                              } catch (e) {
-                                if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text("Failed to save file: $e"),
-                                      backgroundColor: Theme.of(
-                                        context,
-                                      ).colorScheme.error,
-                                    ),
-                                  );
-                                }
-                              }
-                            }
-                          },
-                          title: Text("Save"),
-                          value: "save",
-                        ),
-                        CustomMenuIconItem(
-                          icon: const SuryaThemeIcon(BulkRounded.delete01),
-                          title: Text("Delete"),
-                          value: "delete",
-                          onTap: (value) {
-                            ref
-                                .read(requestDetailsProvider(id).notifier)
-                                .deleteHistoryEntry(response.id);
-                          },
-                        ),
-                        LabeledDivider(text: "History"),
-                        CustomMenuIconItem(
-                          icon: const SuryaThemeIcon(BulkRounded.delete01),
-                          title: Text("Delete History"),
-                          value: "delete_history",
-                          onTap: (value) {
-                            ref
-                                .read(requestDetailsProvider(id).notifier)
-                                .deleteHistory();
-                          },
-                        ),
-                        ..._getHistoryList(id),
-                      ],
-                      child: Icon(Icons.more_vert, size: 16),
-                    ),
-                  ],
                 ),
-              ),
-            ],
+                const SizedBox(height: 8),
+                Expanded(
+                  child: LazyLoadIndexedStack(
+                    index: _index,
+                    children: [
+                      ResponseBodyTab(response: response, mode: _bodyViewMode),
+                      ResponseHeaders(id: id),
+                      ResponseInfoTab(response: response),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-        const SizedBox(height: 8),
-        Expanded(
-          child: LazyLoadIndexedStack(
-            index: _index,
-            children: [
-              ResponseBodyTab(response: response, mode: _bodyViewMode),
-              ResponseHeaders(id: id),
-              ResponseInfoTab(response: response),
-            ],
-          ),
-        ),
       ],
     );
   }
 
-  List<Widget> _getHistoryList(String id) {
-    final history = ref.watch(
-      requestDetailsProvider(id).select((s) => s.history),
-    );
-    final historyId = ref.watch(
-      fileTreeProvider.select(
-        (s) => (s.nodeMap[id]?.config as RequestNodeConfig).historyId,
-      ),
-    );
-    // final historyLen = history?.length ?? 0;
-
-    return history?.mapIndexed((i, h) {
-          return CustomMenuIconItem.tick(
-            checked: historyId != null ? historyId == h.id : i == 0,
-            title: Row(
-              children: [
-                Text(
-                  h.statusCode.toString(),
-                  style: TextStyle(color: statusCodeColor(h.statusCode)),
-                ),
-                const SizedBox(width: 12),
-                Text(formatDuration(h.durationMs)),
-              ],
-            ),
-            value: h.id,
-            onTap: (value) {
-              ref
-                  .read(fileTreeProvider.notifier)
-                  .updateRequestHistoryId(id, i == 0 ? null : h.id);
-            },
-          );
-        }).toList() ??
-        [];
-  }
-}
-
-class _ResponseTimer extends StatefulWidget {
-  final DateTime startTime;
-  const _ResponseTimer({required this.startTime});
-
-  @override
-  State<_ResponseTimer> createState() => _ResponseTimerState();
-}
-
-class _ResponseTimerState extends State<_ResponseTimer> {
-  late final Timer _timer;
-
-  @override
-  void initState() {
-    super.initState();
-    _timer = Timer.periodic(const Duration(milliseconds: 50), (timer) {
-      if (mounted) setState(() {});
-    });
-  }
-
-  @override
-  void dispose() {
-    _timer.cancel();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final ms = DateTime.now().difference(widget.startTime).inMilliseconds;
-    return Text(
-      formatDuration(ms),
-      style: const TextStyle(fontFamily: "monospace"),
-    );
-  }
+  // _getHistoryList moved to ResponseStatusBar
 }
 
 class _ErrorSearch extends StatelessWidget {

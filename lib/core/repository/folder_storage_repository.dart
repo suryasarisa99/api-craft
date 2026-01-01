@@ -441,4 +441,9 @@ class FolderStorageRepository implements StorageRepository {
   Future<void> clearWebSocketSessionMessages(String sessionId) {
     throw UnimplementedError();
   }
+
+  @override
+  Future<void> clearWebSocketHistory(String requestId) {
+    throw UnimplementedError();
+  }
 }

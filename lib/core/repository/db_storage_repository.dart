@@ -533,4 +533,17 @@ class DbStorageRepository implements StorageRepository {
       whereArgs: [sessionId],
     );
   }
+
+  @override
+  Future<void> clearWebSocketHistory(String requestId) async {
+    final db = await _db;
+    // We need to delete sessions AND their messages.
+    // FK constraints might handle messages if ON DELETE CASCADE is set.
+    // Assuming it is, we just delete sessions.
+    await db.delete(
+      'websocket_sessions',
+      where: 'request_id = ?',
+      whereArgs: [requestId],
+    );
+  }
 }

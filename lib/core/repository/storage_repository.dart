@@ -88,4 +88,5 @@ abstract class StorageRepository {
     int limit = 100,
   });
   Future<void> clearWebSocketSessionMessages(String sessionId);
+  Future<void> clearWebSocketHistory(String requestId);
 }

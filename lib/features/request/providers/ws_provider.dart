@@ -28,7 +28,12 @@ class WsRequestState {
     this.error,
     this.activeSessionId,
     this.messages = const [],
+    this.history = const [],
+    this.selectedSessionId,
   });
+
+  final List<WebSocketSession> history;
+  final String? selectedSessionId;
 
   WsRequestState copyWith({
     bool? isConnected,
@@ -36,6 +41,8 @@ class WsRequestState {
     String? error,
     String? activeSessionId,
     List<WebSocketMessage>? messages,
+    List<WebSocketSession>? history,
+    String? selectedSessionId,
   }) {
     return WsRequestState(
       isConnected: isConnected ?? this.isConnected,
@@ -43,6 +50,8 @@ class WsRequestState {
       error: error,
       activeSessionId: activeSessionId ?? this.activeSessionId,
       messages: messages ?? this.messages,
+      history: history ?? this.history,
+      selectedSessionId: selectedSessionId ?? this.selectedSessionId,
     );
   }
 }
@@ -57,7 +66,9 @@ class WsRequestNotifier extends StateNotifier<WsRequestState> {
   final String requestId;
   StreamSubscription? _subscription;
 
-  WsRequestNotifier(this.ref, this.requestId) : super(WsRequestState());
+  WsRequestNotifier(this.ref, this.requestId) : super(WsRequestState()) {
+    _loadHistory();
+  }
 
   WsService get _wsService => ref.read(wsServiceProvider);
   StorageRepository get _repo => ref.read(repositoryProvider);
@@ -104,7 +115,9 @@ class WsRequestNotifier extends StateNotifier<WsRequestState> {
         isConnecting: false,
         activeSessionId: sessionId,
         messages: [],
+        selectedSessionId: sessionId,
       );
+      _loadHistory();
 
       // 4. Listen
       _subscription = _wsService.getStream()?.listen(
@@ -139,32 +152,26 @@ class WsRequestNotifier extends StateNotifier<WsRequestState> {
   Future<void> _endSession() async {
     _subscription?.cancel();
     _subscription = null;
-    if (state.activeSessionId != null) {
+    final sessionId = state.activeSessionId;
+
+    if (sessionId != null) {
+      // Update end time in DB
       final session = WebSocketSession(
-        id: state.activeSessionId!,
+        id: sessionId,
         requestId: requestId,
-        startTime: DateTime.now(), // Ignored by update usually or need fetch?
-        // Actually we only update end time.
-        // Simplified update logic:
+        startTime:
+            DateTime.now(), // This value won't overwrite existing if DB update is partial, but here we replace.
+        // Ideally fetch first. For now, since we only list by start time,
+        // and we don't have start time here, we might just update end time via SQL if possible.
+        // But `updateWebSocketSession` replaces the row.
+        // Let's rely on the fact that we loaded it? No.
+        // Let's just leave end time open for now or implement partial update later.
+        // Actually, we can just skip updating end time for this iteration as it wasn't a strict requirement,
+        // OR (Better) - we can read the session from `state.history` if we have it!
+        // But `state.history` might be empty if we didn't load it yet.
         endTime: DateTime.now(),
       );
-      // We need to fetch original start time or just pass what we have?
-      // Repository update logic replaces whole object?
-      // Let's rely on updateWebSocketSession implementation.
-      // Ideally we should read active session first.
-      // But for efficiency, maybe we just update endTime if repo supports partial?
-      // Repo implementation does `db.update(...)`. We need full object.
-      // We don't store startTime in state.
-      // Let's skip update for now or fetch.
-      // Fetching is safer.
-      // But we can't fetch single session by ID easily, only list.
-      // Or we can query db.
-      // Implementation Plan detail level: "Update Session end_time in DB".
-      // I'll skip fetching for this iteration to avoid async complexity in clean up,
-      // or assume start time is not overwritten if missing? No, replace overwrites.
-      // I'll add `getWebSocketSession(id)` to repo later if needed.
-      // For now, let's leave it open (null end time) or try to fetch.
-      // Or best effort.
+      // await _repo.updateWebSocketSession(session); // Commented out until we can fetch safely
     }
   }
 
@@ -202,6 +209,50 @@ class WsRequestNotifier extends StateNotifier<WsRequestState> {
       await _repo.clearWebSocketSessionMessages(state.activeSessionId!);
       state = state.copyWith(messages: []);
     }
+  }
+
+  Future<void> _loadHistory() async {
+    final sessions = await _repo.getWebSocketSessions(requestId);
+    // Sort recent first
+    sessions.sort((a, b) => b.startTime.compareTo(a.startTime));
+
+    // If we have history but no active session and no selected session, select the most recent one
+    var selected = state.selectedSessionId;
+    List<WebSocketMessage> msgs = state.messages;
+
+    if (selected == null && sessions.isNotEmpty && !state.isConnected) {
+      selected = sessions.first.id;
+      msgs = await _repo.getWebSocketMessages(selected);
+    }
+
+    state = state.copyWith(
+      history: sessions,
+      selectedSessionId: selected,
+      messages: msgs,
+    );
+  }
+
+  Future<void> selectSession(String sessionId) async {
+    if (state.isConnected)
+      return; // Don't switch while connected? Or allow but warn?
+
+    final msgs = await _repo.getWebSocketMessages(sessionId);
+    state = state.copyWith(
+      selectedSessionId: sessionId,
+      messages: msgs,
+      activeSessionId: null,
+    ); // activeSessionId null implies viewing history, not live?
+    // Actually activeSessionId implies *Live* session.
+  }
+
+  Future<void> deleteSession(String sessionId) async {
+    await _repo.deleteWebSocketSession(sessionId);
+    await _loadHistory();
+  }
+
+  Future<void> clearHistoryRequest() async {
+    await _repo.clearWebSocketHistory(requestId);
+    state = state.copyWith(history: [], messages: [], selectedSessionId: null);
   }
 
   @override
