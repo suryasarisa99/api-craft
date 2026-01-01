@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:api_craft/core/providers/providers.dart';
+import 'package:api_craft/core/utils/formatters.dart';
 
 import 'package:api_craft/core/widgets/ui/custom_menu.dart';
 import 'package:api_craft/core/widgets/ui/surya_theme_icon.dart';
@@ -333,7 +334,7 @@ class _ResponseTAbState extends ConsumerState<ResponseTAb>
                   style: TextStyle(color: statusCodeColor(h.statusCode)),
                 ),
                 const SizedBox(width: 12),
-                Text(h.durationMs.toString()),
+                Text(formatDuration(h.durationMs)),
               ],
             ),
             value: h.id,
@@ -376,7 +377,10 @@ class _ResponseTimerState extends State<_ResponseTimer> {
   @override
   Widget build(BuildContext context) {
     final ms = DateTime.now().difference(widget.startTime).inMilliseconds;
-    return Text("${ms} ms", style: const TextStyle(fontFamily: "monospace"));
+    return Text(
+      formatDuration(ms),
+      style: const TextStyle(fontFamily: "monospace"),
+    );
   }
 }
 

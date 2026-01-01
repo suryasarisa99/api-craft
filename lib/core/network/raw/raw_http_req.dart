@@ -224,9 +224,9 @@ Future<RawHttpResponse> sendRawHttp({
       // If existing code passed Microseconds, then `durationMs` field is actually Microseconds.
       // Let's stick to microseconds to match existing behavior if that's what it was.
 
-      final durationMicros = responseReceivedTime
+      final durationMs = responseReceivedTime
           .difference(requestSentTime)
-          .inMicroseconds;
+          .inMilliseconds;
 
       // Re-parse or just update the tempResponse?
       // `tempResponse` is a final object. We might need to copyWith or just parse again correctly.
@@ -235,7 +235,7 @@ Future<RawHttpResponse> sendRawHttp({
       return parseRawResponse(
         allBytes,
         requestSentTime: requestSentTime,
-        durationMs: durationMicros,
+        durationMs: durationMs,
         requestId: requestId,
         redirectUrls: redirectUrls,
         finalUrl: currentUrl.toString(),

@@ -1,4 +1,5 @@
 import 'package:api_craft/features/response/models/http_response_model.dart';
+import 'package:api_craft/core/utils/formatters.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -18,7 +19,7 @@ class ResponseInfoTab extends StatelessWidget {
           "Status",
           "${response.statusCode} ${response.statusMessage}",
         ),
-        _buildInfoRow("Time", "${response.durationMs} ms"),
+        _buildInfoRow("Time", formatDuration(response.durationMs)),
         _buildInfoRow("Size", "$sizeInKb KB"),
         _buildInfoRow("Executed At", dateFormat.format(response.executeAt)),
         if (response.finalUrl != null) _buildInfoRow("URL", response.finalUrl!),
