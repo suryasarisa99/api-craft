@@ -48,27 +48,26 @@ class _ResponseTAbState extends ConsumerState<ResponseTAb>
 
   @override
   Widget build(BuildContext context) {
+    debugPrint("rebuild:::response-tab");
     final id = ref.watch(activeReqIdProvider);
     if (id == null) {
       return const Center(child: Text("No Active Request"));
     }
-    final node = ref.watch(activeReqProvider);
-    if (node == null) {
+    final requestType = ref.watch(
+      activeReqProvider.select((n) => n?.requestType),
+    );
+    if (requestType == null) {
       return const Center(child: Text("No Active Request"));
     }
+    final response = ref.watch(responseProvider(id));
     final isSending = ref.watch(
       reqComposeProvider(id).select((d) => d.isSending),
     );
     final sendError = ref.watch(
       reqComposeProvider(id).select((d) => d.sendError),
     );
-    // final sendStartTime = ref.watch(
-    //   reqComposeProvider(id).select((d) => d.sendStartTime),
-    // );
 
-    final response = ref.watch(responseProvider(id));
-
-    if (node.requestType == RequestType.ws) {
+    if (requestType == RequestType.ws) {
       final wsState = ref.watch(wsRequestProvider(id));
 
       Color statusColor = Colors.transparent;

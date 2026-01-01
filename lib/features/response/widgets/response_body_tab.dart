@@ -48,6 +48,7 @@ class ResponseBodyTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    debugPrint("rebuild:::response-body");
     if (mode == BodyViewMode.hex) {
       return HexViewer(bytes: response.bodyBytes);
     }

@@ -13,6 +13,7 @@ class BodyTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    debugPrint("rebuild:::body-tab");
     final (bodyType, isLoading, isDetailLoaded, bodyData) = ref.watch(
       reqComposeProvider(id).select((s) {
         final n = (s.node as RequestNode);

@@ -18,24 +18,25 @@ class RequestDetailsState {
   final InheritedRequest inherit;
   final List<RawHttpResponse>? history;
   final bool isLoading;
+  final Map<String, dynamic> bodyData;
 
   RequestDetailsState({
     this.body,
     this.inherit = const InheritedRequest.empty(),
     this.history,
     this.isLoading = true,
-  });
+    Map<String, dynamic>? bodyDataRef,
+  }) : bodyData = bodyDataRef ?? _parseBody(body);
 
-  Map<String, dynamic> get bodyData {
-    if (body == null || body!.isEmpty) return {};
+  static Map<String, dynamic> _parseBody(String? body) {
+    if (body == null || body.isEmpty) return {};
     try {
-      final decoded = jsonDecode(body!);
+      final decoded = jsonDecode(body);
       if (decoded is Map<String, dynamic>) {
         return decoded;
       }
       return {"text": body};
     } catch (_) {
-      // Fallback for migration: treat simple string as 'text'
       return {"text": body};
     }
   }
@@ -46,11 +47,16 @@ class RequestDetailsState {
     List<RawHttpResponse>? history,
     bool? isLoading,
   }) {
+    // If body changes, re-parse. If not, keep existing bodyData.
+    final newBody = body ?? this.body;
+    final shouldReparse = body != null && body != this.body;
+
     return RequestDetailsState(
-      body: body ?? this.body,
+      body: newBody,
       inherit: inherit ?? this.inherit,
       history: history ?? this.history,
       isLoading: isLoading ?? this.isLoading,
+      bodyDataRef: shouldReparse ? null : bodyData,
     );
   }
 }
@@ -65,9 +71,12 @@ class RequestDetailsNotifier extends Notifier<RequestDetailsState> {
   @override
   RequestDetailsState build() {
     _setupListeners();
-    ref.watch(environmentProvider);
+    ref.listen(environmentProvider, (_, _) {
+      refreshInheritance();
+    });
+
     _load();
-    return stateOrNull ?? RequestDetailsState();
+    return RequestDetailsState();
   }
 
   void _setupListeners() {
@@ -110,10 +119,6 @@ class RequestDetailsNotifier extends Notifier<RequestDetailsState> {
     if (historyId == null) return state.history!.first;
     return state.history?.firstWhere((e) => e.id == historyId);
   }
-
-  // void updateSelectedHistoryIndex(int? index) {
-  //   state = state.setHistoryIndex(index);
-  // }
 
   bool _isAncestor(String ancestorId) {
     final tree = ref.read(fileTreeProvider);
