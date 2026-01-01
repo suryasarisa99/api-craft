@@ -259,6 +259,22 @@ class FileTreeNotifier extends Notifier<TreeData> {
     }
   }
 
+  void updateRequestHistoryId(String id, String? historyId) {
+    final node = map[id];
+    if (node is RequestNode) {
+      updateNode(
+        node.copyWith(
+          config: node.config.copyWith(
+            historyId: historyId,
+            forceNullHistoryId: historyId == null,
+          ),
+        ),
+      );
+    }
+    final repo = ref.read(repositoryProvider);
+    repo.setHistoryIndex(id, historyId);
+  }
+
   // uses vs code like multiple folder creations by using `/`
   Future<void> createItem(
     String? parentId,

@@ -74,6 +74,7 @@ class RequestNodeConfig extends NodeConfig {
   List<KeyValueItem> queryParameters;
   String? bodyType;
   String? scripts;
+  String? historyId;
 
   RequestNodeConfig({
     super.headers,
@@ -83,6 +84,7 @@ class RequestNodeConfig extends NodeConfig {
     required this.queryParameters,
     this.bodyType,
     this.scripts,
+    this.historyId,
   });
 
   RequestNodeConfig.empty()
@@ -102,6 +104,10 @@ class RequestNodeConfig extends NodeConfig {
     List<KeyValueItem>? queryParameters,
     String? bodyType,
     String? scripts,
+    String? historyId,
+
+    // force historyId to null
+    bool forceNullHistoryId = false,
   }) {
     return RequestNodeConfig(
       headers: headers ?? this.headers,
@@ -111,6 +117,7 @@ class RequestNodeConfig extends NodeConfig {
       auth: auth ?? this.auth,
       description: description ?? this.description,
       isDetailLoaded: isDetailLoaded ?? this.isDetailLoaded,
+      historyId: forceNullHistoryId ? null : historyId ?? this.historyId,
     );
   }
 
@@ -124,6 +131,7 @@ class RequestNodeConfig extends NodeConfig {
       queryParameters: List<KeyValueItem>.from(queryParameters),
       bodyType: bodyType,
       scripts: scripts,
+      historyId: historyId,
     );
   }
 }

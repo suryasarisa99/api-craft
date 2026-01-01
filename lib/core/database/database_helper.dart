@@ -55,7 +55,10 @@ class Tables {
     body TEXT,
     body_type TEXT,
     scripts TEXT,
-    status_code INTEGER
+    status_code INTEGER,
+
+    -- 5. Response id
+    history_id TEXT     -- selected response id
       )
     ''',
     history: '''CREATE TABLE $history (
@@ -164,40 +167,17 @@ class DatabaseHelper {
 
     final db = await openDatabase(
       path,
-      version: 3,
+      version: 1,
       onCreate: (db, version) async {
         await Tables.createAllTables(db);
         await _ensureDefaults(db);
       },
       onUpgrade: (db, oldVersion, newVersion) async {
-        if (oldVersion < 2) {
-          // Migration to v2: Add redirect_urls to request_history
-          try {
-            await db.execute(
-              'ALTER TABLE ${Tables.history} ADD COLUMN redirect_urls TEXT',
-            );
-          } catch (e) {
-            // Check if column exists or ignore
-          }
-        }
-
-        if (oldVersion < 3) {
-          // Migration to v3: Add final_url to request_history
-          try {
-            await db.execute(
-              'ALTER TABLE ${Tables.history} ADD COLUMN final_url TEXT',
-            );
-          } catch (e) {
-            // ignore
-          }
-        }
-
-        // Only Drop All if it's a major breaking change or we decide to wipe
-        // For now, we preserve data.
-        // await Tables.dropAllTables(db);
-        // await Tables.createAllTables(db);
-        // await _ensureDefaults(db);
-        // prefs.clear();
+        // for development only
+        await Tables.dropAllTables(db);
+        await Tables.createAllTables(db);
+        await _ensureDefaults(db);
+        prefs.clear();
       },
       onDowngrade: (db, oldVersion, newVersion) async {
         // for development only

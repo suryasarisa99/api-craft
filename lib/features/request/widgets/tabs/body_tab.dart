@@ -13,10 +13,18 @@ class BodyTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(reqComposeProvider(id));
-    final node = state.node;
-    final bodyType = node is RequestNode ? node.config.bodyType : null;
-    if (state.isLoading || !node.config.isDetailLoaded) {
+    final (bodyType, isLoading, isDetailLoaded, bodyData) = ref.watch(
+      reqComposeProvider(id).select((s) {
+        final n = (s.node as RequestNode);
+        return (
+          n.config.bodyType,
+          s.isLoading,
+          n.config.isDetailLoaded,
+          s.bodyData,
+        );
+      }),
+    );
+    if (isLoading || !isDetailLoaded) {
       return const Center(child: CircularProgressIndicator());
     }
 
@@ -36,7 +44,7 @@ class BodyTab extends ConsumerWidget {
     if (bodyType == BodyType.formMultipart ||
         bodyType == BodyType.formUrlEncoded) {
       final items =
-          (state.bodyData['form'] as List?)
+          (bodyData['form'] as List?)
               ?.map((e) => FormDataItem.fromMap(e))
               .toList() ??
           [];
@@ -70,10 +78,11 @@ class BodyTab extends ConsumerWidget {
     // Existing code editor likely handles text-based bodies.
     return CFCodeEditor(
       key: ValueKey(bodyType),
-      text: (state.bodyData['text'] as String?) ?? '',
+      text: (bodyData['text'] as String?) ?? '',
       language: bodyType,
       readOnly: false,
       onChanged: (newBody) {
+        debugPrint("newBody: $newBody");
         ref.read(reqComposeProvider(id).notifier).updateBodyText(newBody);
       },
       // You might want to update language definition if bodyType string doesn't match highlighter languages exactly.

@@ -347,6 +347,16 @@ class FolderStorageRepository implements StorageRepository {
   }
 
   @override
+  Future<void> deleteCurrHistory(String historyId) async {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> setHistoryIndex(String requestId, String? historyId) {
+    throw UnimplementedError();
+  }
+
+  @override
   Future<void> clearHistoryForCollection() {
     throw UnimplementedError();
   }

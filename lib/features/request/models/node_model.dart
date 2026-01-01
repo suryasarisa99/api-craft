@@ -202,7 +202,7 @@ class RequestNode extends Node<RequestNodeConfig> {
     config.queryParameters = Node.parseHeaders(details['query_parameters']);
     config.bodyType = details['body_type'];
     config.scripts = details['scripts'];
-
+    config.historyId = details['history_id'];
     config.isDetailLoaded = true;
   }
 
@@ -237,6 +237,7 @@ class RequestNode extends Node<RequestNodeConfig> {
             : [],
         bodyType: map['body_type'],
         scripts: map['scripts'],
+        historyId: map['history_id'],
       ),
     );
   }

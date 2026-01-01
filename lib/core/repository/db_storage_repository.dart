@@ -1,4 +1,5 @@
 import 'package:api_craft/core/constants/globals.dart';
+import 'package:api_craft/core/database/database_helper.dart';
 import 'package:api_craft/core/models/models.dart';
 import 'package:api_craft/features/request/models/websocket_session.dart';
 import 'package:api_craft/features/request/models/websocket_message.dart';
@@ -105,6 +106,7 @@ class DbStorageRepository implements StorageRepository {
         'description',
         'body_type',
         'scripts',
+        'history_id',
       ],
       where: 'id = ?',
       whereArgs: [id],
@@ -333,6 +335,17 @@ class DbStorageRepository implements StorageRepository {
     return res.map((e) => RawHttpResponse.fromMap(e)).toList();
   }
 
+  @override
+  Future<void> setHistoryIndex(String requestId, String? historyId) async {
+    final db = await _db;
+    await db.update(
+      Tables.nodes,
+      {'history_id': historyId},
+      where: 'id = ? AND collection_id = ?',
+      whereArgs: [requestId, collectionId],
+    );
+  }
+
   /// Clear history for a node
   @override
   Future<void> clearHistory(String requestId) async {
@@ -342,6 +355,12 @@ class DbStorageRepository implements StorageRepository {
       where: 'request_id = ?',
       whereArgs: [requestId],
     );
+  }
+
+  @override
+  Future<void> deleteCurrHistory(String historyId) async {
+    final db = await _db;
+    await db.delete('request_history', where: 'id = ?', whereArgs: [historyId]);
   }
 
   @override

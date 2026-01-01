@@ -43,11 +43,11 @@ class _CFCodeEditorState extends State<CFCodeEditor> {
   }
 
   void _onChanged() {
-    debouncer.run(() {
-      if (widget.onChanged != null && _controller.text != widget.text) {
-        widget.onChanged!(_controller.text);
-      }
-    });
+    if (widget.onChanged != null && _controller.text != widget.text) {
+      widget.onChanged!(_controller.text);
+    }
+    // debouncer.run(() {
+    // });
   }
 
   @override

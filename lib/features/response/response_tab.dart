@@ -2,9 +2,14 @@ import 'dart:async';
 import 'package:api_craft/core/providers/providers.dart';
 
 import 'package:api_craft/core/widgets/ui/custom_menu.dart';
+import 'package:api_craft/core/widgets/ui/surya_theme_icon.dart';
+import 'package:api_craft/features/request/providers/request_details_provider.dart';
 import 'package:api_craft/features/response/response_headers.dart';
+import 'package:api_craft/features/response/response_provider.dart';
+import 'package:api_craft/features/response/utils/status_code_clr.dart';
 import 'package:api_craft/features/response/widgets/response_body_tab.dart';
 import 'package:api_craft/features/response/widgets/response_info_tab.dart';
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_popup/flutter_popup.dart';
@@ -15,7 +20,10 @@ import 'package:api_craft/features/request/providers/ws_provider.dart';
 import 'package:api_craft/features/response/widgets/ws_response_tab.dart';
 import 'package:flutter/services.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:suryaicons/bulk_rounded.dart';
 import 'dart:io';
+
+import 'package:suryaicons/suryaicons.dart';
 
 enum BodyViewMode { pretty, raw, hex, json }
 
@@ -64,9 +72,8 @@ class _ResponseTAbState extends ConsumerState<ResponseTAb>
     final sendStartTime = ref.watch(
       reqComposeProvider(id).select((d) => d.sendStartTime),
     );
-    final response = ref.watch(
-      reqComposeProvider(id).select((d) => d.history?.firstOrNull),
-    );
+
+    final response = ref.watch(responseProvider(id));
 
     if (node.requestType == RequestType.ws) {
       final wsState = ref.watch(wsRequestProvider(id));
@@ -220,6 +227,7 @@ class _ResponseTAbState extends ConsumerState<ResponseTAb>
                       popupKey: GlobalKey<CustomPopupState>(),
                       items: [
                         CustomMenuIconItem(
+                          icon: const SuryaThemeIcon(BulkRounded.copy01),
                           onTap: (_) async {
                             await Clipboard.setData(
                               ClipboardData(text: response.body),
@@ -229,6 +237,7 @@ class _ResponseTAbState extends ConsumerState<ResponseTAb>
                           value: "copy",
                         ),
                         CustomMenuIconItem(
+                          icon: const SuryaThemeIcon(BulkRounded.download01),
                           onTap: (_) async {
                             String? outputFile = await FilePicker.platform
                                 .saveFile(
@@ -257,6 +266,28 @@ class _ResponseTAbState extends ConsumerState<ResponseTAb>
                           title: Text("Save"),
                           value: "save",
                         ),
+                        CustomMenuIconItem(
+                          icon: const SuryaThemeIcon(BulkRounded.delete01),
+                          title: Text("Delete"),
+                          value: "delete",
+                          onTap: (value) {
+                            ref
+                                .read(requestDetailsProvider(id).notifier)
+                                .deleteHistoryEntry(response.id);
+                          },
+                        ),
+                        LabeledDivider(text: "History"),
+                        CustomMenuIconItem(
+                          icon: const SuryaThemeIcon(BulkRounded.delete01),
+                          title: Text("Delete History"),
+                          value: "delete_history",
+                          onTap: (value) {
+                            ref
+                                .read(requestDetailsProvider(id).notifier)
+                                .deleteHistory();
+                          },
+                        ),
+                        ..._getHistoryList(id),
                       ],
                       child: Icon(Icons.more_vert, size: 16),
                     ),
@@ -279,6 +310,41 @@ class _ResponseTAbState extends ConsumerState<ResponseTAb>
         ),
       ],
     );
+  }
+
+  List<Widget> _getHistoryList(String id) {
+    final history = ref.watch(
+      requestDetailsProvider(id).select((s) => s.history),
+    );
+    final historyId = ref.watch(
+      fileTreeProvider.select(
+        (s) => (s.nodeMap[id]?.config as RequestNodeConfig).historyId,
+      ),
+    );
+    // final historyLen = history?.length ?? 0;
+
+    return history?.mapIndexed((i, h) {
+          return CustomMenuIconItem.tick(
+            checked: historyId != null ? historyId == h.id : i == 0,
+            title: Row(
+              children: [
+                Text(
+                  h.statusCode.toString(),
+                  style: TextStyle(color: statusCodeColor(h.statusCode)),
+                ),
+                const SizedBox(width: 12),
+                Text(h.durationMs.toString()),
+              ],
+            ),
+            value: h.id,
+            onTap: (value) {
+              ref
+                  .read(fileTreeProvider.notifier)
+                  .updateRequestHistoryId(id, i == 0 ? null : h.id);
+            },
+          );
+        }).toList() ??
+        [];
   }
 }
 

@@ -8,12 +8,10 @@ import 'dart:convert';
 
 import '../../../core/repository/storage_repository.dart';
 
-final requestDetailsProvider =
-    NotifierProvider.family<
-      RequestDetailsNotifier,
-      RequestDetailsState,
-      String
-    >(RequestDetailsNotifier.new);
+final requestDetailsProvider = NotifierProvider.autoDispose
+    .family<RequestDetailsNotifier, RequestDetailsState, String>(
+      RequestDetailsNotifier.new,
+    );
 
 class RequestDetailsState {
   final String? body;
@@ -95,6 +93,7 @@ class RequestDetailsNotifier extends Notifier<RequestDetailsState> {
     final body = await _repo.getBody(id) ?? '';
     final history = await _repo.getHistory(id);
 
+    // final selectedHistoryIndex = history.indexWhere((e) => e.id == historyId);
     state = RequestDetailsState(
       body: body,
       history: history,
@@ -102,6 +101,19 @@ class RequestDetailsNotifier extends Notifier<RequestDetailsState> {
       isLoading: false,
     );
   }
+
+  RawHttpResponse? get selectedHistory {
+    final node = ref.read(fileTreeProvider).nodeMap[id];
+    final historyId = node is RequestNode ? node.config.historyId : null;
+
+    if (state.history?.isEmpty ?? true) return null;
+    if (historyId == null) return state.history!.first;
+    return state.history?.firstWhere((e) => e.id == historyId);
+  }
+
+  // void updateSelectedHistoryIndex(int? index) {
+  //   state = state.setHistoryIndex(index);
+  // }
 
   bool _isAncestor(String ancestorId) {
     final tree = ref.read(fileTreeProvider);
@@ -169,9 +181,24 @@ class RequestDetailsNotifier extends Notifier<RequestDetailsState> {
     }
     state = state.copyWith(history: updatedHistory);
 
-    ref
-        .read(fileTreeProvider.notifier)
-        .updateRequestStatusCode(id, entry.statusCode);
+    final fileTree = ref.read(fileTreeProvider);
+    final fileTreeNotifier = ref.read(fileTreeProvider.notifier);
+    fileTreeNotifier.updateRequestStatusCode(id, entry.statusCode);
     _repo.addHistoryEntry(entry);
+    if ((fileTree.nodeMap[id] as RequestNode).config.historyId != null) {
+      fileTreeNotifier.updateRequestHistoryId(id, null);
+    }
+  }
+
+  void deleteHistory() {
+    state = state.copyWith(history: []);
+    _repo.clearHistory(id);
+  }
+
+  void deleteHistoryEntry(String historyId) {
+    state = state.copyWith(
+      history: state.history?.where((e) => e.id != historyId).toList(),
+    );
+    _repo.deleteCurrHistory(historyId);
   }
 }
