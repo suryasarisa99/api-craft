@@ -137,13 +137,11 @@ class RequestResolver {
     final fullUri = _handleUri(uri, queryParams);
 
     // Headers Handling
-    final rawHeaders = await Future.wait(
-      _handleHeaders(node.config.headers, inheritedHeaders).map((h) async {
-        return [
-          await resolveVariables(h[0], resolver, context: context),
-          await resolveVariables(h[1], resolver, context: context),
-        ];
-      }).toList(),
+    final rawHeaders = await _handleHeaders(
+      node.config.headers,
+      inheritedHeaders,
+      resolver: resolver,
+      context: context,
     );
 
     // Merge generated content headers (e.g. multipart boundary)
@@ -628,15 +626,29 @@ class RequestResolver {
     return cleanedItems;
   }
 
-  List<List<String>> _handleHeaders(
+  Future<List<List<String>>> _handleHeaders(
     List<KeyValueItem> headers,
-    List<KeyValueItem> inherited,
-  ) {
+    List<KeyValueItem> inherited, {
+    required LazyVariableResolver resolver,
+    required BuildContext context,
+  }) async {
     final merged = [
       ...cleanKeyValueItems(inherited),
       ...cleanKeyValueItems(headers),
     ];
-    return HeaderUtils.handleHeaders(merged);
+    //resolves headers keys first and then handles later,to prevent handle headers key case convertion/merging header by keys.
+    final resolvedHeaderKeys = await Future.wait(
+      merged.map((h) async {
+        return [await resolver.resolve(h[0], context: context), h[1]];
+      }),
+    );
+    final handledHeaders = HeaderUtils.handleHeaders(resolvedHeaderKeys);
+    final resolvedHeaders = await Future.wait(
+      handledHeaders.map((h) async {
+        return [h[0], await resolver.resolve(h[1], context: context)];
+      }),
+    );
+    return resolvedHeaders;
   }
 
   Uri _handleUri(Uri url, List<List<String>> params) {
