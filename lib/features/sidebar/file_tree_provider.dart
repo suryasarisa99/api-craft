@@ -374,7 +374,7 @@ class FileTreeNotifier extends Notifier<TreeData> {
   Future<void> duplicateFolder(FolderNode node) async {
     final allNodes = [
       node,
-      ...getChildrenNodes(node),
+      ...getChildrenNodes(node, includeFolders: true),
     ]; // includes the folder itself
     final idMap = <String, String>{}; // oldId → newId
 
@@ -433,14 +433,20 @@ class FileTreeNotifier extends Notifier<TreeData> {
     state = state.copyWith(nodeMap: map);
   }
 
-  List<Node> getChildrenNodes(FolderNode folder) {
+  List<Node> getChildrenNodes(FolderNode folder, {bool includeFolders = true}) {
     final children = <Node>[];
     for (final childId in folder.children) {
       final childNode = map[childId];
       if (childNode != null) {
-        children.add(childNode);
         if (childNode is FolderNode) {
-          children.addAll(getChildrenNodes(childNode));
+          if (includeFolders) {
+            children.add(childNode);
+          }
+          children.addAll(
+            getChildrenNodes(childNode, includeFolders: includeFolders),
+          );
+        } else {
+          children.add(childNode);
         }
       }
     }
@@ -449,7 +455,7 @@ class FileTreeNotifier extends Notifier<TreeData> {
 
   List<String> getRecursiveRequestIds(
     Set<String> nodeIds, {
-    bool includeFolders = false,
+    bool includeFolders = true,
   }) {
     final requestIds = <String>{};
     for (final id in nodeIds) {
@@ -458,15 +464,17 @@ class FileTreeNotifier extends Notifier<TreeData> {
       if (node is RequestNode) {
         requestIds.add(node.id);
       } else if (node is FolderNode) {
-        requestIds.addAll(
-          getChildrenNodes(node).whereType<RequestNode>().map((n) => n.id),
-        );
+        final subIds = getChildrenNodes(
+          node,
+          includeFolders: includeFolders,
+        ).map((n) => n.id);
+        requestIds.addAll(includeFolders ? [node.id, ...subIds] : subIds);
       }
     }
     return requestIds.toList();
   }
 
-  List<String> getRecursiveSelectedIds({bool includeFolders = false}) {
+  List<String> getRecursiveSelectedIds({bool includeFolders = true}) {
     final selected = ref.read(selectedNodesProvider);
     final selectedIds = selected.isNotEmpty
         ? selected
@@ -474,15 +482,8 @@ class FileTreeNotifier extends Notifier<TreeData> {
     return getRecursiveRequestIds(selectedIds, includeFolders: includeFolders);
   }
 
-  List<String> getDeleteNodesIds(Node node) {
-    if (node is RequestNode) {
-      return [node.id];
-    }
-    return [node.id, ...getChildrenNodes(node as FolderNode).map((n) => n.id)];
-  }
-
   Future<void> runSelectedRequests(BuildContext context) async {
-    final requestIds = getRecursiveSelectedIds();
+    final requestIds = getRecursiveSelectedIds(includeFolders: false);
     if (requestIds.isEmpty) return;
     final httpService = HttpService();
     // Sequential Execution
