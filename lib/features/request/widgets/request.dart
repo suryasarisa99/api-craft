@@ -39,9 +39,6 @@ class _RequestTabState extends ConsumerState<RequestTab>
     with SingleTickerProviderStateMixin {
   /// tabs
   late final List<Widget> children = [
-    // widget.node.requestType == RequestType.ws
-    //     ? WsMessageTab(requestId: widget.node.id)
-    //     :
     BodyTab(id: widget.node.id),
     QueryParamsTab(id: widget.node.id),
     HeadersTab(id: widget.node.id),
