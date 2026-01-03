@@ -11,6 +11,8 @@ import 'package:super_context_menu/super_context_menu.dart';
 import 'package:api_craft/core/providers/providers.dart';
 // {required FutureOr<Menu?> Function(MenuRequest) menuProvider}
 
+import 'package:api_craft/features/request/services/http_service.dart';
+
 FutureOr<Menu?> getMenuProvider({
   required WidgetRef ref,
   required BuildContext context,
@@ -29,13 +31,24 @@ FutureOr<Menu?> getMenuProvider({
         )
       else
         ..._getFileSpecificMenuActions(ref: ref, context: context, node: node!),
-      if (node != null) ..._getCommonMenuActions(ref, node),
+      if (node != null) ..._getCommonMenuActions(ref, node, context),
     ],
   );
 }
 
-List<MenuElement> _getCommonMenuActions(WidgetRef ref, Node node) {
+List<MenuElement> _getCommonMenuActions(
+  WidgetRef ref,
+  Node node,
+  BuildContext context,
+) {
   return [
+    MenuAction(
+      title: 'Run',
+      // icon: Icons.play_arrow, // MenuAction might not support icon depending on pkg
+      callback: () {
+        ref.read(fileTreeProvider.notifier).runSelectedRequests(context);
+      },
+    ),
     MenuSeparator(),
     MenuAction(
       title: 'Copy',
@@ -75,13 +88,7 @@ List<MenuElement> _getCommonMenuActions(WidgetRef ref, Node node) {
     MenuAction(
       title: 'Delete',
       callback: () {
-        // Smart Delete: If selection contains this node, delete ALl selected.
-        // Otherwise just delete this node.
-        final selected = ref.read(selectedNodesProvider);
-        final nodesToDelete = selected.contains(node.id)
-            ? selected.toList()
-            : [node.id];
-        ref.read(fileTreeProvider.notifier).deleteNodes(nodesToDelete);
+        ref.read(fileTreeProvider.notifier).deleteSelectedNodes();
       },
     ),
   ];

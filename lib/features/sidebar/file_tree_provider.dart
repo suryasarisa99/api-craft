@@ -1,6 +1,8 @@
 import 'package:api_craft/core/models/models.dart';
 import 'package:api_craft/core/providers/providers.dart';
+import 'package:api_craft/core/providers/ref_provider.dart';
 import 'package:api_craft/core/repository/storage_repository.dart';
+import 'package:api_craft/features/request/services/http_service.dart';
 import 'package:api_craft/features/sidebar/providers/clipboard_provider.dart';
 import 'package:api_craft/features/request/widgets/tabs/tab_titles.dart';
 import 'package:flutter/cupertino.dart';
@@ -445,6 +447,33 @@ class FileTreeNotifier extends Notifier<TreeData> {
     return children;
   }
 
+  List<String> getRecursiveRequestIds(
+    Set<String> nodeIds, {
+    bool includeFolders = false,
+  }) {
+    final requestIds = <String>{};
+    for (final id in nodeIds) {
+      final node = map[id];
+      if (node == null) continue;
+      if (node is RequestNode) {
+        requestIds.add(node.id);
+      } else if (node is FolderNode) {
+        requestIds.addAll(
+          getChildrenNodes(node).whereType<RequestNode>().map((n) => n.id),
+        );
+      }
+    }
+    return requestIds.toList();
+  }
+
+  List<String> getRecursiveSelectedIds({bool includeFolders = false}) {
+    final selected = ref.read(selectedNodesProvider);
+    final selectedIds = selected.isNotEmpty
+        ? selected
+        : {ref.read(activeReqIdProvider)!};
+    return getRecursiveRequestIds(selectedIds, includeFolders: includeFolders);
+  }
+
   List<String> getDeleteNodesIds(Node node) {
     if (node is RequestNode) {
       return [node.id];
@@ -452,30 +481,34 @@ class FileTreeNotifier extends Notifier<TreeData> {
     return [node.id, ...getChildrenNodes(node as FolderNode).map((n) => n.id)];
   }
 
-  Future<void> deleteNode(Node node) async {
-    await deleteNodes([node.id]);
-  }
-
-  Future<void> deleteNodes(List<String> nodeIds) async {
-    if (state.isLoading) return;
-
-    // 1. Expand selection to include ALL descendants (Recursive)
-    final allIdsToDelete = <String>{};
-    for (final id in nodeIds) {
-      final node = map[id];
-      if (node != null) {
-        allIdsToDelete.addAll(getDeleteNodesIds(node));
+  Future<void> runSelectedRequests(BuildContext context) async {
+    final requestIds = getRecursiveSelectedIds();
+    if (requestIds.isEmpty) return;
+    final httpService = HttpService();
+    // Sequential Execution
+    final r = ref.read(refProvider); //to prevent circular dependency
+    for (final reqId in requestIds) {
+      try {
+        httpService.run(r, reqId, context: context);
+      } catch (e) {
+        debugPrint("Error running request $reqId: $e");
       }
     }
+  }
 
-    // 2. Repo Delete
-    await _repo.deleteItems(allIdsToDelete.toList());
+  Future<void> deleteNode(Node node) async {
+    await _deleteNodes([node.id]);
+  }
 
-    // 3. Local State Update
-    // We need to remove them from map AND update their parents children lists.
-    // Optimization: Group by parent?
-    // Or just brute force update parents?
+  Future<void> deleteSelectedNodes() async {
+    await _deleteNodes(getRecursiveSelectedIds(includeFolders: true));
+  }
 
+  Future<void> _deleteNodes(List<String> nodeIds) async {
+    // 1. Repo Delete
+    await _repo.deleteItems(nodeIds);
+
+    // 2. Local State Update
     // Let's identify unique parents of the Top-Level deleted nodes to minimize updates.
     // The `getDeleteNodesIds` returns the subtree. We only need to detach from parents of the roots of these subtrees.
     // But `nodeIds` might contain children of other nodes in `nodeIds`.
@@ -484,11 +517,11 @@ class FileTreeNotifier extends Notifier<TreeData> {
     final currentMap = Map<String, Node>.from(state.nodeMap);
     final parentsToUpdate = <String>{};
 
-    for (final id in allIdsToDelete) {
+    for (final id in nodeIds) {
       final node = currentMap[id];
       if (node != null && node.parentId != null) {
         // If parent is NOT in delete list, we must update it
-        if (!allIdsToDelete.contains(node.parentId)) {
+        if (!nodeIds.contains(node.parentId)) {
           parentsToUpdate.add(node.parentId!);
         }
       }
@@ -503,7 +536,7 @@ class FileTreeNotifier extends Notifier<TreeData> {
         parentId: pId,
         updateFn: (parent) {
           final newChildren = parent.children
-              .where((cId) => !allIdsToDelete.contains(cId))
+              .where((cId) => !nodeIds.contains(cId))
               .toList();
           return parent.copyWith(children: newChildren);
         },
@@ -512,7 +545,7 @@ class FileTreeNotifier extends Notifier<TreeData> {
 
     // 5. Clear active ID if deleted
     final activeId = ref.read(activeReqIdProvider);
-    if (activeId != null && allIdsToDelete.contains(activeId)) {
+    if (activeId != null && nodeIds.contains(activeId)) {
       _activeReqNotifier.setActiveId(null);
     }
   }

@@ -53,9 +53,7 @@ class FileExplorerView extends ConsumerWidget {
           const SingleActivator(LogicalKeyboardKey.delete): () {
             final selected = ref.read(selectedNodesProvider);
             if (selected.isNotEmpty) {
-              ref
-                  .read(fileTreeProvider.notifier)
-                  .deleteNodes(selected.toList());
+              ref.read(fileTreeProvider.notifier).deleteSelectedNodes();
             }
           },
         },
