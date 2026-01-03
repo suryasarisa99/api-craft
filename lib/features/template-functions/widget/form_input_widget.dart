@@ -330,10 +330,7 @@ class _FormWidgetHttpRequestState extends ConsumerState<FormWidgetHttpRequest> {
     // only http and graphql requests
     requestNodes = [
       for (final node in nodes)
-        if (node is RequestNode &&
-            (node.requestType == RequestType.http ||
-                node.requestType == RequestType.grapql))
-          node,
+        if (node is RequestNode && node.requestType == RequestType.http) node,
     ];
   }
 

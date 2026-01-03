@@ -13,6 +13,7 @@ class BodyType {
   static const text = "Text";
   static const xml = "XML";
   static const binaryFile = "Binary File";
+  static const graphql = "GraphQL";
 }
 
 class BodyHeader extends ConsumerWidget {
@@ -23,7 +24,12 @@ class BodyHeader extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final formReleated = [BodyType.formUrlEncoded, BodyType.formMultipart];
-    final textReleated = [BodyType.json, BodyType.xml, BodyType.text];
+    final textReleated = [
+      BodyType.json,
+      BodyType.xml,
+      BodyType.text,
+      BodyType.graphql,
+    ];
     final otherReleated = [BodyType.binaryFile, BodyType.noBody];
     final currBodyType = ref.watch(
       reqComposeProvider(

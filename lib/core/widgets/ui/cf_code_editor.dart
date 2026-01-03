@@ -8,6 +8,7 @@ import 'package:re_highlight/re_highlight.dart';
 import 'package:re_highlight/languages/json.dart';
 import 'package:re_highlight/languages/xml.dart';
 import 'package:re_highlight/languages/javascript.dart';
+import 'package:re_highlight/languages/graphql.dart';
 import 'package:re_highlight/styles/atom-one-dark.dart';
 
 class CFCodeEditor extends StatefulWidget {
@@ -73,6 +74,7 @@ class _CFCodeEditorState extends State<CFCodeEditor> {
     if (l.contains('json')) return langJson;
     if (l.contains('xml') || l.contains('html')) return langXml;
     if (l.contains('javascript') || l.contains('js')) return langJavascript;
+    if (l.contains('graphql')) return langGraphql;
     return null;
   }
 

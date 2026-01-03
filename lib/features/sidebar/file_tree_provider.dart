@@ -204,24 +204,14 @@ class FileTreeNotifier extends Notifier<TreeData> {
       headers.removeWhere((h) => h.key.toLowerCase() == 'content-type');
 
       if (type != null) {
-        String? contentType;
-        switch (type) {
-          case BodyType.json:
-            contentType = 'application/json';
-            break;
-          case BodyType.xml:
-            contentType = 'application/xml';
-            break;
-          case BodyType.text:
-            contentType = 'text/plain';
-            break;
-          case BodyType.formUrlEncoded:
-            contentType = 'application/x-www-form-urlencoded';
-            break;
-          case BodyType.formMultipart:
-            contentType = 'multipart/form-data';
-            break;
-        }
+        String? contentType = switch (type) {
+          BodyType.json || BodyType.graphql => 'application/json',
+          BodyType.xml => 'application/xml',
+          BodyType.text => 'text/plain',
+          BodyType.formUrlEncoded => 'application/x-www-form-urlencoded',
+          BodyType.formMultipart => 'multipart/form-data',
+          _ => null,
+        };
 
         if (contentType != null) {
           headers.add(KeyValueItem(key: 'Content-Type', value: contentType));
@@ -281,12 +271,15 @@ class FileTreeNotifier extends Notifier<TreeData> {
     String name,
     NodeType type, {
     RequestType requestType = RequestType.http,
+    String? bodyType,
   }) async {
     if (state.isLoading) return;
 
     final methodStr = (type == NodeType.request)
         ? requestType == RequestType.ws
               ? 'WS'
+              : bodyType == BodyType.graphql
+              ? 'POST'
               : 'GET'
         : null;
 
@@ -336,9 +329,14 @@ class FileTreeNotifier extends Notifier<TreeData> {
           sortOrder: 0,
           config: RequestNodeConfig(
             queryParameters: [],
-            bodyType: requestType == RequestType.ws
-                ? BodyType.text
-                : BodyType.noBody,
+            headers: bodyType == BodyType.graphql
+                ? [KeyValueItem(key: 'Content-Type', value: 'application/json')]
+                : [],
+            bodyType:
+                bodyType ??
+                (requestType == RequestType.ws
+                    ? BodyType.text
+                    : BodyType.noBody),
           ),
         ),
       );

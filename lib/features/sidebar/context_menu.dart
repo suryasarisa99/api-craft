@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:api_craft/features/request/widgets/tabs/tab_titles.dart';
 import 'package:api_craft/features/sidebar/providers/clipboard_provider.dart';
 
 import 'package:api_craft/core/widgets/dialog/input_dialog.dart';
@@ -127,6 +128,19 @@ List<MenuElement> _getFolderSpecificMenuActions({
       },
     ),
     MenuAction(
+      title: 'GraphQL Request',
+      callback: () {
+        createFile(
+          context: context,
+          ref: ref,
+          isRoot: isRoot,
+          parentId: parentId,
+          type: RequestType.http,
+          bodyType: BodyType.graphql,
+        );
+      },
+    ),
+    MenuAction(
       title: 'New Folder',
       callback: () {
         createFolder(
@@ -216,13 +230,16 @@ void createFile({
   required bool isRoot,
   bool useSelectedNode = false,
   String? parentId,
+  String? bodyType,
   RequestType type = RequestType.http,
 }) {
   showDialog(
     context: context,
     builder: (context) {
       return InputDialog(
-        title: type == RequestType.http
+        title: bodyType == "GraphQL"
+            ? "New GraphQL Request"
+            : type == RequestType.http
             ? "New HTTP Request"
             : "New WebSocket Request",
         placeholder: "File Name",
@@ -237,6 +254,7 @@ void createFile({
                 fileName,
                 NodeType.request,
                 requestType: type,
+                bodyType: bodyType,
               );
         },
       );

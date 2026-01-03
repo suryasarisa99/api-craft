@@ -75,6 +75,10 @@ class ReqComposeNotifier extends Notifier<UiRequestContext> {
     _detailsNotifier.updateBodyText(text);
   }
 
+  void updateBodyMap(Map<String, dynamic> map) {
+    _detailsNotifier.updateBodyMap(map);
+  }
+
   void updateBodyFile(String path) {
     _detailsNotifier.updateBodyFile(path);
   }

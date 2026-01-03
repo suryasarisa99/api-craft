@@ -15,6 +15,8 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+final requestResolverProvider = Provider((ref) => RequestResolver(ref));
+
 class RequestResolver {
   final Ref ref;
   late final RequestHydrator _hydrator = RequestHydrator(ref);
@@ -99,12 +101,20 @@ class RequestResolver {
     final resolver = LazyVariableResolver(mergedVars, this);
 
     // Resolve Body & Content-Type Headers
-    final (resolvedBody, contentHeaders) = await _resolveBody(
-      bodyStr,
-      node.config.bodyType,
-      resolver,
-      context,
-    );
+    (dynamic, List<List<String>>?) bodyResult;
+    if (node.config.bodyType == BodyType.graphql) {
+      bodyResult = await _resolveGraphqlBody(bodyStr, resolver, context);
+    } else {
+      bodyResult = await _resolveBody(
+        bodyStr,
+        node.config.bodyType,
+        resolver,
+        context,
+      );
+    }
+
+    final resolvedBody = bodyResult.$1;
+    final contentHeaders = bodyResult.$2;
 
     final resolvedUrl = await resolveVariables(
       node.url,
@@ -379,6 +389,63 @@ class RequestResolver {
     }
 
     return (null, null);
+  }
+
+  Future<(dynamic, List<List<String>>?)> _resolveGraphqlBody(
+    dynamic body,
+    LazyVariableResolver resolver,
+    BuildContext context,
+  ) async {
+    String query = '';
+    String variables = '';
+
+    if (body is String && body.isNotEmpty) {
+      try {
+        final decoded = jsonDecode(body);
+        if (decoded is Map<String, dynamic>) {
+          query = decoded['query'] ?? '';
+          variables = decoded['variables'] ?? '';
+        } else {
+          query = body;
+        }
+      } catch (_) {
+        query = body;
+      }
+    } else if (body is Map<String, dynamic>) {
+      query = body['query'] ?? '';
+      variables = body['variables'] ?? '';
+    }
+
+    final resolvedQuery = await resolveVariables(
+      query,
+      resolver,
+      context: context,
+    );
+
+    // Resolve Variables (JSON)
+    Map<String, dynamic> resolvedVarsMap = {};
+    if (variables.isNotEmpty) {
+      final resolvedVariablesStr = await resolveVariables(
+        variables,
+        resolver,
+        context: context,
+      );
+      try {
+        final varsJson = jsonDecode(resolvedVariablesStr);
+        if (varsJson is Map<String, dynamic>) {
+          resolvedVarsMap = varsJson;
+        }
+      } catch (e) {
+        debugPrint("Error parsing GraphQL variables: $e");
+      }
+    }
+
+    return (
+      {'query': resolvedQuery, 'variables': resolvedVarsMap},
+      [
+        ['Content-Type', 'application/json'],
+      ],
+    );
   }
 
   bool domainMatches(Uri uri, CookieDef c) {

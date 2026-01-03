@@ -167,6 +167,19 @@ class RequestDetailsNotifier extends Notifier<RequestDetailsState> {
     _updateBodyInternal(jsonEncode(currentData));
   }
 
+  void updateBodyMap(Map<String, dynamic> map) {
+    // Merges or sets specific keys.
+    // For GraphQL, we want 'query' and 'variables' to coexist with other potential future keys,
+    // but clear conflicting types if we want to ensure purity?
+    // Actually, let's just merge them in.
+    final currentData = Map<String, dynamic>.from(state.bodyData);
+    currentData.addAll(map);
+
+    // Ensure we are in a consistent state if switching types
+    // But BodyType handles the type.
+    _updateBodyInternal(jsonEncode(currentData));
+  }
+
   // Kept for backward compatibility or direct setting if needed, but prefer granular updates.
   // Used by debouncer.
   void _updateBodyInternal(String newBody) {

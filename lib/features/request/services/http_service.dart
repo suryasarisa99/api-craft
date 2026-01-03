@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:typed_data';
+import 'dart:convert';
 import 'package:uuid/uuid.dart';
 
 import 'package:api_craft/core/network/raw/raw_http_req.dart';
@@ -15,7 +16,7 @@ class HttpService {
     String requestId, {
     required BuildContext context,
   }) async {
-    final resolver = RequestResolver(ref);
+    final resolver = ref.read(requestResolverProvider);
     final isActiveReq = ref.read(activeReqIdProvider) == requestId;
     //NOTE: use composer only when the request is active,otherwise it will throw error
     ReqComposeNotifier? composer;
@@ -37,8 +38,8 @@ class HttpService {
         headers: req.headers,
         // body: ctx.request.config.body,
         // body: _bodies[0],
-        body: req.body,
-        useProxy: false,
+        body: req.body is Map ? jsonEncode(req.body) : req.body,
+        useProxy: true,
         requestId: req.request.id,
         maxRedirects: 50,
       );

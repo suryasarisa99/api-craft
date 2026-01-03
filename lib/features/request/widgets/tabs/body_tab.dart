@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:api_craft/core/models/models.dart';
 import 'package:api_craft/core/widgets/ui/cf_code_editor.dart';
+import 'package:api_craft/features/request/widgets/tabs/graphql_tab.dart';
 
 class BodyTab extends ConsumerWidget {
   final String id;
@@ -72,6 +73,11 @@ class BodyTab extends ConsumerWidget {
               );
         },
       );
+    }
+
+    // GraphQL
+    if (bodyType == BodyType.graphql) {
+      return GraphqlTab(id: id);
     }
 
     // Code Editor (JSON, XML, Text)
