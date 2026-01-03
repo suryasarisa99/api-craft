@@ -11,8 +11,6 @@ import 'package:super_context_menu/super_context_menu.dart';
 import 'package:api_craft/core/providers/providers.dart';
 // {required FutureOr<Menu?> Function(MenuRequest) menuProvider}
 
-import 'package:api_craft/features/request/services/http_service.dart';
-
 FutureOr<Menu?> getMenuProvider({
   required WidgetRef ref,
   required BuildContext context,
@@ -79,6 +77,23 @@ List<MenuElement> _getCommonMenuActions(
         },
       ),
     MenuSeparator(),
+    MenuAction(
+      title: 'Rename',
+      callback: () {
+        if (!context.mounted) return;
+        showInputDialog(
+          context: context,
+          title: "Rename",
+          placeholder: "New Name",
+          initialValue: node.name,
+          onConfirmed: (newName) {
+            if (newName.trim().isNotEmpty && newName != node.name) {
+              ref.read(fileTreeProvider.notifier).renameNode(node, newName);
+            }
+          },
+        );
+      },
+    ),
     MenuAction(
       title: 'Duplicate',
       callback: () {

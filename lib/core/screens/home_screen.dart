@@ -58,7 +58,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   @override
   void initState() {
     super.initState();
-    debugPrint("isSidebarManuallyClosed: ${prefs.getBool('sidebar_closed')}");
     _controller.addListener(_listener);
     WidgetsBinding.instance.addObserver(this);
     final hk = HardwareKeyboard.instance;
@@ -66,7 +65,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       if (event is KeyUpEvent) return false;
       final ctrl = hk.isMetaPressed || hk.isControlPressed;
       if (ctrl && event.logicalKey == LogicalKeyboardKey.keyB) {
-        debugPrint('Sidebar toggle');
         toggleSidebar();
         return true;
       }
@@ -129,10 +127,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         isSidebarManuallyClosed = false;
       });
     }
-
-    debugPrint(
-      "Sidebar width: $sidebarWidth, Req flex: $reqFlex, Res flex: $resFlex",
-    );
   }
 
   static double getWindowWidth() {
@@ -185,7 +179,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   }
 
   double getInitialSidebarWidth() {
-    debugPrint("isSidebarManuallyClosed--: $isSidebarManuallyClosed");
     if (isSidebarManuallyClosed) {
       return 0;
     }
@@ -234,7 +227,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
   @override
   Widget build(BuildContext context) {
-    debugPrint("HomeScreen rebuild");
     return Scaffold(
       key: scaffoldKey,
       drawer: Container(

@@ -181,11 +181,6 @@ class _FileTreeTileState extends ConsumerState<FileNodeTile>
       onKeyEvent: (FocusNode node, KeyEvent keyEvent) {
         if (keyEvent is KeyUpEvent) return KeyEventResult.ignored;
         final k = keyEvent.logicalKey;
-        final hk = HardwareKeyboard.instance;
-        final isShift = hk.isShiftPressed;
-        final isCtrl = Platform.isMacOS
-            ? hk.isMetaPressed
-            : hk.isControlPressed;
 
         if (k == LogicalKeyboardKey.arrowDown) {
           FocusScope.of(context).nextFocus();
@@ -292,7 +287,7 @@ class _FileTreeTileState extends ConsumerState<FileNodeTile>
         ? cs.primary
         : theme.textTheme.bodyMedium?.color ?? Colors.grey;
 
-    final Color? backgroundColor = isActive
+    final Color backgroundColor = isActive
         // ? cs.surfaceBright.withValues(alpha: 1)
         ? const Color.fromARGB(150, 70, 70, 70)
         : isSelected
