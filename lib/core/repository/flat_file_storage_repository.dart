@@ -4,8 +4,6 @@ import 'dart:io';
 import 'package:api_craft/core/models/models.dart';
 
 import 'package:api_craft/core/repository/storage_repository.dart';
-import 'package:api_craft/features/request/models/websocket_message.dart';
-import 'package:api_craft/features/request/models/websocket_session.dart';
 import 'package:flutter/widgets.dart';
 import 'package:path/path.dart' as p;
 import 'package:nanoid/nanoid.dart';
@@ -28,24 +26,20 @@ class FlatFileStorageRepository implements StorageRepository {
     final folderFile = File(p.join(rootDir.path, 'fl_$id.json'));
     if (folderFile.existsSync()) return folderFile;
 
-    // Try environment prefix (shared)
-    final envFile = File(p.join(rootDir.path, 'env_$id.json'));
-    if (envFile.existsSync()) return envFile;
-
     // Default to request if creating? No, this is for existing.
     // If we don't know type, we can't deterministically return a file unless we search.
     // But usually we know the type context or we search.
     return reqFile; // Fallback?
   }
 
-  File _getFileForNode(String id, NodeType type) {
+  File _getNodeFile(String id, NodeType type) {
     final prefix = type == NodeType.folder ? 'fl' : 'rq';
     return File(p.join(rootDir.path, '${prefix}_$id.json'));
   }
 
-  File _getFileForEnv(String id) {
-    // Environments are now stored in `environments` subdirectory
-    return File(p.join(rootDir.path, 'environments', 'env_$id.json'));
+  File _getEnvFile(String id) {
+    // Environments are now stored in `env` subdirectory
+    return File(p.join(rootDir.path, 'env', '$id.json'));
   }
 
   // --- StorageRepository Implementation ---
@@ -133,7 +127,7 @@ class FlatFileStorageRepository implements StorageRepository {
     }
 
     final newId = nanoid();
-    final file = _getFileForNode(newId, type);
+    final file = _getNodeFile(newId, type);
 
     // Calculate sort order: simplistic approach, append to end?
     // Reading all nodes to find max sort order is cleaner but slower.
@@ -186,7 +180,7 @@ class FlatFileStorageRepository implements StorageRepository {
       await rootDir.create(recursive: true);
     }
     for (final node in nodes) {
-      final file = _getFileForNode(node.id, node.type);
+      final file = _getNodeFile(node.id, node.type);
       final map = node.toMap();
       await file.writeAsString(_jsonEncoder.convert(map));
     }
@@ -194,7 +188,7 @@ class FlatFileStorageRepository implements StorageRepository {
 
   @override
   Future<void> updateNode(Node node) async {
-    final file = _getFileForNode(node.id, node.type);
+    final file = _getNodeFile(node.id, node.type);
     // Overwrite with new map
     await file.writeAsString(_jsonEncoder.convert(node.toMap()));
   }
@@ -269,7 +263,7 @@ class FlatFileStorageRepository implements StorageRepository {
 
   @override
   Future<void> updateRequestBody(String id, String body) async {
-    final file = _getFileForNode(id, NodeType.request);
+    final file = _getNodeFile(id, NodeType.request);
     if (await file.exists()) {
       final content = await file.readAsString();
       final map = jsonDecode(content) as Map<String, dynamic>;
@@ -291,7 +285,7 @@ class FlatFileStorageRepository implements StorageRepository {
 
   @override
   Future<List<Environment>> getEnvironments(String collectionId) async {
-    // 1. Get shared envs from Files (environments/env_*.json)
+    // 1. Get shared envs from Files (env/*.json)
     // Private envs are now handled by DataRepository from UI layer (EnvironmentProvider)
     // FlatFileStorageRepo ONLY returns Shared Environments that are file-based?
     // User asked "store env and req/folders in same directory... create separate directory for env".
@@ -299,13 +293,13 @@ class FlatFileStorageRepository implements StorageRepository {
     // So this repo should ONLY return File-based Environments.
     // The Provider will merge them with Private DB Envs.
     final sharedEnvs = <Environment>[];
-    final envDir = Directory(p.join(rootDir.path, 'environments'));
+    final envDir = Directory(p.join(rootDir.path, 'env'));
 
     if (await envDir.exists()) {
       final entities = envDir.listSync();
       for (var entity in entities) {
         if (entity is File &&
-            p.basename(entity.path).startsWith('env_') &&
+            !p.basename(entity.path).startsWith('.') && // Ignore hidden files
             entity.path.endsWith('.json')) {
           try {
             final content = await entity.readAsString();
@@ -330,9 +324,10 @@ class FlatFileStorageRepository implements StorageRepository {
   @override
   Future<void> createEnvironment(Environment env) async {
     if (env.isShared) {
-      final file = _getFileForEnv(env.id);
-      if (!await file.parent.exists())
+      final file = _getEnvFile(env.id);
+      if (!await file.parent.exists()) {
         await file.parent.create(recursive: true);
+      }
       await file.writeAsString(_jsonEncoder.convert(env.toMap()));
     } else {
       // Private environments are handled by DataRepository.
@@ -349,7 +344,7 @@ class FlatFileStorageRepository implements StorageRepository {
     // So update() here assumes it REMAINS shared.
 
     if (env.isShared) {
-      final file = _getFileForEnv(env.id);
+      final file = _getEnvFile(env.id);
       await file.writeAsString(_jsonEncoder.convert(env.toMap()));
     }
   }
@@ -358,13 +353,13 @@ class FlatFileStorageRepository implements StorageRepository {
   Future<void> deleteEnvironment(String id) async {
     // We only handle file deletion. DataRepo handles DB deletion.
     // The provider should call the correct repo.
-    final file = _getFileForEnv(id);
+    final file = _getEnvFile(id);
     if (await file.exists()) await file.delete();
   }
 
   @override
   Future<void> setHistoryIndex(String requestId, String? historyId) async {
-    final file = _getFileForNode(requestId, NodeType.request);
+    final file = _getNodeFile(requestId, NodeType.request);
     if (await file.exists()) {
       final content = await file.readAsString();
       final map = jsonDecode(content) as Map<String, dynamic>;
