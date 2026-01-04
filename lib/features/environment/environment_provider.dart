@@ -86,8 +86,9 @@ class EnvironmentNotifier extends Notifier<EnvironmentState> {
     final repo = ref.read(repositoryProvider);
 
     try {
+      final dataRepo = ref.read(dataRepositoryProvider);
       var envs = await repo.getEnvironments(collectionId);
-      var jars = await repo.getCookieJars(collectionId);
+      var jars = await dataRepo.getCookieJars();
 
       // Get persisted selection from the Collection Model
       final collection = ref.read(selectedCollectionProvider);
@@ -148,9 +149,8 @@ class EnvironmentNotifier extends Notifier<EnvironmentState> {
       ref.read(selectedCollectionProvider.notifier).select(updatedCol);
 
       // 2. Update DB
-      final repo = ref.read(repositoryProvider);
-      repo.updateCollectionSelection(
-        collection.id,
+      final dataRepo = ref.read(dataRepositoryProvider);
+      dataRepo.updateCollectionSelection(
         state.selectedEnvironmentId,
         state.selectedCookieJarId,
       );
@@ -238,7 +238,7 @@ class EnvironmentNotifier extends Notifier<EnvironmentState> {
   }
 
   Future<void> updateCookieJar(CookieJarModel jar) async {
-    final repo = ref.read(repositoryProvider);
+    final repo = ref.read(dataRepositoryProvider);
 
     final index = state.cookieJars.indexWhere((j) => j.id == jar.id);
     if (index != -1) {
@@ -251,7 +251,7 @@ class EnvironmentNotifier extends Notifier<EnvironmentState> {
   }
 
   Future<void> createCookieJar(String name, String collectionId) async {
-    final repo = ref.read(repositoryProvider);
+    final repo = ref.read(dataRepositoryProvider);
     final newJar = CookieJarModel(
       id: nanoid(),
       collectionId: collectionId,
@@ -271,7 +271,7 @@ class EnvironmentNotifier extends Notifier<EnvironmentState> {
   }
 
   Future<void> deleteCookieJar(String id) async {
-    final repo = ref.read(repositoryProvider);
+    final repo = ref.read(dataRepositoryProvider);
 
     state = state.copyWith(
       cookieJars: state.cookieJars.where((j) => j.id != id).toList(),

@@ -57,7 +57,7 @@ class _CollectionPickerState extends ConsumerState<CollectionPicker> {
             title: const Text("Clear History"),
             value: 'clear_history',
             onTap: (_) {
-              ref.read(repositoryProvider).clearHistoryForCollection();
+              ref.read(dataRepositoryProvider).clearHistoryForCollection();
               ScaffoldMessenger.of(
                 context,
               ).showSnackBar(const SnackBar(content: Text("History cleared")));

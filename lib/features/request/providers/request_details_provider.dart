@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:convert';
 
 import '../../../core/repository/storage_repository.dart';
+import '../../../core/repository/data_repository.dart';
 
 final requestDetailsProvider = NotifierProvider.autoDispose
     .family<RequestDetailsNotifier, RequestDetailsState, String>(
@@ -66,6 +67,7 @@ class RequestDetailsNotifier extends Notifier<RequestDetailsState> {
   RequestDetailsNotifier(this.id);
 
   late final StorageRepository _repo = ref.read(repositoryProvider);
+  late final DataRepository _dataRepo = ref.read(dataRepositoryProvider);
   final _bodyDebouncer = Debouncer(Duration(milliseconds: 500));
 
   @override
@@ -100,7 +102,7 @@ class RequestDetailsNotifier extends Notifier<RequestDetailsState> {
   Future<void> _load() async {
     await ref.read(fileTreeProvider.notifier).hydrateNode(id);
     final body = await _repo.getBody(id) ?? '';
-    final history = await _repo.getHistory(id);
+    final history = await _dataRepo.getHistory(id);
 
     // final selectedHistoryIndex = history.indexWhere((e) => e.id == historyId);
     state = RequestDetailsState(
@@ -202,7 +204,7 @@ class RequestDetailsNotifier extends Notifier<RequestDetailsState> {
     final fileTree = ref.read(fileTreeProvider);
     final fileTreeNotifier = ref.read(fileTreeProvider.notifier);
     fileTreeNotifier.updateRequestStatusCode(id, entry.statusCode);
-    _repo.addHistoryEntry(entry);
+    _dataRepo.addHistoryEntry(entry);
     if ((fileTree.nodeMap[id] as RequestNode).config.historyId != null) {
       fileTreeNotifier.updateRequestHistoryId(id, null);
     }
@@ -210,13 +212,13 @@ class RequestDetailsNotifier extends Notifier<RequestDetailsState> {
 
   void deleteHistory() {
     state = state.copyWith(history: []);
-    _repo.clearHistory(id);
+    _dataRepo.clearHistory(id);
   }
 
   void deleteHistoryEntry(String historyId) {
     state = state.copyWith(
       history: state.history?.where((e) => e.id != historyId).toList(),
     );
-    _repo.deleteCurrHistory(historyId);
+    _dataRepo.deleteCurrHistory(historyId);
   }
 }

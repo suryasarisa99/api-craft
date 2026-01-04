@@ -139,8 +139,8 @@ class FileTreeNotifier extends Notifier<TreeData> {
     newMap[node.id] = node;
     state = state.copyWith(nodeMap: newMap);
 
-    // Persist
-    await _repo.updateNode(node);
+    // Persistance: it is done by request ,folder config dialog with debounce / lazily when folder closes
+    // await _repo.updateNode(node);
   }
 
   // --- Granular Updates ---

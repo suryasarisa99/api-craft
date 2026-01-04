@@ -4,6 +4,7 @@ import 'package:api_craft/core/repository/storage_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../providers/providers.dart';
+import 'package:api_craft/core/repository/data_repository.dart';
 
 final repositoryProvider = Provider<StorageRepository>((ref) {
   // 1. Await the Selected Collection (Handles loading state automatically)
@@ -25,9 +26,18 @@ final repositoryProvider = Provider<StorageRepository>((ref) {
     final db = ref.watch(databaseProvider);
     return FlatFileStorageRepository(
       rootPath: path!,
-      dbRepo: DbStorageRepository(db, collectionId),
+      // No delegation to dbRepo anymore
     );
   }
+});
+
+final dataRepositoryProvider = Provider<DataRepository>((ref) {
+  // Data is ALWAYS local (DB), regardless of collection type
+  final db = ref.watch(databaseProvider);
+  final collectionId = ref.watch(
+    selectedCollectionProvider.select((c) => c?.id ?? kDefaultCollection.id),
+  );
+  return DataRepository(db, collectionId);
 });
 
 /* Old Way

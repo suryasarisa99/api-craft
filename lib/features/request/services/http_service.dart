@@ -39,7 +39,7 @@ class HttpService {
         // body: ctx.request.config.body,
         // body: _bodies[0],
         body: req.body is Map ? jsonEncode(req.body) : req.body,
-        useProxy: true,
+        useProxy: false,
         requestId: req.request.id,
         maxRedirects: 50,
       );
@@ -51,7 +51,7 @@ class HttpService {
       if (isActiveReq) {
         composer?.addHistoryEntry(response);
       } else {
-        ref.read(repositoryProvider).addHistoryEntry(response);
+        ref.read(dataRepositoryProvider).addHistoryEntry(response);
       }
 
       // Extract & Save Cookies
@@ -122,7 +122,7 @@ class HttpService {
       if (isActiveReq) {
         composer?.addHistoryEntry(errorResponse);
       } else {
-        ref.read(repositoryProvider).addHistoryEntry(errorResponse);
+        ref.read(dataRepositoryProvider).addHistoryEntry(errorResponse);
       }
 
       composer?.setSendError(e.toString());
@@ -131,7 +131,7 @@ class HttpService {
   }
 
   Future<RawHttpResponse?> getRes(Ref ref, String requestId) async {
-    final repo = ref.read(repositoryProvider);
+    final repo = ref.read(dataRepositoryProvider);
     final responses = await repo.getHistory(requestId, limit: 1);
     if (responses.isNotEmpty) {
       return responses.first;

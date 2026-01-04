@@ -1,8 +1,7 @@
 import 'package:api_craft/core/constants/globals.dart';
 import 'package:api_craft/core/database/database_helper.dart';
 import 'package:api_craft/core/models/models.dart';
-import 'package:api_craft/features/request/models/websocket_session.dart';
-import 'package:api_craft/features/request/models/websocket_message.dart';
+
 import 'package:flutter/cupertino.dart';
 import 'package:nanoid/nanoid.dart';
 import 'package:sqflite/sqflite.dart';
@@ -24,21 +23,6 @@ class DbStorageRepository implements StorageRepository {
     // final db = await _db;
     // debugPrint("db::create-default-collection ${kDefaultCollection}");
     // await db.insert('collections', kDefaultCollection.toMap());
-  }
-
-  @override
-  Future<void> updateCollectionSelection(
-    String collectionId,
-    String? envId,
-    String? jarId,
-  ) async {
-    final db = await _db;
-    await db.update(
-      'collections',
-      {'selected_env_id': envId, 'selected_jar_id': jarId},
-      where: 'id = ?',
-      whereArgs: [collectionId],
-    );
   }
 
   @override
@@ -283,56 +267,6 @@ class DbStorageRepository implements StorageRepository {
   // ... inside StorageRepository
 
   /// Adds a history entry and enforces the limit (e.g., max 10)
-  @override
-  Future<void> addHistoryEntry(RawHttpResponse entry, {int limit = 10}) async {
-    final db = await _db;
-
-    await db.transaction((txn) async {
-      // 1. Insert the new record
-      await txn.insert(
-        'request_history',
-        entry.toMap(),
-        conflictAlgorithm: ConflictAlgorithm.replace,
-      );
-
-      // 2. Cleanup: Delete entries that are outside the top N (descending by time)
-      // This SQL says: "Delete everything from history for this request_id
-      // where the ID is NOT in the top 10 newest items."
-      await txn.rawDelete(
-        '''
-        DELETE FROM request_history 
-        WHERE request_id = ? 
-        AND id NOT IN (
-          SELECT id 
-          FROM request_history 
-          WHERE request_id = ? 
-          ORDER BY executed_at DESC 
-          LIMIT ?
-        )
-        ''',
-        [entry.requestId, entry.requestId, limit],
-      );
-    });
-  }
-
-  /// Get history for a specific request tab
-  @override
-  Future<List<RawHttpResponse>> getHistory(
-    String requestId, {
-    int limit = 10,
-  }) async {
-    final db = await _db;
-    final res = await db.query(
-      'request_history',
-      where: 'request_id = ?',
-      whereArgs: [requestId],
-      orderBy: 'executed_at DESC', // Newest first
-      limit: limit,
-    );
-    // debugPrint("db::get-history for $requestId: $res");
-    debugPrint("db::get-history for $requestId");
-    return res.map((e) => RawHttpResponse.fromMap(e)).toList();
-  }
 
   @override
   Future<void> setHistoryIndex(String requestId, String? historyId) async {
@@ -346,35 +280,6 @@ class DbStorageRepository implements StorageRepository {
   }
 
   /// Clear history for a node
-  @override
-  Future<void> clearHistory(String requestId) async {
-    final db = await _db;
-    await db.delete(
-      'request_history',
-      where: 'request_id = ?',
-      whereArgs: [requestId],
-    );
-  }
-
-  @override
-  Future<void> deleteCurrHistory(String historyId) async {
-    final db = await _db;
-    await db.delete('request_history', where: 'id = ?', whereArgs: [historyId]);
-  }
-
-  @override
-  Future<void> clearHistoryForCollection() async {
-    final db = await _db;
-    await db.rawDelete(
-      '''
-      DELETE FROM request_history
-      WHERE request_id IN (
-        SELECT id FROM nodes WHERE collection_id = ?
-      )
-      ''',
-      [collectionId],
-    );
-  }
 
   // --- Environments ---
   @override
@@ -413,136 +318,5 @@ class DbStorageRepository implements StorageRepository {
   Future<void> deleteEnvironment(String id) async {
     final db = await _db;
     await db.delete('environments', where: 'id = ?', whereArgs: [id]);
-  }
-
-  // --- Cookie Jars ---
-  @override
-  Future<List<CookieJarModel>> getCookieJars(String collectionId) async {
-    final db = await _db;
-    final res = await db.query(
-      'cookie_jars',
-      where: 'collection_id = ?',
-      whereArgs: [collectionId],
-    );
-    return res.map((e) => CookieJarModel.fromMap(e)).toList();
-  }
-
-  @override
-  Future<void> createCookieJar(CookieJarModel jar) async {
-    final db = await _db;
-    await db.insert(
-      'cookie_jars',
-      jar.toMap(),
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
-  }
-
-  @override
-  Future<void> updateCookieJar(CookieJarModel jar) async {
-    final db = await _db;
-    await db.update(
-      'cookie_jars',
-      jar.toMap(),
-      where: 'id = ?',
-      whereArgs: [jar.id],
-    );
-  }
-
-  @override
-  Future<void> deleteCookieJar(String id) async {
-    final db = await _db;
-    await db.delete('cookie_jars', where: 'id = ?', whereArgs: [id]);
-  }
-
-  // --- WebSocket ---
-  @override
-  Future<void> createWebSocketSession(WebSocketSession session) async {
-    final db = await _db;
-    await db.insert(
-      'websocket_sessions',
-      session.toMap(),
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
-  }
-
-  @override
-  Future<void> updateWebSocketSession(WebSocketSession session) async {
-    final db = await _db;
-    await db.update(
-      'websocket_sessions',
-      session.toMap(),
-      where: 'id = ?',
-      whereArgs: [session.id],
-    );
-  }
-
-  @override
-  Future<List<WebSocketSession>> getWebSocketSessions(String requestId) async {
-    final db = await _db;
-    final result = await db.query(
-      'websocket_sessions',
-      where: 'request_id = ?',
-      whereArgs: [requestId],
-      orderBy: 'start_time DESC',
-    );
-    return result.map((e) => WebSocketSession.fromMap(e)).toList();
-  }
-
-  @override
-  Future<void> deleteWebSocketSession(String sessionId) async {
-    final db = await _db;
-    await db.delete(
-      'websocket_sessions',
-      where: 'id = ?',
-      whereArgs: [sessionId],
-    );
-  }
-
-  @override
-  Future<void> addWebSocketMessage(WebSocketMessage msg) async {
-    final db = await _db;
-    final map = msg.toMap();
-    // map.remove('id'); // We now provide ID from client
-    await db.insert('websocket_messages', map);
-  }
-
-  @override
-  Future<List<WebSocketMessage>> getWebSocketMessages(
-    String sessionId, {
-    int limit = 100,
-  }) async {
-    final db = await _db;
-    final result = await db.query(
-      'websocket_messages',
-      where: 'session_id = ?',
-      whereArgs: [sessionId],
-      orderBy: 'timestamp DESC',
-      limit: limit,
-    );
-    debugPrint("db::get-websocket-messages for $sessionId: $result");
-    return result.map((e) => WebSocketMessage.fromMap(e)).toList();
-  }
-
-  @override
-  Future<void> clearWebSocketSessionMessages(String sessionId) async {
-    final db = await _db;
-    await db.delete(
-      'websocket_messages',
-      where: 'session_id = ?',
-      whereArgs: [sessionId],
-    );
-  }
-
-  @override
-  Future<void> clearWebSocketHistory(String requestId) async {
-    final db = await _db;
-    // We need to delete sessions AND their messages.
-    // FK constraints might handle messages if ON DELETE CASCADE is set.
-    // Assuming it is, we just delete sessions.
-    await db.delete(
-      'websocket_sessions',
-      where: 'request_id = ?',
-      whereArgs: [requestId],
-    );
   }
 }

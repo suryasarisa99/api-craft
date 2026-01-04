@@ -2,6 +2,7 @@ import 'package:api_craft/core/models/models.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:api_craft/core/providers/providers.dart';
+import 'package:api_craft/core/repository/data_repository.dart';
 import 'package:nanoid/nanoid.dart';
 
 final collectionsProvider =
@@ -45,12 +46,14 @@ class CollectionsNotifier extends AsyncNotifier<List<CollectionModel>> {
 
     // Create Default Environment & Cookie Jar for this new collection
     final repo = ref.read(repositoryProvider);
+    // Use a scoped DataRepo for the new collection
+    final dataRepo = DataRepository(Future.value(db), newId);
 
     await repo.createEnvironment(
       Environment(id: nanoid(), collectionId: newId, name: 'Default'),
     );
 
-    await repo.createCookieJar(
+    await dataRepo.createCookieJar(
       CookieJarModel(id: nanoid(), collectionId: newId, name: 'Default'),
     );
 

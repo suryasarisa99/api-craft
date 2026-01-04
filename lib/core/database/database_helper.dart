@@ -63,6 +63,7 @@ class Tables {
     ''',
     history: '''CREATE TABLE $history (
   id TEXT PRIMARY KEY,
+  collection_id TEXT NOT NULL,
   request_id TEXT NOT NULL,
   status_code INTEGER,
   status_message TEXT,
@@ -106,6 +107,7 @@ class Tables {
         '''
       CREATE TABLE $websocketSessions (
         id TEXT PRIMARY KEY,
+        collection_id TEXT NOT NULL,
         request_id TEXT NOT NULL,
         start_time TEXT NOT NULL,
         end_time TEXT,
@@ -167,7 +169,7 @@ class DatabaseHelper {
 
     final db = await openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: (db, version) async {
         await Tables.createAllTables(db);
         await _ensureDefaults(db);

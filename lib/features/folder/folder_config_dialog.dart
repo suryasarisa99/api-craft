@@ -46,6 +46,7 @@ class _FolderConfigDialogState extends ConsumerState<FolderConfigDialog> {
           });
         }
       },
+      fireImmediately: false,
     );
   }
 

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:api_craft/core/repository/data_repository.dart';
 import 'package:api_craft/core/repository/storage_repository.dart';
 import 'package:api_craft/core/services/ws_service.dart';
 import 'package:api_craft/features/request/models/websocket_message.dart';
@@ -71,7 +72,7 @@ class WsRequestNotifier extends StateNotifier<WsRequestState> {
   }
 
   WsService get _wsService => ref.read(wsServiceProvider);
-  StorageRepository get _repo => ref.read(repositoryProvider);
+  DataRepository get _repo => ref.read(dataRepositoryProvider);
   RequestResolver get _resolver => ref.read(requestResolverProvider);
 
   /// Connects to a WebSocket starting a new session

@@ -1,7 +1,4 @@
 import 'package:api_craft/core/models/models.dart';
-import 'package:api_craft/features/request/models/websocket_message.dart';
-
-import 'package:api_craft/features/request/models/websocket_session.dart';
 
 export 'folder_storage_repository.dart';
 export 'db_storage_repository.dart';
@@ -42,11 +39,10 @@ abstract class StorageRepository {
   Future<void> createMany(List<Node> nodes);
 
   // --- Collections ---
-  Future<void> updateCollectionSelection(
-    String collectionId,
-    String? envId,
-    String? jarId,
-  );
+  // Managed by DataRepository explicitly now? Or leave updateCollectionSelection here?
+  // User said "keep only requests/folders and environement detail methods".
+  // Collection Selection is technically config, but private config in DB.
+  // It was moved to DataRepository.
 
   /// Reads the configuration columns (headers, auth, vars, desc) for a node
   // Future<NodeConfig> getNodeConfig(String id);
@@ -58,12 +54,6 @@ abstract class StorageRepository {
   Future<void> updateRequestBody(String id, String body);
   Future<void> updateScripts(String id, String scripts);
 
-  ///
-  Future<void> addHistoryEntry(RawHttpResponse entry, {int limit = 10});
-  Future<List<RawHttpResponse>> getHistory(String requestId, {int limit = 10});
-  Future<void> deleteCurrHistory(String historyId);
-  Future<void> clearHistory(String requestId);
-  Future<void> clearHistoryForCollection();
   Future<void> setHistoryIndex(String requestId, String? historyId);
 
   // --- Environments ---
@@ -71,24 +61,4 @@ abstract class StorageRepository {
   Future<void> createEnvironment(Environment env);
   Future<void> updateEnvironment(Environment env);
   Future<void> deleteEnvironment(String id);
-
-  // --- Cookie Jars ---
-  Future<List<CookieJarModel>> getCookieJars(String collectionId);
-  Future<void> createCookieJar(CookieJarModel jar);
-  Future<void> updateCookieJar(CookieJarModel jar);
-  Future<void> deleteCookieJar(String id);
-
-  // --- WebSocket ---
-  Future<void> createWebSocketSession(WebSocketSession session);
-  Future<void> updateWebSocketSession(WebSocketSession session);
-  Future<List<WebSocketSession>> getWebSocketSessions(String requestId);
-  Future<void> deleteWebSocketSession(String sessionId);
-
-  Future<void> addWebSocketMessage(WebSocketMessage msg);
-  Future<List<WebSocketMessage>> getWebSocketMessages(
-    String sessionId, {
-    int limit = 100,
-  });
-  Future<void> clearWebSocketSessionMessages(String sessionId);
-  Future<void> clearWebSocketHistory(String requestId);
 }

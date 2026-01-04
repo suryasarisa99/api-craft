@@ -12,12 +12,10 @@ import 'package:nanoid/nanoid.dart';
 
 class FlatFileStorageRepository implements StorageRepository {
   final Directory rootDir;
-  final DbStorageRepository dbRepo;
+  FlatFileStorageRepository({required String rootPath})
+    : rootDir = Directory(rootPath);
 
   static const JsonEncoder _jsonEncoder = JsonEncoder.withIndent('  ');
-
-  FlatFileStorageRepository({required String rootPath, required this.dbRepo})
-    : rootDir = Directory(rootPath);
 
   // --- Helper: File Access ---
 
@@ -46,7 +44,8 @@ class FlatFileStorageRepository implements StorageRepository {
   }
 
   File _getFileForEnv(String id) {
-    return File(p.join(rootDir.path, 'env_$id.json'));
+    // Environments are now stored in `environments` subdirectory
+    return File(p.join(rootDir.path, 'environments', 'env_$id.json'));
   }
 
   // --- StorageRepository Implementation ---
@@ -290,17 +289,20 @@ class FlatFileStorageRepository implements StorageRepository {
     }
   }
 
-  // --- Environments (Hybrid) ---
-
   @override
   Future<List<Environment>> getEnvironments(String collectionId) async {
-    // 1. Get private/local envs from DB
-    final privateEnvs = await dbRepo.getEnvironments(collectionId);
-
-    // 2. Get shared envs from Files (env_*.json)
+    // 1. Get shared envs from Files (environments/env_*.json)
+    // Private envs are now handled by DataRepository from UI layer (EnvironmentProvider)
+    // FlatFileStorageRepo ONLY returns Shared Environments that are file-based?
+    // User asked "store env and req/folders in same directory... create separate directory for env".
+    // "the details which are not be shared we use database... simplify override methods... separate class for rest"
+    // So this repo should ONLY return File-based Environments.
+    // The Provider will merge them with Private DB Envs.
     final sharedEnvs = <Environment>[];
-    if (await rootDir.exists()) {
-      final entities = rootDir.listSync();
+    final envDir = Directory(p.join(rootDir.path, 'environments'));
+
+    if (await envDir.exists()) {
+      final entities = envDir.listSync();
       for (var entity in entities) {
         if (entity is File &&
             p.basename(entity.path).startsWith('env_') &&
@@ -322,156 +324,60 @@ class FlatFileStorageRepository implements StorageRepository {
       }
     }
 
-    return [...privateEnvs, ...sharedEnvs];
+    return sharedEnvs;
   }
 
   @override
   Future<void> createEnvironment(Environment env) async {
     if (env.isShared) {
       final file = _getFileForEnv(env.id);
+      if (!await file.parent.exists())
+        await file.parent.create(recursive: true);
       await file.writeAsString(_jsonEncoder.convert(env.toMap()));
     } else {
-      await dbRepo.createEnvironment(env);
+      // Private environments are handled by DataRepository.
+      // This repository does not handle them.
     }
   }
 
   @override
   Future<void> updateEnvironment(Environment env) async {
-    // Check if it WAS shared or private?
-    // If user toggles shared status:
-    // - Shared -> Private: Delete file, Insert DB.
-    // - Private -> Shared: Delete DB, Create File.
-
-    // Current implementation of 'update' in logic typically keeps state consistent.
-    // But `env` passed here is the NEW state.
-
-    // Optimization: Just do write to new target, and try delete on old target?
-    // Or just write to target based on `isShared`.
+    // If it's shared, we update the file.
+    // If it's NOT shared, we technically shouldn't be here if this Repo only handles Shared.
+    // But if state changed from Shared->Private, the Provider handles calling delete() on this repo
+    // and create() on DataRepo.
+    // So update() here assumes it REMAINS shared.
 
     if (env.isShared) {
-      // Should be in File
-      // Ensure not in DB
-      await dbRepo.deleteEnvironment(env.id);
-
       final file = _getFileForEnv(env.id);
       await file.writeAsString(_jsonEncoder.convert(env.toMap()));
-    } else {
-      // Should be in DB
-      // Ensure not in File
-      final file = _getFileForEnv(env.id);
-      if (await file.exists()) await file.delete();
-
-      await dbRepo.updateEnvironment(env);
-      // Note: updateEnvironment in DB might fail if ID doesn't exist (because it was in file).
-      // So we should probably use createEnvironment logic (replace)?
-      // DbRepo.createEnvironment uses `insert OR replace`.
-      // But updateEnvironment uses `update`.
-      // Let's safe bet: createEnvironment (upsert).
-      await dbRepo.createEnvironment(env);
     }
   }
 
   @override
   Future<void> deleteEnvironment(String id) async {
-    await dbRepo.deleteEnvironment(id);
+    // We only handle file deletion. DataRepo handles DB deletion.
+    // The provider should call the correct repo.
     final file = _getFileForEnv(id);
     if (await file.exists()) await file.delete();
   }
 
-  // --- Delegated to DB (Private Data) ---
-
-  @override
-  Future<void> updateCollectionSelection(
-    String collectionId,
-    String? envId,
-    String? jarId,
-  ) => dbRepo.updateCollectionSelection(collectionId, envId, jarId);
-
-  @override
-  Future<void> addHistoryEntry(RawHttpResponse entry, {int limit = 10}) =>
-      dbRepo.addHistoryEntry(entry, limit: limit);
-
-  @override
-  Future<List<RawHttpResponse>> getHistory(
-    String requestId, {
-    int limit = 10,
-  }) => dbRepo.getHistory(requestId, limit: limit);
-
   @override
   Future<void> setHistoryIndex(String requestId, String? historyId) async {
-    // history_id is in Node content. So we update Node file!
-    // Not DB.
-    // Although details says "rest will be store in database like history",
-    // `history_id` is a pointer IN the node config.
-    // So we must update the node file.
-    final file = _getFileForId(requestId);
+    final file = _getFileForNode(requestId, NodeType.request);
     if (await file.exists()) {
-      try {
-        final content = await file.readAsString();
-        final map = jsonDecode(content) as Map<String, dynamic>;
-        map['history_id'] = historyId; // request uses 'history_id'
+      final content = await file.readAsString();
+      final map = jsonDecode(content) as Map<String, dynamic>;
+      // history_id is in config? No, RequestNode has it in config.
+      // But usually top level map mirrors Node structure.
+      // Node.fromMap expects 'config'.
+      // Only 'config' map needs update?
+      // RequestNode.toMap puts it in 'config' -> 'history_id'.
+      // So we need to update map['config']['history_id'].
+      if (map['config'] != null && map['config'] is Map) {
+        map['config']['history_id'] = historyId;
         await file.writeAsString(_jsonEncoder.convert(map));
-      } catch (_) {}
+      }
     }
   }
-
-  @override
-  Future<void> clearHistory(String requestId) => dbRepo.clearHistory(requestId);
-
-  @override
-  Future<void> deleteCurrHistory(String historyId) =>
-      dbRepo.deleteCurrHistory(historyId);
-
-  @override
-  Future<void> clearHistoryForCollection() =>
-      dbRepo.clearHistoryForCollection();
-
-  @override
-  Future<List<CookieJarModel>> getCookieJars(String collectionId) =>
-      dbRepo.getCookieJars(collectionId);
-
-  @override
-  Future<void> createCookieJar(CookieJarModel jar) =>
-      dbRepo.createCookieJar(jar);
-
-  @override
-  Future<void> updateCookieJar(CookieJarModel jar) =>
-      dbRepo.updateCookieJar(jar);
-
-  @override
-  Future<void> deleteCookieJar(String id) => dbRepo.deleteCookieJar(id);
-
-  @override
-  Future<void> createWebSocketSession(WebSocketSession session) =>
-      dbRepo.createWebSocketSession(session);
-
-  @override
-  Future<void> updateWebSocketSession(WebSocketSession session) =>
-      dbRepo.updateWebSocketSession(session);
-
-  @override
-  Future<List<WebSocketSession>> getWebSocketSessions(String requestId) =>
-      dbRepo.getWebSocketSessions(requestId);
-
-  @override
-  Future<void> deleteWebSocketSession(String sessionId) =>
-      dbRepo.deleteWebSocketSession(sessionId);
-
-  @override
-  Future<void> addWebSocketMessage(WebSocketMessage msg) =>
-      dbRepo.addWebSocketMessage(msg);
-
-  @override
-  Future<List<WebSocketMessage>> getWebSocketMessages(
-    String sessionId, {
-    int limit = 100,
-  }) => dbRepo.getWebSocketMessages(sessionId, limit: limit);
-
-  @override
-  Future<void> clearWebSocketSessionMessages(String sessionId) =>
-      dbRepo.clearWebSocketSessionMessages(sessionId);
-
-  @override
-  Future<void> clearWebSocketHistory(String requestId) =>
-      dbRepo.clearWebSocketHistory(requestId);
 }
