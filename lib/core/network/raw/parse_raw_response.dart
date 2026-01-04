@@ -4,6 +4,7 @@ import 'dart:typed_data';
 
 import 'package:api_craft/core/models/models.dart';
 import 'package:flutter/material.dart';
+import 'package:nanoid/nanoid.dart';
 
 /// Helper: Parses the raw bytes into a structured Object
 RawHttpResponse parseRawResponse(
@@ -112,7 +113,7 @@ RawHttpResponse parseRawResponse(
   }
 
   return RawHttpResponse(
-    id: uuid.v4(),
+    id: nanoid(),
     requestId: requestId,
     statusCode: statusCode,
     statusMessage: statusMsg,

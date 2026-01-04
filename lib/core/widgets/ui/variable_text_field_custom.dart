@@ -512,7 +512,9 @@ class _VariableTextFieldCustomState
     if (widget.controller == null) {
       _controller.dispose();
     }
-    _focusNode.dispose();
+    if (widget.focusNode == null) {
+      _focusNode.dispose();
+    }
     super.dispose();
   }
 }

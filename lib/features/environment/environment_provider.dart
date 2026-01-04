@@ -2,7 +2,7 @@ import 'package:api_craft/core/providers/providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:api_craft/core/models/models.dart';
-import 'package:uuid/uuid.dart';
+import 'package:nanoid/nanoid.dart';
 
 class EnvironmentState {
   final List<Environment> environments;
@@ -69,8 +69,6 @@ class EnvironmentState {
 }
 
 class EnvironmentNotifier extends Notifier<EnvironmentState> {
-  final Uuid _uuid = const Uuid();
-
   @override
   EnvironmentState build() {
     final collectionId = ref.watch(
@@ -168,7 +166,7 @@ class EnvironmentNotifier extends Notifier<EnvironmentState> {
   }) async {
     final repo = ref.read(repositoryProvider);
     final newEnv = Environment(
-      id: _uuid.v4(),
+      id: nanoid(),
       collectionId: collectionId,
       name: name,
       color: color,
@@ -203,7 +201,7 @@ class EnvironmentNotifier extends Notifier<EnvironmentState> {
     if (env.isGlobal) return;
 
     final newEnv = env.copyWith(
-      id: _uuid.v4(),
+      id: nanoid(),
       name: "${env.name} (Copy)",
       isGlobal: false,
     );
@@ -255,7 +253,7 @@ class EnvironmentNotifier extends Notifier<EnvironmentState> {
   Future<void> createCookieJar(String name, String collectionId) async {
     final repo = ref.read(repositoryProvider);
     final newJar = CookieJarModel(
-      id: _uuid.v4(),
+      id: nanoid(),
       collectionId: collectionId,
       name: name,
     );

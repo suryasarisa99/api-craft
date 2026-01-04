@@ -3,7 +3,7 @@ import 'package:api_craft/core/constants/globals.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:uuid/uuid.dart';
+import 'package:nanoid/nanoid.dart';
 
 // Provider to give synchronous access to DB after app start
 
@@ -223,7 +223,7 @@ class DatabaseHelper {
       // Let's just create "Global" if missing.
       await db.insert(Tables.environments, {
         ...kDefaultEnvironment.toMap(),
-        'id': const Uuid().v4(),
+        'id': nanoid(),
         'name': 'Global',
         'is_global': 1,
       });

@@ -6,6 +6,8 @@ import 'package:api_craft/features/request/models/websocket_session.dart';
 export 'folder_storage_repository.dart';
 export 'db_storage_repository.dart';
 
+export 'flat_file_storage_repository.dart';
+
 abstract class StorageRepository {
   /// Loads children for a given parent (or root if parentId is empty/null)
   Future<List<Node>> getNodes();

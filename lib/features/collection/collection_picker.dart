@@ -1,13 +1,14 @@
 import 'package:api_craft/core/constants/globals.dart';
 import 'package:api_craft/core/models/models.dart';
 import 'package:api_craft/core/providers/providers.dart';
-import 'package:api_craft/core/widgets/dialog/input_dialog.dart';
+
 import 'package:api_craft/core/widgets/ui/custom_menu.dart';
 import 'package:api_craft/core/widgets/ui/surya_theme_icon.dart';
 import 'package:flutter_popup/flutter_popup.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
 import 'package:suryaicons/bulk_rounded.dart';
+import 'package:file_picker/file_picker.dart';
 
 class CollectionPicker extends ConsumerStatefulWidget {
   const CollectionPicker({super.key});
@@ -86,20 +87,9 @@ class _CollectionPickerState extends ConsumerState<CollectionPicker> {
   }
 
   void _showCreateDialog(BuildContext context) {
-    final controller = TextEditingController();
     showDialog(
       context: context,
-      builder: (context) => InputDialog(
-        onConfirmed: (text) {
-          final name = text.trim();
-          if (name.isNotEmpty) {
-            ref
-                .read(collectionsProvider.notifier)
-                .createCollection(name, type: CollectionType.database);
-          }
-        },
-        title: "New Collection",
-      ),
+      builder: (context) => const _CreateCollectionDialog(),
     );
   }
 
@@ -128,6 +118,130 @@ class _CollectionPickerState extends ConsumerState<CollectionPicker> {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _CreateCollectionDialog extends ConsumerStatefulWidget {
+  const _CreateCollectionDialog();
+
+  @override
+  ConsumerState<_CreateCollectionDialog> createState() =>
+      _CreateCollectionDialogState();
+}
+
+class _CreateCollectionDialogState
+    extends ConsumerState<_CreateCollectionDialog> {
+  final TextEditingController _nameController = TextEditingController();
+  String? _selectedPath;
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickFolder() async {
+    final String? result = await FilePicker.platform.getDirectoryPath();
+    if (result != null) {
+      setState(() {
+        _selectedPath = result;
+      });
+    }
+  }
+
+  void _create() {
+    final name = _nameController.text.trim();
+    if (name.isEmpty) return;
+
+    final type = _selectedPath != null
+        ? CollectionType.filesystem
+        : CollectionType.database;
+
+    ref
+        .read(collectionsProvider.notifier)
+        .createCollection(name, type: type, path: _selectedPath);
+    Navigator.pop(context);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return AlertDialog(
+      title: const Text("New Collection"),
+      content: SizedBox(
+        width: 400,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TextField(
+              controller: _nameController,
+              autofocus: true,
+              decoration: const InputDecoration(
+                hintText: "Collection Name",
+                border: OutlineInputBorder(),
+              ),
+              onSubmitted: (_) => _create(),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              "Storage Loaction",
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              decoration: BoxDecoration(
+                border: Border.all(color: theme.dividerColor),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: ListTile(
+                dense: true,
+                onTap: _pickFolder,
+                leading: const Icon(Icons.folder, size: 20),
+                title: Text(
+                  _selectedPath ?? "Database (Default)",
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: _selectedPath == null
+                        ? theme.disabledColor
+                        : theme.textTheme.bodyMedium?.color,
+                    fontStyle: _selectedPath == null
+                        ? FontStyle.italic
+                        : FontStyle.normal,
+                  ),
+                ),
+                trailing: _selectedPath != null
+                    ? IconButton(
+                        icon: const Icon(Icons.close, size: 16),
+                        onPressed: () {
+                          setState(() {
+                            _selectedPath = null;
+                          });
+                        },
+                      )
+                    : const Icon(Icons.edit, size: 16),
+              ),
+            ),
+            if (_selectedPath != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Text(
+                  "Files will be stored in this directory.",
+                  style: theme.textTheme.bodySmall?.copyWith(fontSize: 11),
+                ),
+              ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text("Cancel"),
+        ),
+        FilledButton(onPressed: _create, child: const Text("Create")),
+      ],
     );
   }
 }

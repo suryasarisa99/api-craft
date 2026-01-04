@@ -1,4 +1,4 @@
-import 'package:uuid/uuid.dart';
+import 'package:nanoid/nanoid.dart';
 import '../../../core/models/models.dart';
 
 abstract class NodeConfig {
@@ -136,8 +136,6 @@ class RequestNodeConfig extends NodeConfig {
   }
 }
 
-final uuid = Uuid();
-
 class KeyValueItem {
   final String id;
   String key;
@@ -149,7 +147,7 @@ class KeyValueItem {
     this.key = '',
     this.value = '',
     this.isEnabled = true,
-  }) : id = id ?? uuid.v4();
+  }) : id = id ?? nanoid(8);
 
   factory KeyValueItem.fromMap(Map<String, dynamic> map) => KeyValueItem(
     id: map['id'],

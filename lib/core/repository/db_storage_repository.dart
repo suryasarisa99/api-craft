@@ -4,14 +4,13 @@ import 'package:api_craft/core/models/models.dart';
 import 'package:api_craft/features/request/models/websocket_session.dart';
 import 'package:api_craft/features/request/models/websocket_message.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:nanoid/nanoid.dart';
 import 'package:sqflite/sqflite.dart';
-import 'package:uuid/uuid.dart';
 import 'storage_repository.dart';
 
 class DbStorageRepository implements StorageRepository {
   final Future<Database> _db;
   final String collectionId; // <--- The Filter
-  final Uuid _uuid = const Uuid();
 
   DbStorageRepository(this._db, String? _collectionId)
     : collectionId = _collectionId ?? kDefaultCollection.id {
@@ -167,7 +166,7 @@ class DbStorageRepository implements StorageRepository {
     String? method,
   }) async {
     final db = await _db;
-    final newId = _uuid.v4();
+    final newId = nanoid();
     debugPrint('db::create-item $collectionId with ID $newId');
 
     // Get max sort order for this specific folder

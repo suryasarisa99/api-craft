@@ -8,7 +8,7 @@ import 'package:api_craft/core/providers/providers.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
-import 'package:uuid/uuid.dart';
+import 'package:nanoid/nanoid.dart';
 
 // Service provider
 final wsServiceProvider = Provider((ref) => WsService());
@@ -91,7 +91,7 @@ class WsRequestNotifier extends StateNotifier<WsRequestState> {
         messages: [], // Clear previous session messages on new connect
       );
       // 2. Create Session
-      final sessionId = const Uuid().v4();
+      final sessionId = nanoid();
       final session = WebSocketSession(
         id: sessionId,
         requestId: requestId,
@@ -191,7 +191,7 @@ class WsRequestNotifier extends StateNotifier<WsRequestState> {
     if (sessionId == null) return;
 
     final msg = WebSocketMessage(
-      id: const Uuid().v4(),
+      id: nanoid(),
       requestId: requestId,
       sessionId: sessionId,
       isSent: isSent,

@@ -2,7 +2,7 @@ import 'package:api_craft/core/models/models.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:api_craft/core/providers/providers.dart';
-import 'package:uuid/uuid.dart';
+import 'package:nanoid/nanoid.dart';
 
 final collectionsProvider =
     AsyncNotifierProvider<CollectionsNotifier, List<CollectionModel>>(
@@ -32,7 +32,7 @@ class CollectionsNotifier extends AsyncNotifier<List<CollectionModel>> {
     String? path,
   }) async {
     final db = await ref.read(databaseProvider);
-    final newId = const Uuid().v4();
+    final newId = nanoid();
 
     final newCollection = CollectionModel(
       id: newId,
@@ -47,15 +47,11 @@ class CollectionsNotifier extends AsyncNotifier<List<CollectionModel>> {
     final repo = ref.read(repositoryProvider);
 
     await repo.createEnvironment(
-      Environment(id: const Uuid().v4(), collectionId: newId, name: 'Default'),
+      Environment(id: nanoid(), collectionId: newId, name: 'Default'),
     );
 
     await repo.createCookieJar(
-      CookieJarModel(
-        id: const Uuid().v4(),
-        collectionId: newId,
-        name: 'Default',
-      ),
+      CookieJarModel(id: nanoid(), collectionId: newId, name: 'Default'),
     );
 
     // Refresh list

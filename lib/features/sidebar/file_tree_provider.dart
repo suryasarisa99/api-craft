@@ -7,7 +7,7 @@ import 'package:api_craft/features/sidebar/providers/clipboard_provider.dart';
 import 'package:api_craft/features/request/widgets/tabs/tab_titles.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:uuid/uuid.dart';
+import 'package:nanoid/nanoid.dart';
 
 // Configuration Provider (Database vs FileSystem)
 enum StorageMode { filesystem, database }
@@ -297,10 +297,8 @@ class FileTreeNotifier extends Notifier<TreeData> {
     }
 
     final List<Node> nodes = [];
-    final uuid = Uuid();
-
-    final ids = folderNames.map((e) => uuid.v4()).toList();
-    final childId = fileName == null ? null : uuid.v4();
+    final ids = folderNames.map((e) => nanoid()).toList();
+    final childId = fileName == null ? null : nanoid();
     debugPrint(ids.toString());
     for (int i = 0; i < folderNames.length; i++) {
       nodes.add(
@@ -359,7 +357,7 @@ class FileTreeNotifier extends Notifier<TreeData> {
       await duplicateFolder(node);
     } else {
       final duplicatedNode = node.copyWith(
-        id: const Uuid().v4(),
+        id: nanoid(),
         name: '${node.name}_copy',
         config: node.config.clone(),
       );
@@ -380,7 +378,7 @@ class FileTreeNotifier extends Notifier<TreeData> {
 
     // 1. Generate all new IDs first
     for (final n in allNodes) {
-      idMap[n.id] = const Uuid().v4();
+      idMap[n.id] = nanoid();
     }
 
     // 2. Rebuild nodes with new IDs + fixed parentId
@@ -750,7 +748,7 @@ class FileTreeNotifier extends Notifier<TreeData> {
       await _duplicateFolderToParent(node, parentId);
     } else {
       final newNode = node.copyWith(
-        id: const Uuid().v4(),
+        id: nanoid(),
         parentId: parentId,
         forceNullParent: parentId == null,
         name: node
@@ -768,7 +766,7 @@ class FileTreeNotifier extends Notifier<TreeData> {
   ) async {
     final allNodes = [node, ...getChildrenNodes(node)];
     final idMap = <String, String>{};
-    for (final n in allNodes) idMap[n.id] = const Uuid().v4();
+    for (final n in allNodes) idMap[n.id] = nanoid();
 
     final duplicated = <Node>[];
     for (final n in allNodes) {

@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 import 'dart:convert';
-import 'package:uuid/uuid.dart';
+import 'package:nanoid/nanoid.dart';
 
 import 'package:api_craft/core/network/raw/raw_http_req.dart';
 import 'package:api_craft/core/models/models.dart';
@@ -106,7 +106,7 @@ class HttpService {
       debugPrint("Error sending request: $e\n$stack");
 
       final errorResponse = RawHttpResponse(
-        id: const Uuid().v4(),
+        id: nanoid(),
         requestId: requestId,
         statusCode: 0,
         statusMessage: 'Error',
