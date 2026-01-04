@@ -636,18 +636,21 @@ class RequestResolver {
       ...cleanKeyValueItems(inherited),
       ...cleanKeyValueItems(headers),
     ];
+    debugPrint("Merged Headers: $merged");
     //resolves headers keys first and then handles later,to prevent handle headers key case convertion/merging header by keys.
     final resolvedHeaderKeys = await Future.wait(
       merged.map((h) async {
-        return [await resolver.resolve(h[0], context: context), h[1]];
+        return [await resolveVariables(h[0], resolver, context: context), h[1]];
       }),
     );
+    debugPrint("Resolved Header Keys: $resolvedHeaderKeys");
     final handledHeaders = HeaderUtils.handleHeaders(resolvedHeaderKeys);
     final resolvedHeaders = await Future.wait(
       handledHeaders.map((h) async {
-        return [h[0], await resolver.resolve(h[1], context: context)];
+        return [h[0], await resolveVariables(h[1], resolver, context: context)];
       }),
     );
+    debugPrint("Resolved Headers: $resolvedHeaders");
     return resolvedHeaders;
   }
 

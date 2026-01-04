@@ -36,8 +36,6 @@ class HttpService {
         method: req.request.method,
         url: req.uri,
         headers: req.headers,
-        // body: ctx.request.config.body,
-        // body: _bodies[0],
         body: req.body is Map ? jsonEncode(req.body) : req.body,
         useProxy: false,
         requestId: req.request.id,
