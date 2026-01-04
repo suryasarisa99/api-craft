@@ -12,6 +12,7 @@
 .swiftpm/
 migrate_working_dir/
 ignore
+api_craft.dmg
 # IntelliJ related
 *.iml
 *.ipr
