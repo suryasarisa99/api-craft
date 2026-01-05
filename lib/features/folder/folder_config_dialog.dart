@@ -1,4 +1,5 @@
 import 'package:api_craft/core/providers/providers.dart';
+import 'package:api_craft/core/widgets/ui/custom_dialog.dart';
 import 'package:api_craft/core/widgets/ui/variable_text_field_custom.dart';
 import 'package:api_craft/core/utils/debouncer.dart';
 import 'package:api_craft/features/auth/auth_tab.dart';
@@ -72,25 +73,19 @@ class _FolderConfigDialogState extends ConsumerState<FolderConfigDialog> {
           ref.read(repositoryProvider).updateNode(currentState.node);
         }
       },
-      child: Dialog(
-        insetPadding: const EdgeInsets.all(24),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(6),
-            border: Border.all(color: const Color(0xFF3D3D3D)),
-          ),
-          width: 900,
-          height: 600,
-          child: NotificationListener<SwitchTabNotification>(
-            onNotification: (notification) {
-              setState(() {
-                tabIndex = notification.index;
-              });
-              return true;
-            },
-            child: _buildDialog(),
-          ),
+      child: CustomDialog(
+        width: 900,
+        height: 600,
+        // insetPadding: const EdgeInsets.all(24),
+        // shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        child: NotificationListener<SwitchTabNotification>(
+          onNotification: (notification) {
+            setState(() {
+              tabIndex = notification.index;
+            });
+            return true;
+          },
+          child: _buildDialog(),
         ),
       ),
     );
@@ -99,7 +94,7 @@ class _FolderConfigDialogState extends ConsumerState<FolderConfigDialog> {
   Widget _buildDialog() {
     final tabs = ["General", "Headers", "Auth", "Environment"];
     return Padding(
-      padding: const EdgeInsets.all(8.0),
+      padding: const EdgeInsets.all(00),
       child: Column(
         crossAxisAlignment: .start,
         children: [
@@ -112,7 +107,7 @@ class _FolderConfigDialogState extends ConsumerState<FolderConfigDialog> {
                 ).select((value) => value.node.name),
               );
               return Padding(
-                padding: const EdgeInsets.all(16.0),
+                padding: const EdgeInsets.all(12),
                 child: Row(
                   children: [
                     Icon(Icons.folder_outlined, size: 28, color: Colors.grey),
@@ -143,7 +138,7 @@ class _FolderConfigDialogState extends ConsumerState<FolderConfigDialog> {
           Expanded(
             child: Row(
               children: [
-                const SizedBox(width: 16),
+                const SizedBox(width: 8),
                 SizedBox(
                   width: 140,
                   child: Column(
