@@ -16,7 +16,7 @@ class HttpService {
     String requestId, {
     required BuildContext context,
   }) async {
-    final resolver = ref.read(requestResolverProvider);
+    final resolver = RequestResolver(ref);
     final isActiveReq = ref.read(activeReqIdProvider) == requestId;
     //NOTE: use composer only when the request is active,otherwise it will throw error
     ReqComposeNotifier? composer;

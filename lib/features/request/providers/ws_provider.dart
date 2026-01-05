@@ -1,10 +1,8 @@
 import 'dart:async';
 import 'package:api_craft/core/repository/data_repository.dart';
-import 'package:api_craft/core/repository/storage_repository.dart';
 import 'package:api_craft/core/services/ws_service.dart';
 import 'package:api_craft/features/request/models/websocket_message.dart';
 import 'package:api_craft/features/request/models/websocket_session.dart';
-import 'package:api_craft/features/request/services/req_resolver.dart';
 import 'package:api_craft/core/providers/providers.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,7 +11,6 @@ import 'package:nanoid/nanoid.dart';
 
 // Service provider
 final wsServiceProvider = Provider((ref) => WsService());
-final requestResolverProvider = Provider((ref) => RequestResolver(ref));
 
 // State for a single WS request
 class WsRequestState {
