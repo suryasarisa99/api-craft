@@ -1,4 +1,5 @@
 import 'package:api_craft/core/providers/providers.dart';
+import 'package:api_craft/core/widgets/ui/variable_text_field_custom.dart';
 import 'package:api_craft/core/utils/debouncer.dart';
 import 'package:api_craft/features/auth/auth_tab.dart';
 import 'package:api_craft/features/request/widgets/tabs/environment_tab.dart';
@@ -81,7 +82,15 @@ class _FolderConfigDialogState extends ConsumerState<FolderConfigDialog> {
           ),
           width: 900,
           height: 600,
-          child: _buildDialog(),
+          child: NotificationListener<SwitchTabNotification>(
+            onNotification: (notification) {
+              setState(() {
+                tabIndex = notification.index;
+              });
+              return true;
+            },
+            child: _buildDialog(),
+          ),
         ),
       ),
     );

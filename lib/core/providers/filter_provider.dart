@@ -16,8 +16,19 @@ final filterServiceProvider = Provider.autoDispose.family<FilterService, String?
   if (id != null) {
     // for requests and folders
     variables = ref.watch(
-      reqComposeProvider(id).select((d) => d.allVariables.keys.toSet()),
+      reqComposeProvider(id).select((d) => d.inheritVariables.keys.toSet()),
     );
+    if (ref.read(fileTreeProvider).nodeMap[id] is FolderNode) {
+      variables.addAll(
+        ref.watch(
+          fileTreeProvider.select(
+            (s) => (s.nodeMap[id] as FolderNode).config.variables
+                .map((e) => e.key)
+                .toSet(),
+          ),
+        ),
+      );
+    }
   } else {
     // for global
 

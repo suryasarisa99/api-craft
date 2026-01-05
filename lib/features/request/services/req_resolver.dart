@@ -59,9 +59,7 @@ class RequestResolver {
     BuildContext context,
     String? previewType,
   ) async {
-    final node =
-        ref.read(fileTreeProvider.select((t) => t.nodeMap[requestId]))
-            as RequestNode?;
+    final node = ref.read(fileTreeProvider.select((t) => t.nodeMap[requestId]));
     final mergedVars = mergeVariables(node);
     final resolver = LazyVariableResolver(mergedVars, this);
     // resolve args values if string
@@ -532,6 +530,9 @@ class RequestResolver {
     while (ptr != null) {
       chain.insert(0, ptr);
       ptr = _parentOf(ptr);
+    }
+    if (node is FolderNode) {
+      chain.add(node);
     }
 
     // 2. Overlay Folder Chain Variables (Overrides Global)

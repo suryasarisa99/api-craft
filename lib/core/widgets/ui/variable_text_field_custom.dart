@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:api_craft/core/models/models.dart';
 import 'package:api_craft/core/providers/filter_provider.dart';
 import 'package:api_craft/core/providers/providers.dart';
 import 'package:api_craft/core/widgets/ui/key_valu_text_builder.dart';
@@ -11,10 +12,16 @@ import 'package:api_craft/features/template-functions/parsers/utils.dart';
 import 'package:api_craft/features/template-functions/widget/form_popup_widget.dart';
 import 'package:api_craft/core/widgets/ui/filter.dart';
 import 'package:api_craft/core/widgets/ui/variable_text_builder.dart';
+import 'package:collection/collection.dart';
 import 'package:extended_text_field/extended_text_field.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+class SwitchTabNotification extends Notification {
+  final int index;
+  const SwitchTabNotification(this.index);
+}
 
 class VariableTextFieldCustom extends ConsumerStatefulWidget {
   final String? initialValue;
@@ -110,15 +117,23 @@ class _VariableTextFieldCustomState
 
   (String? variable, String? source) getVariable(String name) {
     if (widget.id != null) {
-      final x = ref.read(reqComposeProvider(widget.id!)).allVariables[name];
+      final node = ref.read(fileTreeProvider).nodeMap[widget.id!];
+      VariableValue? x;
+      if (node is FolderNode) {
+        final v = node.config.variables.firstWhereOrNull((e) => e.key == name);
+        if (v != null) {
+          x = VariableValue("curr-folder", v.value);
+        }
+      }
+      if (x == null) {
+        final inheritedVars = ref
+            .read(reqComposeProvider(widget.id!))
+            .inheritVariables;
+        x = inheritedVars[name];
+      }
       return (x?.value, x?.sourceId);
     }
-    final x = ref
-        .read(environmentProvider)
-        .selectedEnvironment
-        ?.variables
-        .firstWhere((e) => e.key == name);
-    return (x?.value, null);
+    return (null, null);
   }
 
   void handleVariableTap({
@@ -159,6 +174,8 @@ class _VariableTextFieldCustomState
             context: context,
             builder: (_) => const EnvironmentEditorDialog(),
           );
+        } else if (source == "curr-folder") {
+          SwitchTabNotification(3).dispatch(context);
         } else {
           showFolderConfigDialog(
             context: context,

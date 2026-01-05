@@ -29,7 +29,7 @@ class ReqComposeNotifier extends Notifier<UiRequestContext> {
       inheritedHeaders: detailsState.inherit.headers,
       effectiveAuth: detailsState.inherit.auth,
       authSource: detailsState.inherit.authSource,
-      allVariables: detailsState.inherit.variables,
+      inheritVariables: detailsState.inherit.variables,
       isLoading: detailsState.isLoading,
       history: detailsState.history,
       isSending: stateOrNull?.isSending ?? false,

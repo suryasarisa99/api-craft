@@ -7,7 +7,7 @@ class UiRequestContext {
   final List<KeyValueItem> inheritedHeaders;
   final AuthData effectiveAuth;
   final Node? authSource;
-  final Map<String, VariableValue> allVariables;
+  final Map<String, VariableValue> inheritVariables;
   final List<RawHttpResponse>? history;
   final bool isLoading;
   final bool isSending;
@@ -22,7 +22,7 @@ class UiRequestContext {
     required this.inheritedHeaders,
     required this.effectiveAuth,
     required this.authSource,
-    required this.allVariables,
+    required this.inheritVariables,
     this.history,
     this.isLoading = false,
     this.isSending = false,
@@ -38,7 +38,7 @@ class UiRequestContext {
       inheritedHeaders: const [],
       effectiveAuth: const AuthData(type: AuthType.noAuth),
       authSource: null,
-      allVariables: const {},
+      inheritVariables: const {},
       isLoading: true,
     );
   }
@@ -64,7 +64,7 @@ class UiRequestContext {
       inheritedHeaders: inheritedHeaders ?? this.inheritedHeaders,
       effectiveAuth: effectiveAuth ?? this.effectiveAuth,
       authSource: authSource ?? this.authSource,
-      allVariables: allVariables ?? this.allVariables,
+      inheritVariables: allVariables ?? this.inheritVariables,
       history: history ?? this.history,
       isLoading: isLoading ?? this.isLoading,
       isSending: isSending ?? this.isSending,
