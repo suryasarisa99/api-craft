@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:collection/collection.dart';
 
-class FormInputWidget extends StatelessWidget {
+class FormInputWidget extends ConsumerStatefulWidget {
   final List<FormInput> inputs;
   final bool isVertical;
   final String? id;
@@ -23,147 +23,138 @@ class FormInputWidget extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    return isVertical
-        ? Column(spacing: 14, children: _buildInputWidgets(false))
-        : Row(spacing: 8, children: _buildInputWidgets(true));
-  }
-
-  List<Widget> _buildInputWidgets(bool isExpanded) {
-    return inputs.map((input) {
-      return DynamicFormInputWrapper(
-        input: input,
-        data: data,
-        id: id,
-        onChanged: onChanged,
-        isExpanded: isExpanded,
-      );
-    }).toList();
-  }
+  ConsumerState<FormInputWidget> createState() => _FormInputWidgetState();
 }
 
-class DynamicFormInputWrapper extends ConsumerStatefulWidget {
-  final FormInput input;
-  final Map<String, dynamic> data;
-  final String? id;
-  final Function(String key, dynamic value) onChanged;
-
-  final bool isExpanded;
-
-  const DynamicFormInputWrapper({
-    super.key,
-    required this.input,
-    required this.data,
-    required this.id,
-    required this.onChanged,
-    this.isExpanded = false,
-  });
-
-  @override
-  ConsumerState<DynamicFormInputWrapper> createState() =>
-      _DynamicFormInputWrapperState();
-}
-
-class _DynamicFormInputWrapperState
-    extends ConsumerState<DynamicFormInputWrapper> {
-  Map<String, dynamic>? _dynamicOverrides;
-  // ignore: unused_field
-  bool _isLoading = false;
+class _FormInputWidgetState extends ConsumerState<FormInputWidget> {
+  List<Map<String, dynamic>?> _overrides = [];
+  // bool _isLoadingDynamicFns = false;
 
   @override
   void initState() {
     super.initState();
-    _runDynamicFn();
+    _initOverrides();
+    _runAllDynamicFn();
   }
 
   @override
-  void didUpdateWidget(DynamicFormInputWrapper oldWidget) {
+  void didUpdateWidget(FormInputWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
     const eq = MapEquality();
-    if (!eq.equals(oldWidget.data, widget.data) ||
-        oldWidget.input != widget.input) {
-      _runDynamicFn();
+    bool inputsChanged = !const ListEquality().equals(
+      oldWidget.inputs,
+      widget.inputs,
+    );
+    bool dataChanged = !eq.equals(oldWidget.data, widget.data);
+
+    if (inputsChanged) {
+      _initOverrides();
+    }
+
+    if (inputsChanged || dataChanged) {
+      _runAllDynamicFn();
     }
   }
 
-  Future<void> _runDynamicFn() async {
-    if (widget.input.dynamicFn == null) return;
+  void _initOverrides() {
+    _overrides = List.filled(widget.inputs.length, null);
+  }
 
-    if (mounted) setState(() => _isLoading = true);
+  Future<void> _runAllDynamicFn() async {
+    // if (mounted) setState(() => _isLoadingDynamicFns = true);
 
-    try {
-      final result = await widget.input.dynamicFn!(
-        ref,
-        CallTemplateFunctionArgs(values: widget.data, purpose: Purpose.preview),
-      );
+    List<Future<void>> futures = [];
+    for (int i = 0; i < widget.inputs.length; i++) {
+      final input = widget.inputs[i];
+      if (input.dynamicFn == null) continue;
 
-      if (result is Map<String, dynamic> && mounted) {
-        setState(() {
-          _dynamicOverrides = result;
-        });
-      }
-    } catch (e) {
-      debugPrint("Error running dynamicFn: $e");
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
+      // Capture current data for the call
+      final currentData = widget.data;
+      final currentIndex = i; // Capture index for async update
+
+      futures.add(() async {
+        try {
+          final result = await input.dynamicFn!(
+            ref,
+            CallTemplateFunctionArgs(
+              values: currentData,
+              purpose: Purpose.preview,
+            ),
+          );
+
+          if (mounted && result is Map<String, dynamic>) {
+            // Only update if the input at this index is still the same input
+            // and the index is within bounds.
+            if (currentIndex < widget.inputs.length &&
+                widget.inputs[currentIndex] == input) {
+              setState(() {
+                _overrides[currentIndex] = result;
+              });
+            }
+          }
+        } catch (e) {
+          debugPrint(
+            "Error running dynamicFn for ${input.type} at index $currentIndex: $e",
+          );
+        }
+      }());
     }
+    await Future.wait(futures);
+    // if (mounted) setState(() => _isLoadingDynamicFns = false);
   }
 
   @override
   Widget build(BuildContext context) {
-    final input = widget.input;
-    final mergedInput = input.applyOverrides(_dynamicOverrides);
+    final visibleChildren = <Widget>[];
 
-    final bool? hidden = switch (mergedInput) {
-      FormInputBase b => b.hidden,
-      FormInputAccordion a => a.hidden,
-      FormInputHStack h => h.hidden,
-      FormInputBanner b => b.hidden,
-      FormInputMarkdown m => m.hidden,
-      _ => false,
-    };
+    for (int i = 0; i < widget.inputs.length; i++) {
+      final input = widget.inputs[i];
+      final override = (_overrides.length > i) ? _overrides[i] : null;
 
-    if (hidden == true) {
-      return const SizedBox.shrink();
+      final mergedInput = input.applyOverrides(override);
+
+      if (mergedInput.hidden == true) continue;
+
+      Widget child = _buildInputChild(mergedInput);
+
+      if (!widget.isVertical) {
+        child = Expanded(child: child);
+      }
+      visibleChildren.add(child);
     }
+    return widget.isVertical
+        ? Column(spacing: 14, children: visibleChildren)
+        : Row(spacing: 8, children: visibleChildren);
+  }
 
-    final child = switch (mergedInput) {
+  Widget _buildInputChild(FormInput input) {
+    return switch (input) {
       FormInputSelect selectInput => FormWidgetSelect(
         selectInput: selectInput,
         value: widget.data[selectInput.name] as String?,
-        onChanged: (v) {
-          widget.onChanged(selectInput.name, v);
-        },
+        onChanged: (v) => widget.onChanged(selectInput.name, v),
       ),
       FormInputText textInput => FormWidgetText(
         input: textInput,
         id: widget.id,
         value: widget.data[textInput.name] as String?,
-        onChanged: (v) {
-          widget.onChanged(textInput.name, v);
-        },
+        onChanged: (v) => widget.onChanged(textInput.name, v),
       ),
       FormInputCheckbox checkboxInput => FormWidgetCheckbox(
         input: checkboxInput,
         value: widget.data[checkboxInput.name] as bool?,
-        onChanged: (v) {
-          widget.onChanged(checkboxInput.name, v);
-        },
+        onChanged: (v) => widget.onChanged(checkboxInput.name, v),
       ),
       FormInputEditor editorInput => FormWidgetEditor(
         input: editorInput,
         id: widget.id,
         value: widget.data[editorInput.name] as String?,
-        onChanged: (v) {
-          widget.onChanged(editorInput.name, v);
-        },
+        onChanged: (v) => widget.onChanged(editorInput.name, v),
       ),
       FormInputFile fileInput => FormWidgetFile(
         input: fileInput,
         value: widget.data[fileInput.name] as String?,
-        onChanged: (v) {
-          widget.onChanged(fileInput.name, v);
-        },
+        onChanged: (v) => widget.onChanged(fileInput.name, v),
       ),
       FormInputHStack hStackInput => FormWidgetHStack(
         input: hStackInput,
@@ -193,11 +184,6 @@ class _DynamicFormInputWrapperState
       ),
       _ => const SizedBox.shrink(),
     };
-
-    if (widget.isExpanded) {
-      return Expanded(child: child);
-    }
-    return child;
   }
 }
 

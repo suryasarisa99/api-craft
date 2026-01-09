@@ -12,10 +12,11 @@ typedef DynamicFn =
 abstract class FormInput {
   final ArgumentType type;
   final DynamicFn? dynamicFn;
+  final bool? hidden;
 
-  FormInput({required this.type, this.dynamicFn});
+  FormInput({required this.type, this.dynamicFn, this.hidden});
 
-  FormInput copyWith({DynamicFn? dynamicFn});
+  FormInput copyWith({DynamicFn? dynamicFn, bool? hidden});
 
   FormInput applyOverrides(Map<String, dynamic>? overrides);
 }
@@ -26,7 +27,6 @@ abstract class FormInputBase extends FormInput {
   final String? placeholder;
   final dynamic defaultValue;
   final bool? optional;
-  final bool? hidden;
   final bool? disabled;
   final bool? hideLabel;
   final String? description;
@@ -37,7 +37,6 @@ abstract class FormInputBase extends FormInput {
     this.placeholder,
     this.defaultValue,
     this.optional,
-    this.hidden,
     this.disabled,
     this.hideLabel,
     this.description,
@@ -45,6 +44,7 @@ abstract class FormInputBase extends FormInput {
     // super parameters
     required super.type,
     super.dynamicFn,
+    super.hidden,
   });
 
   @override
@@ -112,7 +112,7 @@ class FormInputText extends FormInputBase {
     String? description,
     DynamicFn? dynamicFn,
     bool? password,
-    bool? multiline,
+    bool? multiLine,
   }) {
     return FormInputText(
       name: name ?? this.name,
@@ -126,7 +126,7 @@ class FormInputText extends FormInputBase {
       description: description ?? this.description,
       dynamicFn: dynamicFn ?? this.dynamicFn,
       password: password ?? this.password,
-      multiLine: multiline ?? this.multiLine,
+      multiLine: multiLine ?? this.multiLine,
     );
   }
 }
@@ -410,12 +410,11 @@ class FormInputHttpRequest extends FormInputBase {
 class FormInputAccordion extends FormInput {
   final String label;
   final List<FormInput>? inputs;
-  final bool? hidden;
 
   FormInputAccordion({
     required this.label,
     this.inputs,
-    this.hidden,
+    super.hidden,
     super.dynamicFn,
   }) : super(type: ArgumentType.accordion);
 
@@ -447,9 +446,8 @@ class FormInputAccordion extends FormInput {
 // HORIZONTAL STACK (layout/group)
 class FormInputHStack extends FormInput {
   final List<FormInput>? inputs;
-  final bool? hidden;
 
-  FormInputHStack({this.inputs, this.hidden, super.dynamicFn})
+  FormInputHStack({this.inputs, super.hidden, super.dynamicFn})
     : super(type: ArgumentType.hStack);
 
   @override
@@ -475,10 +473,9 @@ class FormInputHStack extends FormInput {
 // BANNER (info, warning, etc.)
 class FormInputBanner extends FormInput {
   final List<FormInput>? inputs;
-  final bool? hidden;
   final Color? color;
 
-  FormInputBanner({this.inputs, this.hidden, this.color, super.dynamicFn})
+  FormInputBanner({this.inputs, super.hidden, this.color, super.dynamicFn})
     : super(type: ArgumentType.banner);
 
   @override
@@ -509,9 +506,8 @@ class FormInputBanner extends FormInput {
 // MARKDOWN
 class FormInputMarkdown extends FormInput {
   final String content;
-  final bool? hidden;
 
-  FormInputMarkdown({required this.content, this.hidden, super.dynamicFn})
+  FormInputMarkdown({required this.content, super.hidden, super.dynamicFn})
     : super(type: ArgumentType.markdown);
 
   @override
