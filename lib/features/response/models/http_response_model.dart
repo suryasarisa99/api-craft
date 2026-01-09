@@ -51,10 +51,8 @@ class RawHttpResponse {
       // headers: (map['headers'] as List<dynamic>)
       //     .map<List<String>>((e) => List<String>.from(e))
       //     .toList(),
-      headers: (jsonDecode(map['headers']) as List<dynamic>).map<List<String>>((
-        e,
-      ) {
-        final list = e as List<dynamic>;
+      headers: (map['headers'] as List).map<List<String>>((e) {
+        final list = e as List;
         return [list[0].toString(), list[1].toString()];
       }).toList(),
       bodyBytes: base64.decode(map['body_base64']),
@@ -62,7 +60,7 @@ class RawHttpResponse {
       body: map['body'],
       errorMessage: map['error_message'],
       redirectUrls: (map['redirect_urls'] != null)
-          ? List<String>.from(jsonDecode(map['redirect_urls']))
+          ? List<String>.from(map['redirect_urls'])
           : [],
       finalUrl: map['final_url'],
     );
@@ -77,13 +75,13 @@ class RawHttpResponse {
       'duration_ms': durationMs,
       'protocol_version': protocolVersion,
       'status_message': statusMessage,
-      'headers': jsonEncode(headers),
+      'headers': headers,
       // 'body_bytes': bodyBytes,
       'body': body,
       'body_type': bodyType,
       'body_base64': base64.encode(bodyBytes),
       'error_message': errorMessage,
-      'redirect_urls': jsonEncode(redirectUrls),
+      'redirect_urls': redirectUrls,
       'final_url': finalUrl,
     };
   }

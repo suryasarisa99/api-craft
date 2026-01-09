@@ -1,8 +1,5 @@
-import 'dart:convert';
 import 'package:flutter/widgets.dart';
-
 import '../../../core/models/models.dart';
-import '../../collection/collection_model.dart';
 
 enum NodeType { folder, request }
 
@@ -31,19 +28,11 @@ abstract class Node<T extends NodeConfig> {
   });
 
   // --- Helpers ---
-  static List<KeyValueItem> parseHeaders(dynamic source) {
+  static List<KeyValueItem> parseKeyValueItems(dynamic source) {
     if (source == null || source == '') return [];
-    if (source is List) {
-      return source
-          .map((e) => KeyValueItem.fromMap(e as Map<String, dynamic>))
-          .toList();
-    }
-    try {
-      final List list = jsonDecode(source);
-      return list.map((e) => KeyValueItem.fromMap(e)).toList();
-    } catch (_) {
-      return [];
-    }
+    return (source as List)
+        .map((e) => KeyValueItem.fromMap(e as Map<String, dynamic>))
+        .toList();
   }
 
   // --- Factory ---
@@ -96,19 +85,17 @@ class FolderNode extends Node<FolderNodeConfig> {
   void hydrate(Map<String, dynamic> details) {
     // 1. Update fields inside the existing config object
     folderConfig.description = details['description'] ?? '';
-    folderConfig.headers = Node.parseHeaders(details['headers']);
+    folderConfig.headers = Node.parseKeyValueItems(details['headers']);
 
     if (details['auth'] is Map) {
       folderConfig.auth = AuthData.fromMap(
         details['auth'] as Map<String, dynamic>,
       );
-    } else if (details['auth'] != null) {
-      folderConfig.auth = AuthData.fromMap(jsonDecode(details['auth']));
     } else {
       folderConfig.auth = const AuthData();
     }
 
-    folderConfig.variables = Node.parseHeaders(details['variables']);
+    folderConfig.variables = Node.parseKeyValueItems(details['variables']);
 
     // 2. Mark as loaded
     folderConfig.isDetailLoaded = true;
@@ -128,13 +115,11 @@ class FolderNode extends Node<FolderNodeConfig> {
         isDetailLoaded: hasDetails,
         description: map['description'] ?? '',
         // If hasDetails is true, parse them. If false, empty defaults.
-        headers: hasDetails ? Node.parseHeaders(map['headers']) : [],
+        headers: hasDetails ? Node.parseKeyValueItems(map['headers']) : [],
         auth: (hasDetails && map['auth'] != null)
-            ? (map['auth'] is Map
-                  ? AuthData.fromMap(map['auth'])
-                  : AuthData.fromMap(jsonDecode(map['auth'])))
+            ? AuthData.fromMap(map['auth'])
             : const AuthData(),
-        variables: hasDetails ? Node.parseHeaders(map['variables']) : [],
+        variables: hasDetails ? Node.parseKeyValueItems(map['variables']) : [],
       ),
     );
   }
@@ -169,13 +154,9 @@ class FolderNode extends Node<FolderNodeConfig> {
       'sort_order': sortOrder,
       // Delegate detailed fields to the config object
       'description': folderConfig.description,
-      'headers': jsonEncode(
-        folderConfig.headers.map((e) => e.toMap()).toList(),
-      ),
-      'auth': jsonEncode(folderConfig.auth.toMap()),
-      'variables': jsonEncode(
-        folderConfig.variables.map((e) => e.toMap()).toList(),
-      ),
+      'headers': folderConfig.headers.map((e) => e.toMap()).toList(),
+      'auth': folderConfig.auth.toMap(),
+      'variables': folderConfig.variables.map((e) => e.toMap()).toList(),
     };
   }
 
@@ -255,17 +236,17 @@ class RequestNode extends Node<RequestNodeConfig> {
   @override
   void hydrate(Map<String, dynamic> details) {
     config.description = details['description'] ?? '';
-    config.headers = Node.parseHeaders(details['headers']);
+    config.headers = Node.parseKeyValueItems(details['headers']);
 
     if (details['auth'] is Map) {
       config.auth = AuthData.fromMap(details['auth'] as Map<String, dynamic>);
-    } else if (details['auth'] != null) {
-      config.auth = AuthData.fromMap(jsonDecode(details['auth']));
     } else {
       config.auth = const AuthData();
     }
 
-    config.queryParameters = Node.parseHeaders(details['query_parameters']);
+    config.queryParameters = Node.parseKeyValueItems(
+      details['query_parameters'],
+    );
     config.bodyType = details['body_type'];
     config.scripts = details['scripts'];
     config.historyId = details['history_id'];
@@ -294,12 +275,12 @@ class RequestNode extends Node<RequestNodeConfig> {
       config: RequestNodeConfig(
         isDetailLoaded: hasDetails,
         description: map['description'] ?? '',
-        headers: hasDetails ? Node.parseHeaders(map['headers']) : [],
+        headers: hasDetails ? Node.parseKeyValueItems(map['headers']) : [],
         auth: (hasDetails && map['auth'] != null)
-            ? AuthData.fromMap(jsonDecode(map['auth']))
+            ? AuthData.fromMap(map['auth'])
             : const AuthData(),
         queryParameters: hasDetails
-            ? Node.parseHeaders(map['query_parameters'])
+            ? Node.parseKeyValueItems(map['query_parameters'])
             : [],
         bodyType: map['body_type'],
         scripts: map['scripts'],
@@ -347,12 +328,12 @@ class RequestNode extends Node<RequestNodeConfig> {
       'status_code': statusCode,
       // config fields
       'description': reqConfig.description,
-      'headers': jsonEncode(reqConfig.headers.map((e) => e.toMap()).toList()),
-      'auth': jsonEncode(reqConfig.auth.toMap()),
+      'headers': reqConfig.headers.map((e) => e.toMap()).toList(),
+      'auth': reqConfig.auth.toMap(),
       'request_type': requestType.toString(),
-      'query_parameters': jsonEncode(
-        reqConfig.queryParameters.map((e) => e.toMap()).toList(),
-      ),
+      'query_parameters': reqConfig.queryParameters
+          .map((e) => e.toMap())
+          .toList(),
       'body_type': reqConfig.bodyType,
       'scripts': reqConfig.scripts,
     };

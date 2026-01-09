@@ -1,5 +1,4 @@
 import 'package:objectbox/objectbox.dart';
-import 'package:api_craft/features/collection/collection_model.dart';
 import 'package:api_craft/core/models/models.dart';
 
 @Entity()

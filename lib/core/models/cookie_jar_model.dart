@@ -108,7 +108,7 @@ class CookieJarModel {
       'id': id,
       'collection_id': collectionId,
       'name': name,
-      'cookies': jsonEncode(cookies.map((e) => e.toMap()).toList()),
+      'cookies': cookies.map((e) => e.toMap()).toList(),
     };
   }
 
@@ -116,7 +116,7 @@ class CookieJarModel {
     var cookiesList = <CookieDef>[];
     if (map['cookies'] != null) {
       try {
-        final List list = jsonDecode(map['cookies']);
+        final List list = map['cookies'];
         cookiesList = list.map((e) => CookieDef.fromMap(e)).toList();
       } catch (e) {
         // ignore error

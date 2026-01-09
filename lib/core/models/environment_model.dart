@@ -48,7 +48,7 @@ class Environment {
       'collection_id': collectionId,
       'name': name,
       'color': color?.value,
-      'variables': jsonEncode(variables.map((e) => e.toMap()).toList()),
+      'variables': variables.map((e) => e.toMap()).toList(),
       'is_shared': isShared ? 1 : 0,
       'is_global': isGlobal ? 1 : 0,
     };
@@ -60,7 +60,7 @@ class Environment {
       collectionId: map['collection_id'],
       name: map['name'],
       color: map['color'] != null ? Color(map['color']) : null,
-      variables: Node.parseHeaders(map['variables']),
+      variables: Node.parseKeyValueItems(map['variables']),
       isShared: (map['is_shared'] as int? ?? 0) == 1,
       isGlobal: (map['is_global'] as int? ?? 0) == 1,
     );

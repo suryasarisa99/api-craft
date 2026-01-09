@@ -2,6 +2,7 @@
 import 'dart:convert';
 import 'package:api_craft/core/models/models.dart';
 import 'package:api_craft/features/request/models/node_model.dart';
+import 'package:flutter/material.dart';
 
 enum CollectionType { database, filesystem }
 
@@ -39,9 +40,9 @@ class CollectionModel {
       selectedEnvId: map['selected_env_id'],
       selectedJarId: map['selected_jar_id'],
       description: map['description'] ?? '',
-      headers: Node.parseHeaders(map['headers']),
-      auth: map['auth'] != null
-          ? AuthData.fromMap(jsonDecode(map['auth']))
+      headers: Node.parseKeyValueItems(map['headers']),
+      auth: (map['auth'] != null)
+          ? AuthData.fromMap(map['auth'])
           : const AuthData(),
     );
   }
@@ -55,8 +56,8 @@ class CollectionModel {
       'selected_env_id': selectedEnvId,
       'selected_jar_id': selectedJarId,
       'description': description,
-      'headers': jsonEncode(headers.map((e) => e.toMap()).toList()),
-      'auth': jsonEncode(auth.toMap()),
+      'headers': headers,
+      'auth': auth.toMap(),
     };
   }
 
