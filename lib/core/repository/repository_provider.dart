@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../providers/providers.dart';
 import 'package:api_craft/core/repository/data_repository.dart';
+import 'package:api_craft/core/repository/objectbox_storage_repository.dart';
+import 'package:api_craft/core/database/database_provider.dart';
 
 final repositoryProvider = Provider<StorageRepository>((ref) {
   // 1. Await the Selected Collection (Handles loading state automatically)
@@ -20,24 +22,21 @@ final repositoryProvider = Provider<StorageRepository>((ref) {
 
   // 2. Return the correct Repository based on type
   if (collectionId == null || type == CollectionType.database) {
-    final db = ref.watch(databaseProvider);
-    return DbStorageRepository(db, collectionId!);
+    final obxFuture = ref.watch(databaseProvider);
+    return ObjectBoxStorageRepository(obxFuture, collectionId!);
   } else {
-    final db = ref.watch(databaseProvider);
-    return FlatFileStorageRepository(
-      rootPath: path!,
-      // No delegation to dbRepo anymore
-    );
+    // Flat File
+    return FlatFileStorageRepository(rootPath: path!);
   }
 });
 
 final dataRepositoryProvider = Provider<DataRepository>((ref) {
   // Data is ALWAYS local (DB), regardless of collection type
-  final db = ref.watch(databaseProvider);
+  final obxFuture = ref.watch(databaseProvider);
   final collectionId = ref.watch(
     selectedCollectionProvider.select((c) => c?.id ?? kDefaultCollection.id),
   );
-  return DataRepository(db, collectionId);
+  return DataRepository(obxFuture, collectionId);
 });
 
 /* Old Way

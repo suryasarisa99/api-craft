@@ -31,10 +31,15 @@ abstract class Node<T extends NodeConfig> {
   });
 
   // --- Helpers ---
-  static List<KeyValueItem> parseHeaders(dynamic jsonStr) {
-    if (jsonStr == null || jsonStr == '') return [];
+  static List<KeyValueItem> parseHeaders(dynamic source) {
+    if (source == null || source == '') return [];
+    if (source is List) {
+      return source
+          .map((e) => KeyValueItem.fromMap(e as Map<String, dynamic>))
+          .toList();
+    }
     try {
-      final List list = jsonDecode(jsonStr);
+      final List list = jsonDecode(source);
       return list.map((e) => KeyValueItem.fromMap(e)).toList();
     } catch (_) {
       return [];
@@ -92,9 +97,17 @@ class FolderNode extends Node<FolderNodeConfig> {
     // 1. Update fields inside the existing config object
     folderConfig.description = details['description'] ?? '';
     folderConfig.headers = Node.parseHeaders(details['headers']);
-    folderConfig.auth = details['auth'] != null
-        ? AuthData.fromMap(jsonDecode(details['auth']))
-        : const AuthData();
+
+    if (details['auth'] is Map) {
+      folderConfig.auth = AuthData.fromMap(
+        details['auth'] as Map<String, dynamic>,
+      );
+    } else if (details['auth'] != null) {
+      folderConfig.auth = AuthData.fromMap(jsonDecode(details['auth']));
+    } else {
+      folderConfig.auth = const AuthData();
+    }
+
     folderConfig.variables = Node.parseHeaders(details['variables']);
 
     // 2. Mark as loaded
@@ -117,7 +130,9 @@ class FolderNode extends Node<FolderNodeConfig> {
         // If hasDetails is true, parse them. If false, empty defaults.
         headers: hasDetails ? Node.parseHeaders(map['headers']) : [],
         auth: (hasDetails && map['auth'] != null)
-            ? AuthData.fromMap(jsonDecode(map['auth']))
+            ? (map['auth'] is Map
+                  ? AuthData.fromMap(map['auth'])
+                  : AuthData.fromMap(jsonDecode(map['auth'])))
             : const AuthData(),
         variables: hasDetails ? Node.parseHeaders(map['variables']) : [],
       ),
@@ -241,9 +256,15 @@ class RequestNode extends Node<RequestNodeConfig> {
   void hydrate(Map<String, dynamic> details) {
     config.description = details['description'] ?? '';
     config.headers = Node.parseHeaders(details['headers']);
-    config.auth = details['auth'] != null
-        ? AuthData.fromMap(jsonDecode(details['auth']))
-        : const AuthData();
+
+    if (details['auth'] is Map) {
+      config.auth = AuthData.fromMap(details['auth'] as Map<String, dynamic>);
+    } else if (details['auth'] != null) {
+      config.auth = AuthData.fromMap(jsonDecode(details['auth']));
+    } else {
+      config.auth = const AuthData();
+    }
+
     config.queryParameters = Node.parseHeaders(details['query_parameters']);
     config.bodyType = details['body_type'];
     config.scripts = details['scripts'];

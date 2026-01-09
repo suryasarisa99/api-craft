@@ -103,17 +103,22 @@ class RequestDetailsNotifier extends Notifier<RequestDetailsState> {
   }
 
   Future<void> _load() async {
-    await ref.read(fileTreeProvider.notifier).hydrateNode(id);
-    final body = await _repo.getBody(id) ?? '';
-    final history = await _dataRepo.getHistory(id);
+    try {
+      await ref.read(fileTreeProvider.notifier).hydrateNode(id);
+      final body = await _repo.getBody(id) ?? '';
+      final history = await _dataRepo.getHistory(id);
 
-    // final selectedHistoryIndex = history.indexWhere((e) => e.id == historyId);
-    state = RequestDetailsState(
-      body: body,
-      history: history,
-      inherit: await _getInheritance(),
-      isLoading: false,
-    );
+      // final selectedHistoryIndex = history.indexWhere((e) => e.id == historyId);
+      state = RequestDetailsState(
+        body: body,
+        history: history,
+        inherit: await _getInheritance(),
+        isLoading: false,
+      );
+    } catch (e, st) {
+      debugPrint("Error loading request details for $id: $e\n$st");
+      state = state.copyWith(isLoading: false);
+    }
   }
 
   RawHttpResponse? get selectedHistory {

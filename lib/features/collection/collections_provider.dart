@@ -1,9 +1,13 @@
+import 'package:api_craft/core/database/entities/collection_entity.dart';
+import 'package:api_craft/core/database/objectbox.dart';
+import 'package:api_craft/objectbox.g.dart';
 import 'package:api_craft/core/models/models.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:api_craft/core/providers/providers.dart';
 import 'package:api_craft/core/repository/data_repository.dart';
 import 'package:nanoid/nanoid.dart';
+import 'package:api_craft/core/database/database_provider.dart';
 
 final collectionsProvider =
     AsyncNotifierProvider<CollectionsNotifier, List<CollectionModel>>(
@@ -11,18 +15,20 @@ final collectionsProvider =
     );
 
 class CollectionsNotifier extends AsyncNotifier<List<CollectionModel>> {
+  Future<Box<CollectionEntity>> get _box async =>
+      (await ref.watch(databaseProvider)).store.box<CollectionEntity>();
+
   @override
   Future<List<CollectionModel>> build() async {
-    final db = await ref.watch(databaseProvider);
+    final box = await _box;
 
     // Fetch existing
-    final maps = await db.query('collections');
-    debugPrint('Collections found: ${maps.length}');
+    final entities = box.getAll();
+    debugPrint('Collections found: ${entities.length}');
 
-    if (maps.isNotEmpty) {
-      return maps.map((e) => CollectionModel.fromMap(e)).toList();
+    if (entities.isNotEmpty) {
+      return entities.map((e) => e.toModel()).toList();
     } else {
-      // Should have been created by DBHelper init, but if not, return empty or retry
       return [];
     }
   }
@@ -32,7 +38,9 @@ class CollectionsNotifier extends AsyncNotifier<List<CollectionModel>> {
     CollectionType type = CollectionType.database,
     String? path,
   }) async {
-    final db = await ref.read(databaseProvider);
+    final obx = await ref.read(databaseProvider);
+    final box = obx.store.box<CollectionEntity>();
+
     final newId = nanoid();
 
     final newCollection = CollectionModel(
@@ -42,11 +50,11 @@ class CollectionsNotifier extends AsyncNotifier<List<CollectionModel>> {
       path: path,
     );
 
-    await db.insert('collections', newCollection.toMap());
+    box.put(CollectionEntity.fromModel(newCollection));
 
     // Create Default Environment & Cookie Jar for this new collection
     // Use a scoped DataRepo for the new collection
-    final dataRepo = DataRepository(Future.value(db), newId);
+    final dataRepo = DataRepository(Future.value(obx), newId);
 
     await dataRepo.createEnvironment(
       Environment(id: nanoid(), collectionId: newId, name: 'Default'),
@@ -63,24 +71,29 @@ class CollectionsNotifier extends AsyncNotifier<List<CollectionModel>> {
   }
 
   Future<void> deleteCollection(String id) async {
-    final db = await ref.read(databaseProvider);
-    await db.delete('collections', where: 'id = ?', whereArgs: [id]);
+    final box = await _box;
+    final q = box.query(CollectionEntity_.uid.equals(id)).build();
+    q.remove();
+    q.close();
 
     // Refresh list
     ref.invalidateSelf();
-
-    // If deleted collection was selected, switch to default
-    // Handled by SelectedCollectionNotifier listener
   }
 
   Future<void> updateCollection(CollectionModel collection) async {
-    final db = await ref.read(databaseProvider);
-    await db.update(
-      'collections',
-      collection.toMap(),
-      where: 'id = ?',
-      whereArgs: [collection.id],
-    );
+    final box = await _box;
+
+    // Check internal ID
+    final q = box.query(CollectionEntity_.uid.equals(collection.id)).build();
+    final existing = q.findFirst();
+    q.close();
+
+    if (existing != null) {
+      final updated = CollectionEntity.fromModel(collection);
+      updated.id = existing.id; // Preserve ID
+      box.put(updated);
+    }
+
     // Update state locally to avoid reload flicker
     state.whenData((list) {
       final index = list.indexWhere((c) => c.id == collection.id);
@@ -128,34 +141,3 @@ class CollectionsNotifier extends AsyncNotifier<List<CollectionModel>> {
     });
   }
 }
-
-/// use shared preferences to store collections instead of database
-
-// class CollectionsProvider extends Notifier<List<CollectionModel>> {
-//   static const _collectionsKey = 'collections';
-
-//   @override
-//   List<CollectionModel> build() {
-//     final prefs = loadCollections();
-//     if (prefs.isEmpty) {
-//       return [];
-//     }
-//     return prefs;
-//   }
-
-//   Future<void> addCollection(CollectionModel collection) async {
-//     final prefs = await SharedPreferences.getInstance();
-//     final collectionsData = prefs.getStringList(_collectionsKey) ?? [];
-//     collectionsData.add(jsonEncode(collection.toMap()));
-//     await prefs.setStringList(_collectionsKey, collectionsData);
-//     state = [...state, collection];
-//   }
-
-//   List<CollectionModel> loadCollections() {
-//     return prefs.getStringList(_collectionsKey)?.map((data) {
-//           final map = jsonDecode(data);
-//           return CollectionModel.fromMap(map);
-//         }).toList() ??
-//         [];
-//   }
-// }

@@ -6,6 +6,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
   desktop_drop
   flutter_js
   irondash_engine_context
+  objectbox_flutter_libs
   screen_retriever_windows
   super_native_extensions
   url_launcher_windows
