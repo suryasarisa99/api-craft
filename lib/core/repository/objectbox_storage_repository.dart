@@ -175,29 +175,11 @@ class ObjectBoxStorageRepository implements StorageRepository {
     }
   }
 
-  @override
   Future<void> deleteItem(String id) async {
     final box = await _nodeBox;
-    final toDelete = <int>[];
-
-    final queue = <String>[id];
-    while (queue.isNotEmpty) {
-      final currentId = queue.removeLast();
-
-      final node = await _findNode(currentId);
-      if (node != null) {
-        toDelete.add(node.id);
-
-        final children = box
-            .query(NodeEntity_.parentId.equals(currentId))
-            .build()
-            .find();
-        queue.addAll(children.map((c) => c.uid));
-      }
-    }
-
-    if (toDelete.isNotEmpty) {
-      box.removeMany(toDelete);
+    final node = await _findNode(id);
+    if (node != null) {
+      box.remove(node.id);
     }
   }
 

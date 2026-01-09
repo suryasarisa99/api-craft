@@ -1,8 +1,6 @@
 import 'package:api_craft/core/models/models.dart';
 
-export 'folder_storage_repository.dart';
 export 'db_storage_repository.dart';
-
 export 'flat_file_storage_repository.dart';
 
 abstract class StorageRepository {
@@ -20,8 +18,7 @@ abstract class StorageRepository {
     String? method,
   });
 
-  /// Deletes an item (and its children).
-  Future<void> deleteItem(String id);
+  /// Deletes list of items (not their children).
   Future<void> deleteItems(List<String> ids);
 
   /// Renames an item.

@@ -193,22 +193,9 @@ class FlatFileStorageRepository implements StorageRepository {
     await file.writeAsString(_jsonEncoder.convert(node.toMap()));
   }
 
-  @override
   Future<void> deleteItem(String id) async {
     final file = _getFileForId(id);
-    if (await file.exists()) {
-      await file.delete();
-    }
-    // Also delete children?
-    // File structure is flat, children just have parent_id = id.
-    // We need to recursively find children and delete them!
-    // DB assumes Cascade Delete. Files don't have that.
-    // We must scan for children.
-    final allNodes = await getNodes(); // Re-read to be safe
-    final children = allNodes.where((n) => n.parentId == id).toList();
-    for (final child in children) {
-      await deleteItem(child.id); // Recursive
-    }
+    await file.delete();
   }
 
   @override

@@ -538,10 +538,6 @@ class FileTreeNotifier extends Notifier<TreeData> {
     }
   }
 
-  Future<void> deleteNode(Node node) async {
-    await _deleteNodes([node.id]);
-  }
-
   Future<void> deleteSelectedNodes() async {
     await _deleteNodes(getRecursiveSelectedIds(includeFolders: true));
   }
