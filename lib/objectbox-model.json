@@ -45,21 +45,6 @@
           "id": "7:7087347246569023560",
           "name": "selectedJarId",
           "type": 9
-        },
-        {
-          "id": "8:788942307543725488",
-          "name": "description",
-          "type": 9
-        },
-        {
-          "id": "9:4307797785585676034",
-          "name": "headers",
-          "type": 13
-        },
-        {
-          "id": "10:8467056271953228457",
-          "name": "auth",
-          "type": 13
         }
       ],
       "relations": []
@@ -474,7 +459,11 @@
   "modelVersionParserMinimum": 5,
   "retiredEntityUids": [],
   "retiredIndexUids": [],
-  "retiredPropertyUids": [],
+  "retiredPropertyUids": [
+    788942307543725488,
+    4307797785585676034,
+    8467056271953228457
+  ],
   "retiredRelationUids": [],
   "version": 1
 }

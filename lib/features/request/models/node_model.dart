@@ -170,19 +170,16 @@ class FolderNode extends Node<FolderNodeConfig> {
 class CollectionNode extends FolderNode {
   final CollectionModel collection;
 
-  CollectionNode({required this.collection, super.children = const []})
-    : super(
-        id: collection.id,
-        parentId: null,
-        name: collection.name,
-        sortOrder: -1,
-        config: FolderNodeConfig(
-          isDetailLoaded: true,
-          description: collection.description,
-          headers: collection.headers,
-          auth: collection.auth,
-        ),
-      );
+  CollectionNode({
+    required this.collection,
+    required super.config,
+    super.children = const [],
+  }) : super(
+         id: collection.id,
+         parentId: null,
+         name: collection.name,
+         sortOrder: -1,
+       );
 
   @override
   CollectionNode copyWith({
@@ -195,16 +192,12 @@ class CollectionNode extends FolderNode {
     String? id,
     CollectionModel? collection,
   }) {
-    // Sync updates back to the inner CollectionModel
-    final newCollection = (collection ?? this.collection).copyWith(
-      name: name,
-      description: config?.description,
-      headers: config?.headers,
-      auth: config?.auth,
-    );
+    // If name changes, update collection model too
+    final newCollection = (collection ?? this.collection).copyWith(name: name);
 
     return CollectionNode(
       collection: newCollection,
+      config: config ?? this.config,
       children: children ?? this.children,
     );
   }

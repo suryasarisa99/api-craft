@@ -74,24 +74,6 @@ final _entities = <obx_int.ModelEntity>[
         type: 9,
         flags: 0,
       ),
-      obx_int.ModelProperty(
-        id: const obx_int.IdUid(8, 788942307543725488),
-        name: 'description',
-        type: 9,
-        flags: 0,
-      ),
-      obx_int.ModelProperty(
-        id: const obx_int.IdUid(9, 4307797785585676034),
-        name: 'headers',
-        type: 13,
-        flags: 0,
-      ),
-      obx_int.ModelProperty(
-        id: const obx_int.IdUid(10, 8467056271953228457),
-        name: 'auth',
-        type: 13,
-        flags: 0,
-      ),
     ],
     relations: <obx_int.ModelRelation>[],
     backlinks: <obx_int.ModelBacklink>[],
@@ -601,7 +583,11 @@ obx_int.ModelDefinition getObjectBoxModel() {
     lastSequenceId: const obx_int.IdUid(0, 0),
     retiredEntityUids: const [],
     retiredIndexUids: const [],
-    retiredPropertyUids: const [],
+    retiredPropertyUids: const [
+      788942307543725488,
+      4307797785585676034,
+      8467056271953228457,
+    ],
     retiredRelationUids: const [],
     modelVersion: 5,
     modelVersionParserMinimum: 5,
@@ -630,13 +616,6 @@ obx_int.ModelDefinition getObjectBoxModel() {
         final selectedJarIdOffset = object.selectedJarId == null
             ? null
             : fbb.writeString(object.selectedJarId!);
-        final descriptionOffset = fbb.writeString(object.description);
-        final headersOffset = object.headers == null
-            ? null
-            : fbb.writeListInt8(obx_int.toFlexBuffer(object.headers!));
-        final authOffset = object.auth == null
-            ? null
-            : fbb.writeListInt8(obx_int.toFlexBuffer(object.auth!));
         fbb.startTable(11);
         fbb.addInt64(0, object.id);
         fbb.addOffset(1, uidOffset);
@@ -645,9 +624,6 @@ obx_int.ModelDefinition getObjectBoxModel() {
         fbb.addOffset(4, pathOffset);
         fbb.addOffset(5, selectedEnvIdOffset);
         fbb.addOffset(6, selectedJarIdOffset);
-        fbb.addOffset(7, descriptionOffset);
-        fbb.addOffset(8, headersOffset);
-        fbb.addOffset(9, authOffset);
         fbb.finish(fbb.endTable());
         return object.id;
       },
@@ -678,15 +654,6 @@ obx_int.ModelDefinition getObjectBoxModel() {
         final selectedJarIdParam = const fb.StringReader(
           asciiOptimization: true,
         ).vTableGetNullable(buffer, rootOffset, 16);
-        final descriptionParam = const fb.StringReader(
-          asciiOptimization: true,
-        ).vTableGet(buffer, rootOffset, 18, '');
-        final headersParam = obx_int.flexBufferToListOfMaps(
-          buffer,
-          rootOffset,
-          20,
-        );
-        final authParam = obx_int.flexBufferToMap(buffer, rootOffset, 22);
         final object = CollectionEntity(
           id: idParam,
           uid: uidParam,
@@ -695,9 +662,6 @@ obx_int.ModelDefinition getObjectBoxModel() {
           path: pathParam,
           selectedEnvId: selectedEnvIdParam,
           selectedJarId: selectedJarIdParam,
-          description: descriptionParam,
-          headers: headersParam,
-          auth: authParam,
         );
 
         return object;
@@ -1337,11 +1301,6 @@ class CollectionEntity_ {
   /// See [CollectionEntity.selectedJarId].
   static final selectedJarId = obx.QueryStringProperty<CollectionEntity>(
     _entities[0].properties[6],
-  );
-
-  /// See [CollectionEntity.description].
-  static final description = obx.QueryStringProperty<CollectionEntity>(
-    _entities[0].properties[7],
   );
 }
 

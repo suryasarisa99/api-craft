@@ -59,11 +59,51 @@ class FileTreeNotifier extends Notifier<TreeData> {
       // 1. Build map
       final map = <String, Node>{};
 
+      // Find persisted Root Node (FolderNode with id == collection.id)
+      final persistedRootIndex = nodes.indexWhere((n) => n.id == collection.id);
+      FolderNodeConfig rootConfig;
+      if (persistedRootIndex != -1) {
+        final persistedRoot = nodes[persistedRootIndex];
+        // Use its config. If it's a FolderNode, we cast.
+        // It SHOULD be a FolderNode.
+        if (persistedRoot is FolderNode) {
+          rootConfig = persistedRoot.config;
+        } else {
+          // Fallback if type mismatch (rare)
+          rootConfig = FolderNodeConfig(isDetailLoaded: true);
+        }
+        // Remove from list so we don't duplicate processing (though map handles overlaps)
+        // nodes.removeAt(persistedRootIndex); // List is immutable? No usually list<Node>
+      } else {
+        // Fallback: Create default config if not found
+        rootConfig = FolderNodeConfig(isDetailLoaded: true);
+      }
+
       // Inject Root Collection Node
-      final rootNode = CollectionNode(collection: collection, children: []);
+      final rootNode = CollectionNode(
+        collection: collection,
+        config: rootConfig,
+        children: [],
+      );
       map[collection.id] = rootNode;
 
       for (final n in nodes) {
+        if (n.id == collection.id) {
+          // Already handled as rootNode, but we need its children info?
+          // The persisted node has 'children' ids if it was a FolderNode.
+          // But our loop "Link children -> parent" (step 2) rebuilds children list dynamically from parentIds.
+          // The persisted 'children' list in FolderNode is strictly for ORDER.
+          // FileTreeProvider recalculates children based on parentId for structure, but SORT ORDER?
+          // Wait, 'children' list in FolderNode usually persists the ORDER.
+          // This provider sets children dynamically in Step 2.
+          // Does Step 2 preserve order?
+          // Step 2 just appends: `parent.copyWith(children: [...parent.children, n.id])`.
+          // If valid sort order exists, we should use it?
+          // Currently Step 2 ignores persisted 'children' list?
+          // Let's look at Step 2.
+          continue;
+        }
+
         if (n.parentId == null) {
           // Reparent top-level nodes to Collection
           map[n.id] = n.copyWith(parentId: collection.id);
@@ -207,14 +247,7 @@ class FileTreeNotifier extends Notifier<TreeData> {
   void updateRequestScripts(String id, String scripts) {
     final node = map[id];
     if (node is RequestNode) {
-      // Scripts also need separate repo call if stored separately?
-      // updateNode handles node persistence which includes config.
-      // But ReqComposeProvider had `_repo.updateScripts`.
-      // Node.toMap usually includes scripts.
-      // Let's assume updateNode handles it, but previous code had specific call.
-      // I will trust updateNode does it (NodeConfig handles it).
       updateNode(node.copyWith(config: node.config.copyWith(scripts: scripts)));
-      // If we need optimized partial update we can add it later.
     }
   }
 
@@ -327,7 +360,7 @@ class FileTreeNotifier extends Notifier<TreeData> {
       nodes.add(
         FolderNode(
           id: ids[i],
-          parentId: i == 0 ? parentId : ids[i - 1],
+          parentId: i == 0 ? (parentId ?? collectionId) : ids[i - 1],
           children: i < folderNames.length - 1
               ? [ids[i + 1]]
               : childId == null
@@ -343,7 +376,7 @@ class FileTreeNotifier extends Notifier<TreeData> {
       nodes.add(
         RequestNode(
           id: childId!,
-          parentId: ids.lastOrNull ?? parentId,
+          parentId: ids.lastOrNull ?? (parentId ?? collectionId),
           name: fileName,
           requestType: requestType,
 
@@ -787,19 +820,20 @@ class FileTreeNotifier extends Notifier<TreeData> {
 
   Future<void> _duplicateNodeToParent(Node node, String? parentId) async {
     final collectionId = ref.read(selectedCollectionProvider)?.id;
+    final effectiveParentId = parentId ?? collectionId;
 
     if (node is FolderNode) {
-      await _duplicateFolderToParent(node, parentId);
+      await _duplicateFolderToParent(node, effectiveParentId);
     } else {
       final newNode = node.copyWith(
         id: nanoid(),
-        parentId: parentId,
-        forceNullParent: parentId == null,
+        parentId: effectiveParentId,
+        forceNullParent: effectiveParentId == null,
         name: node
             .name, // Keep same name or add copy? VS Code keeps same name on copy-paste to other folder
         config: node.config.clone(),
       );
-      final dbNode = (parentId == collectionId)
+      final dbNode = (effectiveParentId == collectionId)
           ? newNode.copyWith(parentId: null, forceNullParent: true)
           : newNode;
 
@@ -812,6 +846,9 @@ class FileTreeNotifier extends Notifier<TreeData> {
     FolderNode node,
     String? targetParentId,
   ) async {
+    final collectionId = ref.read(selectedCollectionProvider)?.id;
+    final effectiveParentId = targetParentId ?? collectionId;
+
     final allNodes = [node, ...getChildrenNodes(node)];
     final idMap = <String, String>{};
     for (final n in allNodes) idMap[n.id] = nanoid();
@@ -819,11 +856,11 @@ class FileTreeNotifier extends Notifier<TreeData> {
     final duplicated = <Node>[];
     for (final n in allNodes) {
       final newId = idMap[n.id]!;
-      // If it's the root being moved, use targetParentId.
+      // If it's the root being moved, use effectiveParentId.
       // Else calculate new parent based on idMap
       String? newParentId;
       if (n.id == node.id) {
-        newParentId = targetParentId;
+        newParentId = effectiveParentId;
       } else {
         newParentId = n.parentId == null
             ? null
@@ -852,7 +889,16 @@ class FileTreeNotifier extends Notifier<TreeData> {
       }
     }
 
-    await _repo.createMany(duplicated);
+    // DB Translation for Folder Tree
+    // We need to ensure root folder uses null parent for DB if it's top level
+    final dbNodes = duplicated.map((n) {
+      if (n.parentId == collectionId) {
+        return n.copyWith(parentId: null, forceNullParent: true);
+      }
+      return n;
+    }).toList();
+
+    await _repo.createMany(dbNodes);
 
     // Update local state is tricky for bulk.
     // Easiest is to add them to map and update the parent of the root copy.

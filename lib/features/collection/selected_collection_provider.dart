@@ -42,6 +42,8 @@ class SelectedCollectionNotifier extends Notifier<CollectionModel?> {
   }
 
   Future<void> select(CollectionModel collection) async {
+    // Determine the model to save.
+    // Index model is fine, as details are loaded via Root Node.
     await prefs.setString(_prefKey, jsonEncode(collection.toMap()));
     state = collection;
   }

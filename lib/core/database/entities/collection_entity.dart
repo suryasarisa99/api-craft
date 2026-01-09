@@ -15,11 +15,6 @@ class CollectionEntity {
   String? path;
   String? selectedEnvId;
   String? selectedJarId;
-  String description;
-
-  // Flex Props
-  List<Map<String, dynamic>>? headers;
-  Map<String, dynamic>? auth;
 
   CollectionEntity({
     this.id = 0,
@@ -29,9 +24,6 @@ class CollectionEntity {
     this.path,
     this.selectedEnvId,
     this.selectedJarId,
-    this.description = '',
-    this.headers,
-    this.auth,
   });
 
   factory CollectionEntity.fromModel(CollectionModel model) {
@@ -42,9 +34,6 @@ class CollectionEntity {
       path: model.path,
       selectedEnvId: model.selectedEnvId,
       selectedJarId: model.selectedJarId,
-      description: model.description,
-      headers: model.headers.map((e) => e.toMap()).toList(),
-      auth: model.auth.toMap(),
     );
   }
 
@@ -58,9 +47,6 @@ class CollectionEntity {
       path: path,
       selectedEnvId: selectedEnvId,
       selectedJarId: selectedJarId,
-      description: description,
-      headers: headers?.map((e) => KeyValueItem.fromMap(e)).toList() ?? [],
-      auth: auth != null ? AuthData.fromMap(auth!) : const AuthData(),
     );
   }
 }

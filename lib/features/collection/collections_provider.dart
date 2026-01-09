@@ -1,5 +1,6 @@
 import 'package:api_craft/core/database/entities/collection_entity.dart';
-import 'package:api_craft/core/database/objectbox.dart';
+import 'package:api_craft/core/repository/objectbox_storage_repository.dart';
+import 'package:api_craft/core/repository/storage_repository.dart';
 import 'package:api_craft/objectbox.g.dart';
 import 'package:api_craft/core/models/models.dart';
 import 'package:flutter/material.dart';
@@ -7,7 +8,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:api_craft/core/providers/providers.dart';
 import 'package:api_craft/core/repository/data_repository.dart';
 import 'package:nanoid/nanoid.dart';
-import 'package:api_craft/core/database/database_provider.dart';
 
 final collectionsProvider =
     AsyncNotifierProvider<CollectionsNotifier, List<CollectionModel>>(
@@ -22,7 +22,7 @@ class CollectionsNotifier extends AsyncNotifier<List<CollectionModel>> {
   Future<List<CollectionModel>> build() async {
     final box = await _box;
 
-    // Fetch existing
+    // Fetch existing (Index only from DB)
     final entities = box.getAll();
     debugPrint('Collections found: ${entities.length}');
 
@@ -52,8 +52,25 @@ class CollectionsNotifier extends AsyncNotifier<List<CollectionModel>> {
 
     box.put(CollectionEntity.fromModel(newCollection));
 
-    // Create Default Environment & Cookie Jar for this new collection
-    // Use a scoped DataRepo for the new collection
+    // Create Root Node (FolderNode) for this collection
+    StorageRepository repo;
+    if (type == CollectionType.database) {
+      repo = ObjectBoxStorageRepository(Future.value(obx), newId);
+    } else {
+      repo = FlatFileStorageRepository(rootPath: path!);
+    }
+
+    final rootNode = FolderNode(
+      id: newId, // Root ID same as Collection ID
+      parentId: null,
+      name: name,
+      config: FolderNodeConfig(isDetailLoaded: true),
+      sortOrder: -1,
+    );
+
+    await repo.createOne(rootNode);
+
+    // Create Default Environment & Cookie Jar
     final dataRepo = DataRepository(Future.value(obx), newId);
 
     await dataRepo.createEnvironment(
@@ -94,54 +111,47 @@ class CollectionsNotifier extends AsyncNotifier<List<CollectionModel>> {
     q.close();
 
     if (existing != null) {
+      // 1. Check for Name Change & Sync Root Node
+      if (existing.name != collection.name) {
+        try {
+          // Instantiate scoped repo to update Root Node
+          StorageRepository repo;
+          if (collection.type == CollectionType.database) {
+            final obx = await ref.read(databaseProvider);
+            repo = ObjectBoxStorageRepository(Future.value(obx), collection.id);
+          } else {
+            if (collection.path != null) {
+              repo = FlatFileStorageRepository(rootPath: collection.path!);
+            } else {
+              throw Exception("Filesystem collection missing path");
+            }
+          }
+          await repo.renameItem(collection.id, collection.name);
+
+          // Invalidate Tree if this is the selected collection
+          // to reflect the name change immediately in the UI tree
+          final selectedId = ref.read(selectedCollectionProvider)?.id;
+          if (selectedId == collection.id) {
+            ref.invalidate(fileTreeProvider);
+          }
+        } catch (e) {
+          debugPrint("Error syncing collection name to root node: $e");
+        }
+      }
+
+      // 2. Just update DB Index
       final updated = CollectionEntity.fromModel(collection);
       updated.id = existing.id; // Preserve ID
       box.put(updated);
     }
 
-    // Update state locally to avoid reload flicker
+    // Update state locally
     state.whenData((list) {
       final index = list.indexWhere((c) => c.id == collection.id);
       if (index != -1) {
         final newList = List<CollectionModel>.from(list);
         newList[index] = collection;
         state = AsyncData(newList);
-      }
-    });
-  }
-
-  void updateDescription(String id, String description) {
-    state.whenData((list) {
-      final collection = list.firstWhere(
-        (c) => c.id == id,
-        orElse: () => list.first,
-      );
-      if (collection.id == id) {
-        updateCollection(collection.copyWith(description: description));
-      }
-    });
-  }
-
-  void updateHeaders(String id, List<KeyValueItem> headers) {
-    state.whenData((list) {
-      final collection = list.firstWhere(
-        (c) => c.id == id,
-        orElse: () => list.first,
-      );
-      if (collection.id == id) {
-        updateCollection(collection.copyWith(headers: headers));
-      }
-    });
-  }
-
-  void updateAuth(String id, AuthData auth) {
-    state.whenData((list) {
-      final collection = list.firstWhere(
-        (c) => c.id == id,
-        orElse: () => list.first,
-      );
-      if (collection.id == id) {
-        updateCollection(collection.copyWith(auth: auth));
       }
     });
   }

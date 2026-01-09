@@ -54,10 +54,8 @@ class ReqComposeNotifier extends Notifier<UiRequestContext> {
   FileTreeNotifier get _treeNotifier => ref.read(fileTreeProvider.notifier);
   RequestDetailsNotifier get _detailsNotifier =>
       ref.read(requestDetailsProvider(id).notifier);
-  CollectionsNotifier get _colNotifier =>
-      ref.read(collectionsProvider.notifier);
 
-  String? get _collectionId => ref.read(selectedCollectionProvider)?.id;
+  // Removed _colNotifier as updates are now handled via Node updates (FileTreeNotifier)
 
   void updateName(String name) {
     _treeNotifier.updateNodeName(id, name);
@@ -72,21 +70,12 @@ class ReqComposeNotifier extends Notifier<UiRequestContext> {
   }
 
   void updateDescription(String description) {
-    if (id == _collectionId) {
-      _colNotifier.updateDescription(id, description);
-      _treeNotifier.updateNodeDescription(id, description);
-    } else {
-      _treeNotifier.updateNodeDescription(id, description);
-    }
+    // Root Node (Collection) updates are handled same as FolderNode updates
+    _treeNotifier.updateNodeDescription(id, description);
   }
 
   void updateHeaders(List<KeyValueItem> headers) {
-    if (id == _collectionId) {
-      _colNotifier.updateHeaders(id, headers);
-      _treeNotifier.updateNodeHeaders(id, headers);
-    } else {
-      _treeNotifier.updateNodeHeaders(id, headers);
-    }
+    _treeNotifier.updateNodeHeaders(id, headers);
   }
 
   void updateQueryParameters(List<KeyValueItem> queryParameters) {
@@ -118,12 +107,7 @@ class ReqComposeNotifier extends Notifier<UiRequestContext> {
   }
 
   void updateAuth(AuthData auth) {
-    if (id == _collectionId) {
-      _colNotifier.updateAuth(id, auth);
-      _treeNotifier.updateNodeAuth(id, auth);
-    } else {
-      _treeNotifier.updateNodeAuth(id, auth);
-    }
+    _treeNotifier.updateNodeAuth(id, auth);
   }
 
   void updateVariables(List<KeyValueItem> variables) {

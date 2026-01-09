@@ -6,7 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/providers.dart';
 import 'package:api_craft/core/repository/data_repository.dart';
 import 'package:api_craft/core/repository/objectbox_storage_repository.dart';
-import 'package:api_craft/core/database/database_provider.dart';
 
 final repositoryProvider = Provider<StorageRepository>((ref) {
   // 1. Await the Selected Collection (Handles loading state automatically)

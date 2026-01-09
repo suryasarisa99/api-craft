@@ -1,6 +1,5 @@
 import 'package:api_craft/core/models/models.dart';
 
-export 'db_storage_repository.dart';
 export 'flat_file_storage_repository.dart';
 
 abstract class StorageRepository {

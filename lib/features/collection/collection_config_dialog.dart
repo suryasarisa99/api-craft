@@ -1,5 +1,6 @@
 import 'package:api_craft/core/models/models.dart';
 import 'package:api_craft/core/providers/providers.dart';
+import 'package:api_craft/core/utils/debouncer.dart';
 import 'package:api_craft/core/widgets/ui/custom_dialog.dart';
 import 'package:api_craft/core/widgets/ui/variable_text_field_custom.dart';
 import 'package:api_craft/features/auth/auth_tab.dart';
@@ -21,20 +22,69 @@ class CollectionConfigDialog extends ConsumerStatefulWidget {
 class _CollectionConfigDialogState
     extends ConsumerState<CollectionConfigDialog> {
   int tabIndex = 0;
+  bool hasChanges = false;
+  static const useLazyMode = true;
+  late final ProviderSubscription<FolderNode> subscription;
+  final debouncer = Debouncer(Duration(milliseconds: 1000));
+
+  @override
+  void initState() {
+    super.initState();
+    // Listen for changes in the node
+    subscription = ref.listenManual(
+      fileTreeProvider.select(
+        (s) => s.nodeMap[widget.collectionId] as CollectionNode,
+      ),
+      (previous, next) {
+        if (useLazyMode) {
+          /// note: hasChanges is always becomes true, when folder config dialog is opened
+          hasChanges = true;
+          subscription.close();
+        } else {
+          debouncer.run(() {
+            ref.read(repositoryProvider).updateNode(next);
+          });
+        }
+      },
+      fireImmediately: false,
+    );
+  }
+
+  @override
+  void dispose() {
+    subscription.close();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return CustomDialog(
-      width: 900,
-      height: 600,
-      child: NotificationListener<SwitchTabNotification>(
-        onNotification: (notification) {
-          setState(() {
-            tabIndex = notification.index;
-          });
-          return true;
-        },
-        child: _buildDialog(),
+    return PopScope(
+      onPopInvokedWithResult: (pop, result) async {
+        // Trigger inheritance update
+        ref
+            .read(nodeUpdateTriggerProvider.notifier)
+            .setLastUpdatedFolder(widget.collectionId);
+
+        // Lazy Persistence
+        if (hasChanges) {
+          final node =
+              ref.read(fileTreeProvider).nodeMap[widget.collectionId]
+                  as CollectionNode;
+          await ref.read(repositoryProvider).updateNode(node);
+        }
+      },
+      child: CustomDialog(
+        width: 900,
+        height: 600,
+        child: NotificationListener<SwitchTabNotification>(
+          onNotification: (notification) {
+            setState(() {
+              tabIndex = notification.index;
+            });
+            return true;
+          },
+          child: _buildDialog(),
+        ),
       ),
     );
   }
@@ -223,27 +273,17 @@ class _GeneralTabState extends ConsumerState<_GeneralTab> {
               labelText: "Name",
             ),
             onChanged: (val) {
-              // We need a method to rename collection.
-              // fileTreeProvider.notifier.renameNode works for nodes.
-              // We might need a specialized renameCollection or renameNode if collection IS a node.
-              // Assuming collection is represented as a node or we have a way.
-              // context_menu uses: ref.read(fileTreeProvider.notifier).renameNode(node, newName);
-              // But here we might not have the Node object readily available or obscure interaction.
-              // Let's rely on repository or specific provider method if exists.
-              // Actually, use repository directly or fileTree notifier?
-              // Let's try to find if there is a renameCollection method.
-              // If not, maybe updateNode works if we treat it as node?
-              // But collection model is separate.
-              // Let's use a debouncer or just onSubmitted?
-              // For now, let's just trigger update on change.
-              ref.read(repositoryProvider).renameItem(widget.id, val).then((
-                vid,
-              ) {
-                // Update provider if needed, or it auto updates via stream/listener
-                // Actually renameItem returns new ID if FS, but for root/dB ?
-                // We might need to refresh file tree.
-                ref.invalidate(fileTreeProvider);
-              });
+              if (val.trim().isEmpty) return;
+
+              ref
+                  .read(collectionsProvider.notifier)
+                  .updateCollection(
+                    ref
+                        .read(collectionsProvider)
+                        .value!
+                        .firstWhere((e) => e.id == widget.id)
+                        .copyWith(name: val),
+                  );
             },
           ),
           const SizedBox(height: 24),
