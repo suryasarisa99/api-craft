@@ -132,6 +132,8 @@ class _FormPopupWidgetState extends ConsumerState<FormPopupWidget> {
           const SizedBox(height: 10),
           Text(widget.templateFn.description),
           const SizedBox(height: 16),
+
+          /// Form
           Form(
             key: _formKey,
             child: FormInputWidget(
@@ -151,6 +153,8 @@ class _FormPopupWidgetState extends ConsumerState<FormPopupWidget> {
               },
             ),
           ),
+
+          /// Preview
           const SizedBox(height: 16),
           Container(
             padding: .symmetric(vertical: 6, horizontal: 12),
@@ -174,6 +178,8 @@ class _FormPopupWidgetState extends ConsumerState<FormPopupWidget> {
               ],
             ),
           ),
+
+          /// Save Button
           const SizedBox(height: 16),
           Row(
             mainAxisAlignment: .end,

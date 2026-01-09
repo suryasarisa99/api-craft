@@ -25,7 +25,7 @@ class FormInputWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return isVertical
-        ? Column(spacing: 16, children: _buildInputWidgets(false))
+        ? Column(spacing: 14, children: _buildInputWidgets(false))
         : Row(spacing: 8, children: _buildInputWidgets(true));
   }
 
@@ -219,7 +219,14 @@ class FormWidgetSelect extends StatelessWidget {
     final optional = selectInput.optional == true;
 
     return DropdownButtonFormField<String>(
-      decoration: InputDecoration(labelText: label),
+      decoration: InputDecoration(
+        labelText: label,
+        contentPadding: EdgeInsets.symmetric(vertical: 8, horizontal: 10),
+      ),
+      dropdownColor: const Color.fromARGB(255, 45, 45, 45),
+      isDense: true,
+      itemHeight: 28,
+      style: TextStyle(fontSize: 14),
       initialValue: value ?? defaultValue,
       validator: !optional
           ? (value) {
@@ -268,7 +275,7 @@ class FormWidgetText extends StatelessWidget {
       decoration: InputDecoration(
         labelText: label,
         hintText: placeholder,
-        contentPadding: EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+        contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 10),
       ),
       initialValue: value ?? defaultValue,
       onChanged: (val) {

@@ -128,6 +128,12 @@ class MainApp extends StatelessWidget {
         iconTheme: IconThemeData(color: Colors.grey),
         inputDecorationTheme: InputDecorationThemeData(
           isDense: true,
+          // labelStyle: TextStyle(color: Colors.grey, fontSize: 14),
+          floatingLabelStyle: TextStyle(
+            height: 1,
+            fontSize: 14,
+            color: Colors.grey,
+          ),
           contentPadding: EdgeInsets.symmetric(horizontal: 6, vertical: 7),
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(6.0)),
           enabledBorder: OutlineInputBorder(
@@ -141,6 +147,19 @@ class MainApp extends StatelessWidget {
           ),
           prefixIconConstraints: BoxConstraints.tight(Size(32, 28)),
           suffixIconConstraints: BoxConstraints.tight(Size(32, 28)),
+        ),
+
+        /// Dropdown Button Style
+        dropdownMenuTheme: DropdownMenuThemeData(),
+        menuButtonTheme: MenuButtonThemeData(
+          style: ButtonStyle(
+            shape: WidgetStatePropertyAll<RoundedRectangleBorder>(
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(6.0)),
+            ),
+            foregroundColor: WidgetStatePropertyAll<Color>(
+              colorSchema.primaryContainer,
+            ),
+          ),
         ),
       ),
       debugShowCheckedModeBanner: false,
