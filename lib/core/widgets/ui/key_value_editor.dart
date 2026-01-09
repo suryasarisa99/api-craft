@@ -1,10 +1,8 @@
 import 'package:api_craft/core/widgets/dialog/input_dialog.dart';
 import 'package:api_craft/core/widgets/dialog/multiline_edit.dart';
 import 'package:api_craft/core/models/models.dart';
-import 'package:api_craft/core/widgets/ui/cf_code_editor.dart';
 import 'package:api_craft/core/widgets/ui/custom_input.dart';
 import 'package:api_craft/core/widgets/ui/custom_menu.dart';
-import 'package:api_craft/core/widgets/ui/variable_text_field.dart';
 import 'package:api_craft/core/widgets/ui/variable_text_field_custom.dart';
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:dotted_decoration/dotted_decoration.dart';
@@ -56,15 +54,10 @@ class _KeyValueEditorState extends State<KeyValueEditor> {
   String? _focusTargetId;
   bool _isCodeEditor = false;
 
-  void _dispatchUpdate() {
-    widget.onChanged(widget.items);
-  }
-
   void _updateItem(int index, KeyValueItem newItem) {
-    setState(() {
-      widget.items[index] = newItem;
-    });
-    _dispatchUpdate();
+    final newItems = List<KeyValueItem>.from(widget.items);
+    newItems[index] = newItem;
+    widget.onChanged(newItems);
   }
 
   void _toggleEditor() {
@@ -93,19 +86,19 @@ class _KeyValueEditorState extends State<KeyValueEditor> {
         value: isKey == true ? "" : v,
       );
     }
+    final newItems = List<KeyValueItem>.from(widget.items);
+    newItems.add(newItem);
+
     setState(() {
-      widget.items.add(newItem);
+      _focusTargetId = newItem.id;
     });
-    debugPrint("last added id: ${newItem.id}");
-    _focusTargetId = newItem.id;
-    _dispatchUpdate();
+    widget.onChanged(newItems);
   }
 
   void _removeItem(int index) {
-    setState(() {
-      widget.items.removeAt(index);
-    });
-    _dispatchUpdate();
+    final newItems = List<KeyValueItem>.from(widget.items);
+    newItems.removeAt(index);
+    widget.onChanged(newItems);
   }
 
   void _onTextChange(String v) {
@@ -119,9 +112,7 @@ class _KeyValueEditorState extends State<KeyValueEditor> {
       );
     }).toList();
     //need to update state.
-    widget.items.clear();
-    widget.items.addAll(items);
-    _dispatchUpdate();
+    widget.onChanged(items);
   }
 
   String get _toText {
@@ -197,12 +188,13 @@ class _KeyValueEditorState extends State<KeyValueEditor> {
                               fixedNewIdx == widget.items.length) {
                             return;
                           }
-                          setState(() {
-                            if (oldIdx < newIdx) newIdx -= 1;
-                            final item = widget.items.removeAt(oldIdx);
-                            widget.items.insert(newIdx, item);
-                          });
-                          _dispatchUpdate();
+                          final newItems = List<KeyValueItem>.from(
+                            widget.items,
+                          );
+                          if (oldIdx < newIdx) newIdx -= 1;
+                          final item = newItems.removeAt(oldIdx);
+                          newItems.insert(newIdx, item);
+                          widget.onChanged(newItems);
                         },
                         itemBuilder: (context, i) {
                           final isExtra = i == widget.items.length;
