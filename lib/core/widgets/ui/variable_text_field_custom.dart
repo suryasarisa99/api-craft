@@ -88,22 +88,12 @@ class _VariableTextFieldCustomState
     if (widget.isKeyVal) {
       _variableBuilder = KeyValueTextBuilder(
         builderOnTap: handleVariableTap,
-        builderTextStyle: TextStyle(
-          fontWeight: FontWeight.bold,
-          fontSize: fontSize,
-          color: const Color.fromARGB(255, 254, 145, 223),
-          backgroundColor: const Color.fromARGB(68, 63, 21, 63),
-        ),
+        builderTextStyle: TextStyle(fontSize: fontSize),
       );
     } else {
       _variableBuilder = VariableTextBuilder(
         builderOnTap: handleVariableTap,
-        builderTextStyle: TextStyle(
-          fontWeight: FontWeight.bold,
-          fontSize: fontSize,
-          color: const Color.fromARGB(255, 254, 145, 223),
-          backgroundColor: const Color.fromARGB(68, 63, 21, 63),
-        ),
+        builderTextStyle: TextStyle(fontSize: fontSize),
       );
     }
     // close on focus lost

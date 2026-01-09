@@ -1,3 +1,4 @@
+import 'package:api_craft/features/template-functions/parsers/utils.dart';
 import 'package:extended_text_field/extended_text_field.dart';
 import 'package:flutter/material.dart';
 
@@ -9,6 +10,7 @@ typedef TemplateTap =
       required int from,
       required int to,
     });
+final _variableRegex = RegExp(r'\([^)]*\)');
 
 class VariableText extends SpecialText {
   static const String startKey = "{{";
@@ -28,12 +30,15 @@ class VariableText extends SpecialText {
     final String variableName = getContent();
 
     // find open and close brackets: ( and ), ignore any content in between
-    final regex = RegExp(r'\([^)]*\)');
-    final didReplace = regex.hasMatch(variableName);
+    final isFn = _variableRegex.hasMatch(variableName);
     late final String result;
-    if (didReplace) {
+    bool isExist = true;
+    if (isFn) {
       // debugPrint("Variable name with parameters detected: $variableName");
-      result = variableName.replaceAll(regex, '(...)');
+      // result = variableName.replaceAll(_variableRegex, '(...)');
+      final name = variableName.replaceAll(_variableRegex, '');
+      isExist = templateFunctionRegistry[name] != null;
+      result = "$name(...)";
     } else {
       result = variableName;
     }
@@ -54,7 +59,10 @@ class VariableText extends SpecialText {
             vertical: verticalPadding,
           ),
           decoration: BoxDecoration(
-            color: textStyle?.backgroundColor,
+            // color: textStyle?.backgroundColor,
+            color: isFn
+                ? const Color.fromARGB(154, 111, 27, 111)
+                : const Color.fromARGB(159, 42, 80, 127),
             borderRadius: BorderRadius.circular(4),
             border: Border.all(color: const Color(0x66857383), width: 1),
           ),
@@ -64,7 +72,6 @@ class VariableText extends SpecialText {
             // },
             onTap: () {
               final content = getContent().trim();
-              final isFn = content.contains('(');
 
               final name = isFn
                   ? content.substring(0, content.indexOf('(')).trim()
@@ -78,16 +85,36 @@ class VariableText extends SpecialText {
                 to: start + toString().length,
               );
             },
-            child: Text(
-              result,
-              strutStyle: StrutStyle(height: 0.5),
-              style: textStyle?.copyWith(
-                fontWeight: FontWeight.w400,
-                fontSize: (textStyle?.fontSize ?? 14),
-                backgroundColor: Colors.transparent,
-                letterSpacing: 0.9,
-                height: 0.8,
-              ),
+            child: Row(
+              mainAxisSize: .min,
+              children: [
+                if (!isExist)
+                  Text(
+                    "! ",
+                    style: TextStyle(
+                      color: const Color.fromARGB(255, 255, 117, 105),
+                      fontWeight: FontWeight.w500,
+                      fontSize: (textStyle?.fontSize ?? 14),
+                      backgroundColor: Colors.transparent,
+                      letterSpacing: 0.9,
+                      height: 0.8,
+                    ),
+                  ),
+                Text(
+                  result,
+                  strutStyle: StrutStyle(height: 0.5),
+                  style: textStyle?.copyWith(
+                    color: isFn
+                        ? const Color.fromARGB(255, 255, 151, 226)
+                        : const Color.fromARGB(255, 149, 204, 255),
+                    fontWeight: FontWeight.w300,
+                    fontSize: (textStyle?.fontSize ?? 14),
+                    backgroundColor: Colors.transparent,
+                    letterSpacing: 0.9,
+                    height: 0.8,
+                  ),
+                ),
+              ],
             ),
           ),
         ),
