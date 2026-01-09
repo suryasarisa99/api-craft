@@ -211,10 +211,10 @@ class RequestDetailsNotifier extends Notifier<RequestDetailsState> {
 
     final fileTree = ref.read(fileTreeProvider);
     final fileTreeNotifier = ref.read(fileTreeProvider.notifier);
-    fileTreeNotifier.updateRequestStatusCode(id, entry.statusCode);
+    fileTreeNotifier.updateStatusCode(id, entry.statusCode);
     _dataRepo.addHistoryEntry(entry);
     if ((fileTree.nodeMap[id] as RequestNode).config.historyId != null) {
-      fileTreeNotifier.updateRequestHistoryId(id, null);
+      fileTreeNotifier.updateHistoryId(id, null);
     }
   }
 

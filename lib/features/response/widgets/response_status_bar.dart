@@ -191,7 +191,7 @@ class ResponseStatusBar extends ConsumerWidget {
             onTap: (value) {
               ref
                   .read(fileTreeProvider.notifier)
-                  .updateRequestHistoryId(requestId, i == 0 ? null : h.id);
+                  .updateHistoryId(requestId, i == 0 ? null : h.id);
             },
           );
         }).toList() ??

@@ -66,24 +66,24 @@ class ReqComposeNotifier extends Notifier<UiRequestContext> {
   }
 
   void updateUrl(String url) {
-    _treeNotifier.updateRequestUrl(id, url);
+    _treeNotifier.updateUrl(id, url);
   }
 
   void updateDescription(String description) {
     // Root Node (Collection) updates are handled same as FolderNode updates
-    _treeNotifier.updateNodeDescription(id, description);
+    _treeNotifier.updateDescription(id, description);
   }
 
   void updateHeaders(List<KeyValueItem> headers) {
-    _treeNotifier.updateNodeHeaders(id, headers);
+    _treeNotifier.updateHeaders(id, headers);
   }
 
   void updateQueryParameters(List<KeyValueItem> queryParameters) {
-    _treeNotifier.updateRequestQueryParameters(id, queryParameters);
+    _treeNotifier.updateQueryParameters(id, queryParameters);
   }
 
   void updateScripts(String scripts) {
-    _treeNotifier.updateRequestScripts(id, scripts);
+    _treeNotifier.updateScripts(id, scripts);
   }
 
   void updateBodyText(String text) {
@@ -107,7 +107,7 @@ class ReqComposeNotifier extends Notifier<UiRequestContext> {
   }
 
   void updateAuth(AuthData auth) {
-    _treeNotifier.updateNodeAuth(id, auth);
+    _treeNotifier.updateAuth(id, auth);
   }
 
   void updateVariables(List<KeyValueItem> variables) {

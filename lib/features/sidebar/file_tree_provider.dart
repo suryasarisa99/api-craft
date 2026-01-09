@@ -2,6 +2,7 @@ import 'package:api_craft/core/models/models.dart';
 import 'package:api_craft/core/providers/providers.dart';
 import 'package:api_craft/core/providers/ref_provider.dart';
 import 'package:api_craft/core/repository/storage_repository.dart';
+import 'package:api_craft/core/utils/debouncer.dart';
 import 'package:api_craft/features/request/services/http_service.dart';
 import 'package:api_craft/features/sidebar/providers/clipboard_provider.dart';
 import 'package:api_craft/features/request/widgets/tabs/tab_titles.dart';
@@ -28,6 +29,8 @@ class TreeData {
 final fileTreeProvider = NotifierProvider<FileTreeNotifier, TreeData>(
   FileTreeNotifier.new,
 );
+
+final groupDebouncer = GroupedDebouncer(Duration(milliseconds: 300));
 
 class FileTreeNotifier extends Notifier<TreeData> {
   StorageRepository get _repo => ref.read(repositoryProvider);
@@ -193,13 +196,17 @@ class FileTreeNotifier extends Notifier<TreeData> {
     }
   }
 
-  Future<void> updateNode(Node node) async {
+  Future<void> updateNode(Node node, {bool persist = false}) async {
     final newMap = Map<String, Node>.from(map);
     newMap[node.id] = node;
     state = state.copyWith(nodeMap: newMap);
 
     // Persistance: it is done by request ,folder config dialog with debounce / lazily when folder closes
-    // await _repo.updateNode(node);
+    if (persist) {
+      groupDebouncer.run(node.id, () {
+        _repo.updateNode(node);
+      });
+    }
   }
 
   // --- Granular Updates ---
@@ -209,17 +216,23 @@ class FileTreeNotifier extends Notifier<TreeData> {
     if (node != null) updateNode(node.copyWith(name: name));
   }
 
-  void updateRequestMethod(String id, String method) {
+  void updateRequestMethod(String id, String method, {bool persist = false}) {
     final node = map[id];
-    if (node is RequestNode) updateNode(node.copyWith(method: method));
+    if (node is RequestNode) {
+      updateNode(node.copyWith(method: method), persist: persist);
+    }
   }
 
-  void updateRequestUrl(String id, String url) {
+  void updateUrl(String id, String url, {bool persist = false}) {
     final node = map[id];
     if (node is RequestNode) updateNode(node.copyWith(url: url));
   }
 
-  void updateNodeDescription(String id, String description) {
+  void updateDescription(
+    String id,
+    String description, {
+    bool persist = false,
+  }) {
     final node = map[id];
     if (node != null) {
       updateNode(
@@ -228,30 +241,45 @@ class FileTreeNotifier extends Notifier<TreeData> {
     }
   }
 
-  void updateNodeHeaders(String id, List<KeyValueItem> headers) {
+  void updateHeaders(
+    String id,
+    List<KeyValueItem> headers, {
+    bool persist = false,
+  }) {
     final node = map[id];
     if (node != null) {
-      updateNode(node.copyWith(config: node.config.copyWith(headers: headers)));
-    }
-  }
-
-  void updateRequestQueryParameters(String id, List<KeyValueItem> params) {
-    final node = map[id];
-    if (node is RequestNode) {
       updateNode(
-        node.copyWith(config: node.config.copyWith(queryParameters: params)),
+        node.copyWith(config: node.config.copyWith(headers: headers)),
+        persist: persist,
       );
     }
   }
 
-  void updateRequestScripts(String id, String scripts) {
+  void updateQueryParameters(
+    String id,
+    List<KeyValueItem> params, {
+    bool persist = false,
+  }) {
     final node = map[id];
     if (node is RequestNode) {
-      updateNode(node.copyWith(config: node.config.copyWith(scripts: scripts)));
+      updateNode(
+        node.copyWith(config: node.config.copyWith(queryParameters: params)),
+        persist: persist,
+      );
     }
   }
 
-  void updateRequestBodyType(String id, String? type) {
+  void updateScripts(String id, String scripts, {bool persist = false}) {
+    final node = map[id];
+    if (node is RequestNode) {
+      updateNode(
+        node.copyWith(config: node.config.copyWith(scripts: scripts)),
+        persist: persist,
+      );
+    }
+  }
+
+  void updateRequestBodyType(String id, String? type, {bool persist = false}) {
     final node = map[id];
     if (node is RequestNode) {
       var headers = List<KeyValueItem>.from(node.config.headers);
@@ -276,34 +304,43 @@ class FileTreeNotifier extends Notifier<TreeData> {
         node.copyWith(
           config: node.config.copyWith(bodyType: type, headers: headers),
         ),
+        persist: persist,
       );
     }
   }
 
-  void updateNodeAuth(String id, AuthData auth) {
+  void updateAuth(String id, AuthData auth, {bool persist = false}) {
     final node = map[id];
     if (node != null) {
-      updateNode(node.copyWith(config: node.config.copyWith(auth: auth)));
+      updateNode(
+        node.copyWith(config: node.config.copyWith(auth: auth)),
+        persist: persist,
+      );
     }
   }
 
-  void updateFolderVariables(String id, List<KeyValueItem> variables) {
+  void updateFolderVariables(
+    String id,
+    List<KeyValueItem> variables, {
+    bool persist = false,
+  }) {
     final node = map[id];
     if (node is FolderNode) {
       updateNode(
         node.copyWith(config: node.config.copyWith(variables: variables)),
+        persist: persist,
       );
     }
   }
 
-  void updateRequestStatusCode(String id, int statusCode) {
+  void updateStatusCode(String id, int statusCode) {
     final node = map[id];
     if (node is RequestNode) {
       updateNode(node.copyWith(statusCode: statusCode));
     }
   }
 
-  void updateRequestHistoryId(String id, String? historyId) {
+  void updateHistoryId(String id, String? historyId) {
     final node = map[id];
     if (node is RequestNode) {
       updateNode(

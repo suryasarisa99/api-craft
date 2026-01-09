@@ -58,3 +58,53 @@ class DebouncerFlush {
 
   void dispose() => cancel();
 }
+
+class GroupedDebouncer {
+  final Duration duration;
+  final Map<String, Timer> _timers = {};
+  final Map<String, VoidCallback> _actions = {};
+
+  GroupedDebouncer([this.duration = const Duration(milliseconds: 300)]);
+
+  void run(String id, VoidCallback action) {
+    _actions[id] = action;
+    _timers[id]?.cancel();
+    _timers[id] = Timer(duration, () {
+      _actions[id]?.call();
+      _actions.remove(id);
+      _timers.remove(id);
+    });
+  }
+
+  void flush(String id) {
+    if (_timers.containsKey(id)) {
+      _timers[id]!.cancel();
+      _timers.remove(id);
+      _actions[id]?.call();
+      _actions.remove(id);
+    }
+  }
+
+  void cancel(String id) {
+    _timers[id]?.cancel();
+    _timers.remove(id);
+    _actions.remove(id);
+  }
+
+  void flushAll() {
+    final ids = List<String>.from(_timers.keys);
+    for (var id in ids) {
+      flush(id);
+    }
+  }
+
+  void cancelAll() {
+    for (var timer in _timers.values) {
+      timer.cancel();
+    }
+    _timers.clear();
+    _actions.clear();
+  }
+
+  void dispose() => cancelAll();
+}
