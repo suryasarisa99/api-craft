@@ -285,13 +285,6 @@ class FlatFileStorageRepository implements StorageRepository {
 
   @override
   Future<List<Environment>> getEnvironments(String collectionId) async {
-    // 1. Get shared envs from Files (env/*.json)
-    // Private envs are now handled by DataRepository from UI layer (EnvironmentProvider)
-    // FlatFileStorageRepo ONLY returns Shared Environments that are file-based?
-    // User asked "store env and req/folders in same directory... create separate directory for env".
-    // "the details which are not be shared we use database... simplify override methods... separate class for rest"
-    // So this repo should ONLY return File-based Environments.
-    // The Provider will merge them with Private DB Envs.
     final sharedEnvs = <Environment>[];
     final envDir = Directory(p.join(rootDir.path, 'env'));
 
@@ -304,15 +297,7 @@ class FlatFileStorageRepository implements StorageRepository {
           try {
             final content = await entity.readAsString();
             final map = jsonDecode(content) as Map<String, dynamic>;
-            // Verify collection ID matches?
-            // User might copy env file from another collection?
-            // FlatFileRepo is usually rooted PER collection?
-            // DbRepo takes collectionId.
-            // If rootDir IS the collection folder, then all files implicitly belong to it.
-            // But map might have 'collection_id'. Let's check.
-            if (map['collection_id'] == collectionId) {
-              sharedEnvs.add(Environment.fromMap(map));
-            }
+            sharedEnvs.add(Environment.fromMap(map));
           } catch (_) {}
         }
       }
@@ -329,20 +314,11 @@ class FlatFileStorageRepository implements StorageRepository {
         await file.parent.create(recursive: true);
       }
       await file.writeAsString(_jsonEncoder.convert(env.toMap()));
-    } else {
-      // Private environments are handled by DataRepository.
-      // This repository does not handle them.
     }
   }
 
   @override
   Future<void> updateEnvironment(Environment env) async {
-    // If it's shared, we update the file.
-    // If it's NOT shared, we technically shouldn't be here if this Repo only handles Shared.
-    // But if state changed from Shared->Private, the Provider handles calling delete() on this repo
-    // and create() on DataRepo.
-    // So update() here assumes it REMAINS shared.
-
     if (env.isShared) {
       final file = _getEnvFile(env.id);
       await file.writeAsString(_jsonEncoder.convert(env.toMap()));
@@ -351,8 +327,6 @@ class FlatFileStorageRepository implements StorageRepository {
 
   @override
   Future<void> deleteEnvironment(String id) async {
-    // We only handle file deletion. DataRepo handles DB deletion.
-    // The provider should call the correct repo.
     final file = _getEnvFile(id);
     if (await file.exists()) await file.delete();
   }

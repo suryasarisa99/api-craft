@@ -87,11 +87,32 @@ class EnvironmentNotifier extends Notifier<EnvironmentState> {
 
     try {
       final dataRepo = ref.read(dataRepositoryProvider);
-      var envs = await repo.getEnvironments(collectionId);
-      var jars = await dataRepo.getCookieJars();
 
-      // Get persisted selection from the Collection Model
+      // Fetch from Repo (Files/Shared or DB/All)
+      // Fetch from Repo (Files/Shared or DB/All)
+      final repoEnvs = await repo.getEnvironments(collectionId);
+      final jars = await dataRepo.getCookieJars();
+
+      // Get persisted selection ...
       final collection = ref.read(selectedCollectionProvider);
+
+      List<Environment> envs;
+      if (collection?.type != CollectionType.database) {
+        // Fetch from DataRepo (Private envs from db)
+        final privateEnvs = await dataRepo.getEnvironments();
+
+        repoEnvs.addAll(privateEnvs);
+        envs = repoEnvs;
+
+        // Merge (Deduplicate by ID)
+        // final envMap = {for (var e in repoEnvs) e.id: e};
+        // for (var e in privateEnvs) {
+        //   envMap[e.id] = e;
+        // }
+        // envs = envMap.values.toList();
+      } else {
+        envs = repoEnvs;
+      }
 
       String? selEnv = collection?.selectedEnvId;
       String? selJar = collection?.selectedJarId;
@@ -180,21 +201,49 @@ class EnvironmentNotifier extends Notifier<EnvironmentState> {
     if (!isGlobal) {
       selectEnvironment(newEnv.id);
     }
-    repo.createEnvironment(newEnv);
+
+    final dataRepo = ref.read(dataRepositoryProvider);
+    if (newEnv.isShared) {
+      await repo.createEnvironment(newEnv);
+    } else {
+      await dataRepo.createEnvironment(newEnv);
+    }
   }
 
   Future<void> updateEnvironment(Environment env) async {
     final repo = ref.read(repositoryProvider);
+    final dataRepo = ref.read(dataRepositoryProvider);
 
     // Update local state
     final index = state.environments.indexWhere((e) => e.id == env.id);
+    Environment? oldEnv;
     if (index != -1) {
+      oldEnv = state.environments[index];
       final newEnvs = List<Environment>.from(state.environments);
       newEnvs[index] = env;
       state = state.copyWith(environments: newEnvs);
     }
+    oldEnv ??= env;
 
-    await repo.updateEnvironment(env);
+    // Storage Logic
+    // Only perform "move" (delete from old) if we are in Hybrid/Filesystem mode.
+    // In Database mode, repo & dataRepo are the same ObjectBox instance.
+    final collection = ref.read(selectedCollectionProvider);
+    final isHybrid = collection?.type != CollectionType.database;
+
+    if (env.isShared) {
+      await repo.updateEnvironment(env);
+      // If it was private, remove from local DB (Only if Hybrid)
+      if (isHybrid && !oldEnv.isShared) {
+        await dataRepo.deleteEnvironment(env.id);
+      }
+    } else {
+      await dataRepo.createEnvironment(env); // create acts as update/upsert
+      // If it was shared, remove from File (Only if Hybrid)
+      if (isHybrid && oldEnv.isShared) {
+        await repo.deleteEnvironment(env.id);
+      }
+    }
   }
 
   Future<void> duplicateEnvironment(Environment env) async {
@@ -206,10 +255,15 @@ class EnvironmentNotifier extends Notifier<EnvironmentState> {
       isGlobal: false,
     );
     final repo = ref.read(repositoryProvider);
+    final dataRepo = ref.read(dataRepositoryProvider);
 
     state = state.copyWith(environments: [...state.environments, newEnv]);
 
-    await repo.createEnvironment(newEnv);
+    if (newEnv.isShared) {
+      await repo.createEnvironment(newEnv);
+    } else {
+      await dataRepo.createEnvironment(newEnv);
+    }
   }
 
   Future<void> toggleShared(Environment env) async {
@@ -223,13 +277,18 @@ class EnvironmentNotifier extends Notifier<EnvironmentState> {
 
     final curEnvId = state.selectedEnvironmentId;
     final repo = ref.read(repositoryProvider);
+    final dataRepo = ref.read(dataRepositoryProvider);
 
     // Update state first
     state = state.copyWith(
       environments: state.environments.where((e) => e.id != id).toList(),
     );
 
-    await repo.deleteEnvironment(id);
+    if (target.isShared) {
+      await repo.deleteEnvironment(id);
+    } else {
+      await dataRepo.deleteEnvironment(id);
+    }
 
     if (curEnvId == id) {
       state = state.copyWith(selectedEnvironmentId: null);

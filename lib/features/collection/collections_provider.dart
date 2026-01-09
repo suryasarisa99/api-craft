@@ -57,7 +57,12 @@ class CollectionsNotifier extends AsyncNotifier<List<CollectionModel>> {
     final dataRepo = DataRepository(Future.value(obx), newId);
 
     await dataRepo.createEnvironment(
-      Environment(id: nanoid(), collectionId: newId, name: 'Default'),
+      Environment(
+        id: nanoid(),
+        collectionId: newId,
+        name: 'Global',
+        isGlobal: true,
+      ),
     );
 
     await dataRepo.createCookieJar(

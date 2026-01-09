@@ -9,7 +9,6 @@ import 'package:api_craft/objectbox.g.dart';
 import 'package:api_craft/core/models/models.dart';
 import 'package:api_craft/features/request/models/websocket_message.dart';
 import 'package:api_craft/features/request/models/websocket_session.dart';
-import 'package:objectbox/objectbox.dart';
 
 class DataRepository {
   final Future<ObjectBox> _obxFuture;
@@ -165,6 +164,23 @@ class DataRepository {
     final entity = EnvironmentEntity.fromModel(env);
     if (existing != null) entity.id = existing.id;
     box.put(entity);
+  }
+
+  Future<List<Environment>> getEnvironments() async {
+    final box = await _envBox;
+    final q = box
+        .query(EnvironmentEntity_.collectionId.equals(collectionId))
+        .build();
+    final res = q.find();
+    q.close();
+    return res.map((e) => e.toModel()).toList();
+  }
+
+  Future<void> deleteEnvironment(String id) async {
+    final box = await _envBox;
+    final q = box.query(EnvironmentEntity_.uid.equals(id)).build();
+    q.remove();
+    q.close();
   }
 
   // --- WebSocket ---
