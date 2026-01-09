@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:api_craft/features/collection/collection_config_dialog.dart';
 import 'package:api_craft/features/request/widgets/tabs/tab_titles.dart';
 import 'package:api_craft/features/sidebar/providers/clipboard_provider.dart';
 
@@ -124,6 +125,21 @@ List<MenuElement> _getFolderSpecificMenuActions({
   final collectionId = (ref.read(selectedCollectionProvider))?.id;
   debugPrint('Collection ID for context menu: $collectionId');
   return [
+    if (isRoot) ...[
+      MenuAction(
+        title: 'Collection Configuration',
+        callback: () {
+          final targetId = node?.id ?? collectionId;
+          if (targetId != null) {
+            showDialog(
+              context: context,
+              builder: (_) => CollectionConfigDialog(collectionId: targetId),
+            );
+          }
+        },
+      ),
+      MenuSeparator(),
+    ],
     MenuSeparator(),
     MenuAction(
       title: 'HTTP Request',

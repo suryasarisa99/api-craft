@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/widgets.dart';
 
 import '../../../core/models/models.dart';
+import '../../collection/collection_model.dart';
 
 enum NodeType { folder, request }
 
@@ -166,6 +167,50 @@ class FolderNode extends Node<FolderNodeConfig> {
   @override
   String toString() {
     return ':::Node:::\n  id: $id\n  name: $name\n  type: $type\n  children: ${children.length}\n  parentId: $parentId\n  config: $config\n';
+  }
+}
+
+// --- COLLECTION NODE ---
+class CollectionNode extends FolderNode {
+  final CollectionModel collection;
+
+  CollectionNode({required this.collection, super.children = const []})
+    : super(
+        id: collection.id,
+        parentId: null,
+        name: collection.name,
+        sortOrder: -1,
+        config: FolderNodeConfig(
+          isDetailLoaded: true,
+          description: collection.description,
+          headers: collection.headers,
+          auth: collection.auth,
+        ),
+      );
+
+  @override
+  CollectionNode copyWith({
+    String? name,
+    String? parentId,
+    bool forceNullParent = false,
+    FolderNodeConfig? config,
+    List<String>? children,
+    int? sortOrder,
+    String? id,
+    CollectionModel? collection,
+  }) {
+    // Sync updates back to the inner CollectionModel
+    final newCollection = (collection ?? this.collection).copyWith(
+      name: name,
+      description: config?.description,
+      headers: config?.headers,
+      auth: config?.auth,
+    );
+
+    return CollectionNode(
+      collection: newCollection,
+      children: children ?? this.children,
+    );
   }
 }
 

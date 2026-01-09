@@ -129,6 +129,17 @@ class DataRepository {
     await db.delete(Tables.cookieJars, where: 'id = ?', whereArgs: [id]);
   }
 
+  // --- Environments ---
+
+  Future<void> createEnvironment(Environment env) async {
+    final db = await _db;
+    await db.insert(
+      Tables.environments,
+      env.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
   // --- WebSocket ---
 
   Future<void> createWebSocketSession(WebSocketSession session) async {

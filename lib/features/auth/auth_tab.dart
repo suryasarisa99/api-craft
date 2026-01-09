@@ -169,7 +169,9 @@ class AuthTab extends ConsumerWidget {
     final auth = ref.watch(
       reqComposeProvider(id).select((value) => value.node.config.auth),
     );
-    final node = ref.read(fileTreeProvider).nodeMap[id]!;
+    final node = ref.watch(
+      reqComposeProvider(id).select((value) => value.node),
+    );
     final authSource = ref.watch(
       reqComposeProvider(id).select((value) => value.authSource),
     );

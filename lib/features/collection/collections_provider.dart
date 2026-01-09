@@ -27,7 +27,7 @@ class CollectionsNotifier extends AsyncNotifier<List<CollectionModel>> {
     }
   }
 
-  Future<void> createCollection(
+  Future<CollectionModel> createCollection(
     String name, {
     CollectionType type = CollectionType.database,
     String? path,
@@ -45,11 +45,10 @@ class CollectionsNotifier extends AsyncNotifier<List<CollectionModel>> {
     await db.insert('collections', newCollection.toMap());
 
     // Create Default Environment & Cookie Jar for this new collection
-    final repo = ref.read(repositoryProvider);
     // Use a scoped DataRepo for the new collection
     final dataRepo = DataRepository(Future.value(db), newId);
 
-    await repo.createEnvironment(
+    await dataRepo.createEnvironment(
       Environment(id: nanoid(), collectionId: newId, name: 'Default'),
     );
 
@@ -60,8 +59,7 @@ class CollectionsNotifier extends AsyncNotifier<List<CollectionModel>> {
     // Refresh list
     ref.invalidateSelf();
 
-    // Auto-select the new collection
-    ref.read(selectedCollectionProvider.notifier).select(newCollection);
+    return newCollection;
   }
 
   Future<void> deleteCollection(String id) async {
@@ -72,16 +70,62 @@ class CollectionsNotifier extends AsyncNotifier<List<CollectionModel>> {
     ref.invalidateSelf();
 
     // If deleted collection was selected, switch to default
-    final selected = ref.read(selectedCollectionProvider);
-    if (selected != null && selected.id == id) {
-      final list = await future;
-      // list might still contain the deleted one if we haven't awaited the invalidate fully
-      // but db delete is done.
-      // safest is to select 'default_api_craft' or first available
-      ref
-          .read(selectedCollectionProvider.notifier)
-          .select(list.firstWhere((e) => e.id != id, orElse: () => list.first));
-    }
+    // Handled by SelectedCollectionNotifier listener
+  }
+
+  Future<void> updateCollection(CollectionModel collection) async {
+    final db = await ref.read(databaseProvider);
+    await db.update(
+      'collections',
+      collection.toMap(),
+      where: 'id = ?',
+      whereArgs: [collection.id],
+    );
+    // Update state locally to avoid reload flicker
+    state.whenData((list) {
+      final index = list.indexWhere((c) => c.id == collection.id);
+      if (index != -1) {
+        final newList = List<CollectionModel>.from(list);
+        newList[index] = collection;
+        state = AsyncData(newList);
+      }
+    });
+  }
+
+  void updateDescription(String id, String description) {
+    state.whenData((list) {
+      final collection = list.firstWhere(
+        (c) => c.id == id,
+        orElse: () => list.first,
+      );
+      if (collection.id == id) {
+        updateCollection(collection.copyWith(description: description));
+      }
+    });
+  }
+
+  void updateHeaders(String id, List<KeyValueItem> headers) {
+    state.whenData((list) {
+      final collection = list.firstWhere(
+        (c) => c.id == id,
+        orElse: () => list.first,
+      );
+      if (collection.id == id) {
+        updateCollection(collection.copyWith(headers: headers));
+      }
+    });
+  }
+
+  void updateAuth(String id, AuthData auth) {
+    state.whenData((list) {
+      final collection = list.firstWhere(
+        (c) => c.id == id,
+        orElse: () => list.first,
+      );
+      if (collection.id == id) {
+        updateCollection(collection.copyWith(auth: auth));
+      }
+    });
   }
 }
 

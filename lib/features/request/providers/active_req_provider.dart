@@ -10,11 +10,12 @@ final activeReqIdProvider = NotifierProvider<ActiveReqIdNotifier, String?>(
 final activeReqProvider = Provider<RequestNode?>((ref) {
   final activeReqId = ref.watch(activeReqIdProvider);
   if (activeReqId == null) return null;
-  return ref.watch(
-    fileTreeProvider.select(
-      (treeData) => treeData.nodeMap[activeReqId] as RequestNode?,
-    ),
+
+  final node = ref.watch(
+    fileTreeProvider.select((treeData) => treeData.nodeMap[activeReqId]),
   );
+
+  return node is RequestNode ? node : null;
 });
 
 class ActiveReqIdNotifier extends Notifier<String?> {

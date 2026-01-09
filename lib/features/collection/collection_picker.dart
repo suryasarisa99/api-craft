@@ -8,6 +8,7 @@ import 'package:flutter_popup/flutter_popup.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
 import 'package:suryaicons/bulk_rounded.dart';
+import 'package:api_craft/features/collection/collection_config_dialog.dart';
 import 'package:file_picker/file_picker.dart';
 
 class CollectionPicker extends ConsumerStatefulWidget {
@@ -51,6 +52,19 @@ class _CollectionPickerState extends ConsumerState<CollectionPicker> {
         ),
 
         if (selectedCollection != null) ...[
+          menuDivider,
+          CustomMenuIconItem(
+            icon: const SuryaThemeIcon(BulkRounded.settings01),
+            title: const Text("Configure Collection"),
+            value: 'configure',
+            onTap: (_) {
+              showDialog(
+                context: context,
+                builder: (_) =>
+                    CollectionConfigDialog(collectionId: selectedCollection.id),
+              );
+            },
+          ),
           menuDivider,
           CustomMenuIconItem(
             icon: const SuryaThemeIcon(BulkRounded.linkBackward),
@@ -150,7 +164,7 @@ class _CreateCollectionDialogState
     }
   }
 
-  void _create() {
+  Future<void> _create() async {
     final name = _nameController.text.trim();
     if (name.isEmpty) return;
 
@@ -158,10 +172,14 @@ class _CreateCollectionDialogState
         ? CollectionType.filesystem
         : CollectionType.database;
 
-    ref
+    final newCollection = await ref
         .read(collectionsProvider.notifier)
         .createCollection(name, type: type, path: _selectedPath);
-    Navigator.pop(context);
+
+    if (mounted) {
+      ref.read(selectedCollectionProvider.notifier).select(newCollection);
+      Navigator.pop(context);
+    }
   }
 
   @override

@@ -76,6 +76,9 @@ class RequestDetailsNotifier extends Notifier<RequestDetailsState> {
     ref.listen(environmentProvider, (_, _) {
       refreshInheritance();
     });
+    ref.listen(selectedCollectionProvider, (_, _) {
+      refreshInheritance();
+    });
 
     _load();
     return RequestDetailsState();

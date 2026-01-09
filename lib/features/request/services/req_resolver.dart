@@ -30,12 +30,11 @@ class RequestResolver {
   /// ---------- UI RESOLUTION ----------
   Future<InheritedRequest> resolveInherit(String requestId) async {
     debugPrint("resolve for ui: $requestId");
-    //callstack
-    late Node node;
-    try {
-      node = ref.read(fileTreeProvider.select((t) => t.nodeMap[requestId]!));
-    } catch (e) {
-      log("error for id: $requestId: $e", stackTrace: StackTrace.current);
+
+    final node = ref.read(fileTreeProvider).nodeMap[requestId];
+
+    if (node == null) {
+      return const InheritedRequest.empty();
     }
 
     // await _hydrator.hydrateNode(node);
@@ -473,6 +472,8 @@ class RequestResolver {
       result.insertAll(0, ptr.config.headers.where((h) => h.isEnabled));
       ptr = _parentOf(ptr);
     }
+
+    // Collection Inheritance
     return result;
   }
 

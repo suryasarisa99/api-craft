@@ -25,7 +25,10 @@ class Tables {
         type TEXT NOT NULL, -- 'database' or 'filesystem'
         path TEXT, -- Null if database, actual path if filesystem
         selected_env_id TEXT,
-        selected_jar_id TEXT
+        selected_jar_id TEXT,
+        description TEXT,
+        headers TEXT,
+        auth TEXT
       )
     ''',
     nodes:
@@ -171,8 +174,10 @@ class DatabaseHelper {
       path,
       version: 2,
       onCreate: (db, version) async {
+        await Tables.dropAllTables(db);
         await Tables.createAllTables(db);
         await _ensureDefaults(db);
+        prefs.clear();
       },
       onUpgrade: (db, oldVersion, newVersion) async {
         // for development only

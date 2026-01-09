@@ -2,6 +2,8 @@ import 'package:api_craft/features/request/providers/request_details_provider.da
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:api_craft/core/models/models.dart';
 import 'package:api_craft/core/providers/providers.dart';
+import 'package:api_craft/features/collection/collection_model.dart';
+import 'package:api_craft/features/collection/collections_provider.dart';
 
 final reqComposeProvider = NotifierProvider.autoDispose
     .family<ReqComposeNotifier, UiRequestContext, String>(
@@ -15,11 +17,20 @@ class ReqComposeNotifier extends Notifier<UiRequestContext> {
   @override
   UiRequestContext build() {
     // 1. Watch Node
-    final node = ref.watch(
-      fileTreeProvider.select((treeData) => treeData.nodeMap[id]!),
+    var node = ref.watch(
+      fileTreeProvider.select((treeData) => treeData.nodeMap[id]),
     );
 
-    // 2. Watch Details (Body,History & Inheritance Details)
+    // 2. Safety Fallback
+    node ??= FolderNode(
+      id: id,
+      parentId: null,
+      name: 'Error: Not Found',
+      sortOrder: 0,
+      config: FolderNodeConfig(),
+    );
+
+    // 3. Watch Details (Body,History & Inheritance Details)
     final detailsState = ref.watch(requestDetailsProvider(id));
 
     return UiRequestContext(
@@ -37,11 +48,16 @@ class ReqComposeNotifier extends Notifier<UiRequestContext> {
       sendError: stateOrNull?.sendError,
     );
   }
+
   // --- ACTIONS (Delegate to appropriate provider) ---
 
   FileTreeNotifier get _treeNotifier => ref.read(fileTreeProvider.notifier);
   RequestDetailsNotifier get _detailsNotifier =>
       ref.read(requestDetailsProvider(id).notifier);
+  CollectionsNotifier get _colNotifier =>
+      ref.read(collectionsProvider.notifier);
+
+  String? get _collectionId => ref.read(selectedCollectionProvider)?.id;
 
   void updateName(String name) {
     _treeNotifier.updateNodeName(id, name);
@@ -56,11 +72,21 @@ class ReqComposeNotifier extends Notifier<UiRequestContext> {
   }
 
   void updateDescription(String description) {
-    _treeNotifier.updateNodeDescription(id, description);
+    if (id == _collectionId) {
+      _colNotifier.updateDescription(id, description);
+      _treeNotifier.updateNodeDescription(id, description);
+    } else {
+      _treeNotifier.updateNodeDescription(id, description);
+    }
   }
 
   void updateHeaders(List<KeyValueItem> headers) {
-    _treeNotifier.updateNodeHeaders(id, headers);
+    if (id == _collectionId) {
+      _colNotifier.updateHeaders(id, headers);
+      _treeNotifier.updateNodeHeaders(id, headers);
+    } else {
+      _treeNotifier.updateNodeHeaders(id, headers);
+    }
   }
 
   void updateQueryParameters(List<KeyValueItem> queryParameters) {
@@ -92,7 +118,12 @@ class ReqComposeNotifier extends Notifier<UiRequestContext> {
   }
 
   void updateAuth(AuthData auth) {
-    _treeNotifier.updateNodeAuth(id, auth);
+    if (id == _collectionId) {
+      _colNotifier.updateAuth(id, auth);
+      _treeNotifier.updateNodeAuth(id, auth);
+    } else {
+      _treeNotifier.updateNodeAuth(id, auth);
+    }
   }
 
   void updateVariables(List<KeyValueItem> variables) {

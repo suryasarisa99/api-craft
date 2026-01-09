@@ -44,6 +44,15 @@ final rootIdsProvider = Provider.autoDispose<RootList>((ref) {
       .where((n) => n.parentId == null)
       .toList();
 
+  // Hide CollectionNode: If the root is the Collection, show its children instead
+  if (roots.isNotEmpty && roots.first is CollectionNode) {
+    final collectionNode = roots.first as CollectionNode;
+    roots = collectionNode.children
+        .map((id) => treeState.nodeMap[id])
+        .whereType<Node>()
+        .toList();
+  }
+
   if (filteredTree != null) {
     roots = roots
         .where((n) => filteredTree.visibleNodes.contains(n.id))

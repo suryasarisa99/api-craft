@@ -47,19 +47,37 @@ class FileTreeNotifier extends Notifier<TreeData> {
   }
 
   // --- INITIAL LOAD ---
+  // --- INITIAL LOAD ---
   Future<void> _loadInitialData() async {
     try {
+      final collection = ref.read(selectedCollectionProvider);
+      if (collection == null) return;
+
       final repo = ref.read(repositoryProvider);
       final nodes = await repo.getNodes(); // List<Node>
 
       // 1. Build map
       final map = <String, Node>{};
+
+      // Inject Root Collection Node
+      final rootNode = CollectionNode(collection: collection, children: []);
+      map[collection.id] = rootNode;
+
       for (final n in nodes) {
-        map[n.id] = n;
+        if (n.parentId == null) {
+          // Reparent top-level nodes to Collection
+          map[n.id] = n.copyWith(parentId: collection.id);
+        } else {
+          map[n.id] = n;
+        }
       }
 
       // 2. Link children → parent (FolderNode.children)
-      for (final n in nodes) {
+      // We iterate map.values to see the modified parentIds
+      final allNodes = map.values.toList();
+      for (final n in allNodes) {
+        if (n.id == collection.id) continue;
+
         final parentId = n.parentId;
         if (parentId == null) continue;
 
@@ -73,6 +91,7 @@ class FileTreeNotifier extends Notifier<TreeData> {
       // 3. Commit
       state = TreeData(map, isLoading: false);
     } catch (e) {
+      debugPrint("Error loading tree: $e");
       state = state.copyWith(isLoading: false);
     }
   }
@@ -300,6 +319,10 @@ class FileTreeNotifier extends Notifier<TreeData> {
     final ids = folderNames.map((e) => nanoid()).toList();
     final childId = fileName == null ? null : nanoid();
     debugPrint(ids.toString());
+    // For creation, we default use parentId as is (local view)
+    // But for DB, if parentId == collectionId, we must use null.
+    final collectionId = ref.read(selectedCollectionProvider)?.id;
+
     for (int i = 0; i < folderNames.length; i++) {
       nodes.add(
         FolderNode(
@@ -342,9 +365,17 @@ class FileTreeNotifier extends Notifier<TreeData> {
       );
     }
 
-    await _repo.createMany(nodes);
+    // Prepare nodes for DB (translate parentId: collectionId -> null)
+    final dbNodes = nodes.map((n) {
+      if (n.parentId == collectionId) {
+        return n.copyWith(parentId: null, forceNullParent: true);
+      }
+      return n;
+    }).toList();
 
-    // direct mutation
+    await _repo.createMany(dbNodes);
+
+    // direct mutation (Local View keeps collectionId as parent)
     for (final node in nodes) {
       state.nodeMap[node.id] = node;
     }
@@ -415,19 +446,31 @@ class FileTreeNotifier extends Notifier<TreeData> {
       map[n.id] = n;
     }
 
-    // 4. Add duplicated root folder to its parent
-    final originalParent = node.parentId;
-    if (originalParent != null) {
-      final parent = map[originalParent];
-      if (parent is FolderNode) {
-        final updatedParent = parent.copyWith(
-          children: [...parent.children, idMap[node.id]!],
-        );
-        map[originalParent] = updatedParent;
-      }
+    // 4. Add duplicated root to parent if parent exists
+    // Logic handles parentId creation in the loop, but we need to link parent -> child in map if parent exists.
+    final rootDup = duplicated[0]; // The folder itself
+    if (rootDup.parentId != null && map.containsKey(rootDup.parentId)) {
+      _updateParent(
+        parentId: rootDup.parentId!,
+        updateFn: (p) => p.copyWith(children: [...p.children, rootDup.id]),
+      );
     }
-    await _repo.createMany(duplicated);
-    // 5. Commit
+
+    // DB Translation
+    final collectionId = ref.read(selectedCollectionProvider)?.id;
+    final dbNodes = duplicated.map((n) {
+      if (n.parentId == collectionId) {
+        return n.copyWith(parentId: null, forceNullParent: true);
+      }
+      return n;
+    }).toList();
+
+    await _repo.createMany(dbNodes);
+
+    // 5. Commit (Local View)
+    for (final n in duplicated) {
+      map[n.id] = n;
+    }
     state = state.copyWith(nodeMap: map);
   }
 
@@ -577,7 +620,10 @@ class FileTreeNotifier extends Notifier<TreeData> {
     }
 
     // 2. Repo Update (Move)
-    await _repo.moveItem(movedNode.id, newParentId);
+    final collectionId = ref.read(selectedCollectionProvider)?.id;
+    final dbParentId = (newParentId == collectionId) ? null : newParentId;
+
+    await _repo.moveItem(movedNode.id, dbParentId);
 
     // 3. Prepare Local State
     final currentMap = state.nodeMap;
@@ -744,6 +790,8 @@ class FileTreeNotifier extends Notifier<TreeData> {
   }
 
   Future<void> _duplicateNodeToParent(Node node, String? parentId) async {
+    final collectionId = ref.read(selectedCollectionProvider)?.id;
+
     if (node is FolderNode) {
       await _duplicateFolderToParent(node, parentId);
     } else {
@@ -755,7 +803,11 @@ class FileTreeNotifier extends Notifier<TreeData> {
             .name, // Keep same name or add copy? VS Code keeps same name on copy-paste to other folder
         config: node.config.clone(),
       );
-      await _repo.createOne(newNode);
+      final dbNode = (parentId == collectionId)
+          ? newNode.copyWith(parentId: null, forceNullParent: true)
+          : newNode;
+
+      await _repo.createOne(dbNode);
       _addItem(newNode);
     }
   }
