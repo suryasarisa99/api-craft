@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:api_craft/core/widgets/sonner/sonner.dart';
+import 'package:sonner_toast/sonner_toast.dart';
 
-enum _ToastType { info, success, error, warning }
+enum ToastType { info, success, error, warning }
 
 class ToastService {
   static void show(
@@ -12,10 +12,10 @@ class ToastService {
   }) {
     Sonner.toast(
       duration: duration,
-      builder: (context, onDismiss) => _StandardToast(
+      builder: (context, onDismiss) => StandardToast(
         message: message,
         description: description,
-        type: isError ? _ToastType.error : _ToastType.success,
+        type: isError ? ToastType.error : ToastType.success,
         onDismiss: onDismiss,
       ),
     );
@@ -28,10 +28,10 @@ class ToastService {
   }) {
     Sonner.toast(
       duration: duration,
-      builder: (context, onDismiss) => _StandardToast(
+      builder: (context, onDismiss) => StandardToast(
         message: message,
         description: description,
-        type: _ToastType.success,
+        type: ToastType.success,
         onDismiss: onDismiss,
       ),
     );
@@ -44,10 +44,10 @@ class ToastService {
   }) {
     Sonner.toast(
       duration: duration,
-      builder: (context, onDismiss) => _StandardToast(
+      builder: (context, onDismiss) => StandardToast(
         message: message,
         description: description,
-        type: _ToastType.error,
+        type: ToastType.error,
         onDismiss: onDismiss,
       ),
     );
@@ -60,33 +60,40 @@ class ToastService {
   }) {
     Sonner.toast(
       duration: duration,
-      builder: (context, onDismiss) => _StandardToast(
+      builder: (context, onDismiss) => StandardToast(
         message: message,
         description: description,
-        type: _ToastType.warning,
+        type: ToastType.warning,
         onDismiss: onDismiss,
       ),
     );
   }
 
-  static void info(String message) {
+  static void info(
+    String message, {
+    String? description,
+    Duration? duration = const Duration(seconds: 4),
+  }) {
     Sonner.toast(
-      builder: (context, onDismiss) => _StandardToast(
+      duration: duration,
+      builder: (context, onDismiss) => StandardToast(
         message: message,
-        type: _ToastType.info,
+        description: description,
+        type: ToastType.info,
         onDismiss: onDismiss,
       ),
     );
   }
 }
 
-class _StandardToast extends StatelessWidget {
+class StandardToast extends StatelessWidget {
   final String message;
   final String? description;
-  final _ToastType type;
+  final ToastType type;
   final VoidCallback onDismiss;
 
-  const _StandardToast({
+  const StandardToast({
+    super.key,
     required this.message,
     this.description,
     required this.type,
@@ -98,22 +105,27 @@ class _StandardToast extends StatelessWidget {
     Color bg = Colors.white;
     Color fg = Colors.black;
     IconData icon = Icons.info_outline;
+    Color iconColor = Colors.black;
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
     if (isDark) {
       bg = const Color(0xFF1E1E1E);
       fg = Colors.white;
+      iconColor = Colors.white;
     }
 
     switch (type) {
-      case _ToastType.success:
+      case ToastType.success:
         icon = Icons.check_circle_outline;
+        iconColor = Colors.green;
         break;
-      case _ToastType.error:
+      case ToastType.error:
         icon = Icons.error_outline;
+        iconColor = Colors.red;
         break;
-      case _ToastType.warning:
+      case ToastType.warning:
         icon = Icons.warning_amber_rounded;
+        iconColor = Colors.yellow;
         break;
       default:
         break;
@@ -138,7 +150,7 @@ class _StandardToast extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 20, color: fg.withValues(alpha: 0.8)),
+          Icon(icon, size: 20, color: iconColor),
           const SizedBox(width: 12),
           Expanded(
             child: Column(

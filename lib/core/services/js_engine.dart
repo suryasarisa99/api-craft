@@ -3,11 +3,13 @@ import 'package:api_craft/core/models/models.dart';
 import 'package:api_craft/core/providers/providers.dart';
 import 'package:api_craft/core/services/env_service.dart';
 import 'package:api_craft/core/services/req_service.dart';
+import 'package:api_craft/core/services/toast_service.dart';
 import 'package:api_craft/core/widgets/dialog/input_dialog.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_js/flutter_js.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:sonner_toast/sonner_toast.dart';
 
 final jsEngineProvider = Provider((ref) => JsEngineService(ref));
 // for macos: sendMessage,for windows: SendMessage
@@ -105,6 +107,32 @@ class JsEngineService {
         'log': (Map args) {
           final String msg = args['msg'];
           debugPrint('JS: $msg');
+        },
+        'toast': (Map args) {
+          final String msg = args['msg'];
+          final String type = args['type'];
+          final String? description = args['description'];
+          final int? durationSec = args['duration'];
+          final duration = durationSec != null
+              ? Duration(seconds: durationSec)
+              : null;
+
+          final toastType = ToastType.values.firstWhere(
+            (e) => e.name.toLowerCase() == type,
+            orElse: () => ToastType.info,
+          );
+          debugPrint("toast type: $toastType");
+
+          debugPrint("JS: Toast $msg $type $description $duration");
+          Sonner.toast(
+            duration: duration,
+            builder: (context, close) => StandardToast(
+              message: msg,
+              description: description,
+              type: toastType,
+              onDismiss: close,
+            ),
+          );
         },
       };
 
@@ -218,6 +246,25 @@ class JsEngineService {
                 delete _callbacks[id];
              }
           }
+        };
+
+        var toast = {
+          success: function(msg, options) {
+            var opts = options || {};
+            return _send('toast', { type: 'success', msg: msg, description: opts.description, duration: opts.duration });
+          },
+          error: function(msg, options) {
+            var opts = options || {};
+            return _send('toast', { type: 'error', msg: msg, description: opts.description, duration: opts.duration });
+          },
+          warn: function(msg, options) {
+            var opts = options || {};
+            return _send('toast', { type: 'warning', msg: msg, description: opts.description, duration: opts.duration });
+          },
+          info: function(msg, options) {
+            var opts = options || {};
+            return _send('toast', { type: 'info', msg: msg, description: opts.description, duration: opts.duration });
+          },
         };
         
         var req = createReq('$currentId');

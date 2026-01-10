@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 class CookieDef {
   final String domain;
   final String path;
