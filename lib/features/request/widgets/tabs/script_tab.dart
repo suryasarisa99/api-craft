@@ -33,7 +33,9 @@ class ScriptTab extends ConsumerWidget {
               ElevatedButton.icon(
                 onPressed: () {
                   if (scripts != null && scripts.isNotEmpty) {
-                    ref.read(jsEngineProvider).executeScript(scripts);
+                    ref
+                        .read(jsEngineProvider)
+                        .executeScript(scripts, context: context);
                   }
                 },
                 icon: const Icon(Icons.play_arrow),

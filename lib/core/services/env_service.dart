@@ -3,13 +3,23 @@ import 'package:api_craft/core/providers/providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class EnvService {
+  static String? getVariable(Ref ref, String key) {
+    final envState = ref.read(environmentProvider);
+    final selectedEnv = envState.selectedEnvironment;
+    if (selectedEnv == null) return null;
+
+    final v = selectedEnv.variables.where((v) => v.key == key).firstOrNull;
+    return v?.value;
+  }
+
   static void setVariable(
     Ref ref, {
     required String key,
     required String value,
   }) {
     final envState = ref.read(environmentProvider);
-    final selectedEnv = envState.selectedEnvironment;
+    final selectedEnv =
+        envState.selectedEnvironment ?? envState.globalEnvironment;
     if (selectedEnv == null) return;
 
     final updatedVars = List<KeyValueItem>.from(selectedEnv.variables);
