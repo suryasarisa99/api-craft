@@ -3,6 +3,7 @@ import 'package:api_craft/core/screens/home_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:api_craft/core/widgets/sonner/sonner.dart';
 
 import 'package:window_manager/window_manager.dart'; // Use for better logging
 
@@ -43,6 +44,8 @@ class MainApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      builder: (context, child) =>
+          SonnerOverlay(key: Sonner.overlayKey, child: child!),
       darkTheme: ThemeData(
         visualDensity: VisualDensity.compact,
         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
