@@ -5,7 +5,6 @@ import 'package:api_craft/core/services/env_service.dart';
 import 'package:api_craft/core/services/req_service.dart';
 import 'package:api_craft/core/services/toast_service.dart';
 import 'package:api_craft/core/widgets/dialog/input_dialog.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_js/flutter_js.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -22,14 +21,15 @@ class JsEngineService {
   Future<void> executeScript(
     String script, {
     RawHttpResponse? response,
-    BuildContext? context,
+    required BuildContext context,
   }) async {
     final JavascriptRuntime jsRuntime = getJavascriptRuntime();
     int pendingOps = 0;
-    bool scriptExecuted = false;
+    bool scriptExecuted = false; // "started"
+    bool scriptFinished = false; // "completed"
 
     void tryDispose() {
-      if (pendingOps == 0 && scriptExecuted) {
+      if (pendingOps == 0 && scriptFinished) {
         jsRuntime.dispose();
       }
     }
@@ -52,7 +52,6 @@ class JsEngineService {
 
         final String? callbackId = mapArgs['callbackId'];
         if (callbackId == null) {
-          // Fallback for fire-and-forget or legacy calls
           handler(mapArgs);
           return;
         }
@@ -77,8 +76,18 @@ class JsEngineService {
     }
 
     try {
+      // 0. Pre-load Active Cookie Jar
+      final repo = ref.read(dataRepositoryProvider);
+      final collection = ref.read(selectedCollectionProvider);
+      final jar = ref.read(environmentProvider).selectedCookieJar;
+
       // 1. Inject API bridge
       final syncHandlers = {
+        'done': (Map args) {
+          scriptFinished = true;
+          // Defer disposal significantly to ensure evaluate() and channel return paths are clear
+          Future.delayed(const Duration(milliseconds: 100), tryDispose);
+        },
         'setVariable': (Map args) {
           final String key = args['key'];
           final dynamic value = args['value'];
@@ -90,6 +99,7 @@ class JsEngineService {
           return EnvService.getVariable(ref, key);
         },
         'getReqUrl': (Map args) {
+          debugPrint('JS: Getting request URL ${args['id']}');
           return ReqService.getUrl(ref, args['id']);
         },
         'setReqUrl': (Map args) {
@@ -101,15 +111,39 @@ class JsEngineService {
         'setReqMethod': (Map args) {
           ReqService.setMethod(ref, args['id'], args['method']);
         },
-        'getReqHeaders': (Map args) {
-          return jsonEncode(ReqService.getHeaders(ref, args['id']));
+        'setReqBody': (Map args) {
+          final body = args['body'];
+          final bodyStr = body is String ? body : jsonEncode(body);
+          ReqService.setBody(ref, args['id'], bodyStr);
+        },
+        'setReqHeaders': (Map args) {
+          final rawHeaders = args['headers'];
+          final headers = <String, String>{};
+          if (rawHeaders is Map) {
+            rawHeaders.forEach((k, v) {
+              headers[k.toString()] = v?.toString() ?? '';
+            });
+          }
+          ReqService.setHeaders(ref, args['id'], headers);
         },
         'log': (Map args) {
           final String msg = args['msg'];
           debugPrint('JS: $msg');
         },
         'toast': (Map args) {
-          final String msg = args['msg'];
+          final dynamic msgRaw = args['msg'];
+          String msg;
+          if (msgRaw is String) {
+            msg = msgRaw;
+          } else if (msgRaw is Map || msgRaw is List) {
+            try {
+              msg = jsonEncode(msgRaw);
+            } catch (e) {
+              msg = msgRaw.toString();
+            }
+          } else {
+            msg = msgRaw?.toString() ?? 'null';
+          }
           final String type = args['type'];
           final String? description = args['description'];
           final int? durationSec = args['duration'];
@@ -118,12 +152,12 @@ class JsEngineService {
               : null;
 
           final toastType = ToastType.values.firstWhere(
-            (e) => e.name.toLowerCase() == type,
+            (e) => e.name == type,
             orElse: () => ToastType.info,
           );
-          debugPrint("toast type: $toastType");
 
           debugPrint("JS: Toast $msg $type $description $duration");
+
           Sonner.toast(
             duration: duration,
             builder: (context, close) => StandardToast(
@@ -133,6 +167,82 @@ class JsEngineService {
               onDismiss: close,
             ),
           );
+        },
+        // Cookie Handlers
+        'getCookie': (Map args) {
+          if (jar == null) return null;
+          final String key = args['key'];
+          debugPrint("JS: Getting cookie $key");
+          final cookie = jar.cookies.where((c) => c.key == key).firstOrNull;
+          return cookie != null ? jsonEncode(cookie.toMap()) : null;
+        },
+        'getCookieByPath': (Map args) {
+          if (jar == null) return null;
+          final String path = args['path'];
+          final cookies = jar.cookies
+              .where((c) => c.path == path)
+              .map((e) => e.toMap())
+              .toList();
+          return jsonEncode(cookies);
+        },
+        'getAllCookies': (Map args) {
+          if (jar == null) return [];
+          return jsonEncode(jar.cookies.map((e) => e.toMap()).toList());
+        },
+        'addCookie': (Map args) {
+          if (jar == null) return;
+          debugPrint("JS: Adding cookie map $args");
+          final newCookie = CookieDef.fromMap(Map<String, dynamic>.from(args));
+          debugPrint("JS: Adding cookie object ${newCookie.toMap()}");
+
+          final updatedCookies = jar!.cookies.where((c) {
+            final sameKey = c.key == newCookie.key;
+            final sameDomain = c.domain == newCookie.domain;
+            final samePath = c.path == newCookie.path;
+            return !(sameKey && sameDomain && samePath);
+          }).toList();
+
+          updatedCookies.add(newCookie);
+          final newJar = jar.copyWith(cookies: updatedCookies);
+          repo.updateCookieJar(newJar);
+        },
+        'updateCookie': (Map args) {
+          if (jar == null) return;
+          final newCookie = CookieDef.fromMap(Map<String, dynamic>.from(args));
+
+          final updatedCookies = jar!.cookies.where((c) {
+            final sameKey = c.key == newCookie.key;
+            final sameDomain = c.domain == newCookie.domain;
+            final samePath = c.path == newCookie.path;
+            return !(sameKey && sameDomain && samePath);
+          }).toList();
+
+          updatedCookies.add(newCookie);
+          final newJar = jar.copyWith(cookies: updatedCookies);
+          repo.updateCookieJar(newJar);
+        },
+        'removeCookie': (Map args) {
+          if (jar == null) return;
+          final String key = args['key'];
+          final updatedCookies = jar.cookies
+              .where((c) => c.key != key)
+              .toList();
+          final newJar = jar.copyWith(cookies: updatedCookies);
+          repo.updateCookieJar(newJar);
+        },
+      };
+
+      final asyncHandlers = {
+        'getReqBody': (Map args) {
+          return ReqService.getBody(ref, args['id']);
+        },
+        'prompt': (Map args) async {
+          final String msg = args['msg'] ?? 'Prompt';
+          final String? value = await showInputDialog(
+            context: context,
+            title: msg,
+          );
+          return value;
         },
       };
 
@@ -152,15 +262,8 @@ class JsEngineService {
         });
       });
 
-      // Async Handlers
-      registerAsyncHandler('prompt', (Map args) async {
-        if (context == null) return null;
-        final String msg = args['msg'] ?? 'Prompt';
-        final String? value = await showInputDialog(
-          context: context,
-          title: msg,
-        );
-        return value;
+      asyncHandlers.forEach((channel, handler) {
+        registerAsyncHandler(channel, handler);
       });
 
       String responseJson = "null";
@@ -189,9 +292,7 @@ class JsEngineService {
            return null;
         }
 
-        // Async Helper
         var _callbacks = {};
-        
         function _callAsync(channel, args) {
            return new Promise(function(resolve, reject) {
               var id = 'cb_' + Math.random().toString(36).substr(2, 9);
@@ -200,16 +301,11 @@ class JsEngineService {
            });
         }
         
-        // Console Log Polyfill
         console.log = function(msg) { return _send('log', { msg: msg }); };
         var log = function(msg) { return _send('log', { msg: msg }); };
+        var prompt = function(msg) { return _callAsync('prompt', { msg: msg }); };
 
-        // Prompt Polyfill (Async)
-        var prompt = function(msg) {
-           return _callAsync('prompt', { msg: msg });
-        };
-
-        function createReq(id) {
+        function getReq(id) {
            return {
              id: id,
              getUrl: function() { return _send('getReqUrl', {id: this.id}); },
@@ -219,71 +315,81 @@ class JsEngineService {
              getHeaders: function() { 
                 var res = _send('getReqHeaders', {id: this.id});
                 try { return JSON.parse(res); } catch(e) { return {}; }
-             }
+             },
+             setHeaders: function(headers) { return _send('setReqHeaders', {id: this.id, headers: headers}); },
+             getBody: function() { return _callAsync('getReqBody', {id: this.id}); },
+             setBody: function(body) { return _send('setReqBody', {id: this.id, body: body}); }
            };
         }
 
         var api = {
           response: $responseJson,
-          setVariable: function(key, value) {
-            return _send('setVariable', { key: key, value: value });
-          },
-          getVariable: function(key) {
-            return _send('getVariable', { key: key });
-          },
-          getReq: function(id) {
-            return createReq(id);
-          },
+          setVariable: function(key, value) { return _send('setVariable', { key: key, value: value }); },
+          getVariable: function(key) { return _send('getVariable', { key: key }); },
+          getReq: function(id) { return getReq(id); },
           _resolveCallback: function(id, value) {
-             if (_callbacks[id]) {
-                _callbacks[id].resolve(value);
-                delete _callbacks[id];
-             }
+             if (_callbacks[id]) { _callbacks[id].resolve(value); delete _callbacks[id]; }
           },
           _rejectCallback: function(id, error) {
-             if (_callbacks[id]) {
-                _callbacks[id].reject(error);
-                delete _callbacks[id];
-             }
+             if (_callbacks[id]) { _callbacks[id].reject(error); delete _callbacks[id]; }
           }
         };
 
         var toast = {
-          success: function(msg, options) {
-            var opts = options || {};
-            return _send('toast', { type: 'success', msg: msg, description: opts.description, duration: opts.duration });
-          },
-          error: function(msg, options) {
-            var opts = options || {};
-            return _send('toast', { type: 'error', msg: msg, description: opts.description, duration: opts.duration });
-          },
-          warn: function(msg, options) {
-            var opts = options || {};
-            return _send('toast', { type: 'warning', msg: msg, description: opts.description, duration: opts.duration });
-          },
-          info: function(msg, options) {
-            var opts = options || {};
-            return _send('toast', { type: 'info', msg: msg, description: opts.description, duration: opts.duration });
-          },
+          success: function(msg, options) { var opts = options || {}; return _send('toast', { type: 'success', msg: msg, description: opts.description, duration: opts.duration }); },
+          error: function(msg, options) { var opts = options || {}; return _send('toast', { type: 'error', msg: msg, description: opts.description, duration: opts.duration }); },
+          warn: function(msg, options) { var opts = options || {}; return _send('toast', { type: 'warning', msg: msg, description: opts.description, duration: opts.duration }); },
+          info: function(msg, options) { var opts = options || {}; return _send('toast', { type: 'info', msg: msg, description: opts.description, duration: opts.duration }); },
+        };
+
+        var jar = {
+          get: function(key) { var res = _send('getCookie', {key: key}); try { return JSON.parse(res); } catch(e) { return null; } },
+          getByPath: function(path) { var res = _send('getCookieByPath', {path: path}); try { return JSON.parse(res); } catch(e) { return []; } },
+          getAll: function() { var res = _send('getAllCookies', {}); try { return JSON.parse(res); } catch(e) { return []; } },
+          add: function(cookie) { return _send('addCookie', cookie); },
+          update: function(cookie) { return _send('updateCookie', cookie); },
+          remove: function(key) { return _send('removeCookie', {key: key}); }
         };
         
-        var req = createReq('$currentId');
+        var req = getReq('$currentId');
       """;
 
-      // 2. Execute
-      final result = jsRuntime.evaluate(
-        """$bridge \n\n async function main() { $script }\n\n main();""",
-      );
+      final result = jsRuntime.evaluate("""$bridge \n\n async function main() { 
+             try { 
+                $script 
+             } catch(e) { 
+                _send('toast', {type:'error', msg:'Runtime Error', description: e.toString()}); 
+             } finally {
+                _send('done');
+             }
+        }\n\n main(); 0;""");
+
       if (result.isError) {
-        debugPrint('JS Script Error: ${result.stringResult}');
+        final errorMsg = 'JS Script Error: ${result.stringResult}';
+        debugPrint(errorMsg);
+        ToastService.error(
+          "Script Execution Failed",
+          description: result.stringResult,
+          duration: const Duration(seconds: 5),
+        );
       }
     } catch (e) {
-      debugPrint('JS Runtime Error: $e');
+      final errorMsg = 'JS Runtime Error: $e';
+      debugPrint(errorMsg);
+      ToastService.error(
+        "Script Runtime Error",
+        description: e.toString(),
+        duration: const Duration(seconds: 5),
+      );
     } finally {
       scriptExecuted = true;
-      // Small delay default, but respect pendingOps
-      Future.delayed(const Duration(milliseconds: 500), () {
-        tryDispose();
+      // Use fallback timeout in case done signal is missed (e.g. native crash or extreme freeze)
+      Future.delayed(const Duration(seconds: 30), () {
+        if (!scriptFinished) {
+          debugPrint("JS: Script timed out. Disposing.");
+          scriptFinished = true;
+          tryDispose();
+        }
       });
     }
   }

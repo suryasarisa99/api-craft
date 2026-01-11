@@ -95,7 +95,7 @@ class HttpService {
         debugPrint("Running post-response script...");
         await ref
             .read(jsEngineProvider)
-            .executeScript(scripts, response: response);
+            .executeScript(scripts, response: response, context: context);
       }
 
       composer?.finishSending();

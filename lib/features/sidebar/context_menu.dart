@@ -7,6 +7,7 @@ import 'package:api_craft/core/widgets/dialog/input_dialog.dart';
 import 'package:api_craft/features/request/models/node_model.dart';
 import 'package:api_craft/features/folder/folder_config_dialog.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:super_context_menu/super_context_menu.dart';
 import 'package:api_craft/core/providers/providers.dart';
@@ -233,7 +234,14 @@ List<MenuElement> _getFileSpecificMenuActions({
   required BuildContext context,
   required Node node,
 }) {
-  return [];
+  return [
+    MenuAction(
+      title: 'Copy Id',
+      callback: () {
+        Clipboard.setData(ClipboardData(text: node.id));
+      },
+    ),
+  ];
 }
 
 void createFolder({
