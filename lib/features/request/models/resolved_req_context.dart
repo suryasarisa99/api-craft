@@ -16,4 +16,18 @@ class ResolvedRequestContext {
     required this.auth,
     required this.variables,
   });
+  Map<String, dynamic> toMap() {
+    return {
+      'uri': uri.toString(),
+      'method': request.method,
+      'headers': headers.map((e) => {'key': e[0], 'value': e[1]}).toList(),
+      'body': body is List<int> ? String.fromCharCodes(body) : body,
+      'auth': {
+        'type': auth.type.name,
+        'username': auth.username,
+        'token': auth.token,
+      },
+      'variables': variables.map((key, value) => MapEntry(key, value.value)),
+    };
+  }
 }

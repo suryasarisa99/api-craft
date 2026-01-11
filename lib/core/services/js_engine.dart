@@ -1,17 +1,22 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:api_craft/core/models/models.dart';
+import 'package:api_craft/core/network/raw/raw_http_req.dart';
 import 'package:api_craft/core/providers/providers.dart';
+import 'package:api_craft/core/providers/ref_provider.dart';
 import 'package:api_craft/core/services/env_service.dart';
 import 'package:api_craft/core/services/req_service.dart';
 import 'package:api_craft/core/services/toast_service.dart';
 import 'package:api_craft/core/widgets/dialog/input_dialog.dart';
+import 'package:api_craft/features/request/services/http_service.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_js/flutter_js.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sonner_toast/sonner_toast.dart';
 
 final jsEngineProvider = Provider((ref) => JsEngineService(ref));
-// for macos: sendMessage,for windows: SendMessage
+
+// for macos: sendMessage, for windows: SendMessage
 const sendMsg = "sendMessage";
 
 class JsEngineService {
@@ -23,22 +28,347 @@ class JsEngineService {
     RawHttpResponse? response,
     required BuildContext context,
   }) async {
-    final JavascriptRuntime jsRuntime = getJavascriptRuntime();
-    int pendingOps = 0;
-    bool scriptExecuted = false; // "started"
-    bool scriptFinished = false; // "completed"
+    final JavascriptRuntime engine = getJavascriptRuntime();
+    final Completer<void> scriptCompleter = Completer();
 
-    void tryDispose() {
-      if (pendingOps == 0 && scriptFinished) {
-        jsRuntime.dispose();
-      }
-    }
+    // 1. Define Bridge Handlers
+    // The key is the channel name.
+    // The value is the handler function which can be async and return a value directly.
+    final handlers = <String, FutureOr<dynamic> Function(Map<String, dynamic>)>{
+      'log': (args) {
+        debugPrint('JS: ${args['msg']}');
+      },
+      'script_done': (args) {
+        if (!scriptCompleter.isCompleted) {
+          Future.delayed(
+            const Duration(milliseconds: 100),
+            () => scriptCompleter.complete(),
+          );
+        }
+      },
+      'setVar': (args) {
+        EnvService.setVariable(
+          ref,
+          key: args['key'],
+          value: args['value']?.toString() ?? '',
+        );
+      },
+      'getVar': (args) {
+        return EnvService.getVariable(ref, args['key']);
+      },
+      'getReqUrl': (args) {
+        return ReqService.getUrl(ref, args['id']);
+      },
+      'setReqUrl': (args) {
+        ReqService.setUrl(ref, args['id'], args['url']);
+      },
+      'getReqMethod': (args) {
+        return ReqService.getMethod(ref, args['id']);
+      },
+      'setReqMethod': (args) {
+        ReqService.setMethod(ref, args['id'], args['method']);
+      },
+      'getReqBody': (args) async {
+        final body = await ReqService.getBody(ref, args['id']);
+        if (body is Map || body is List) return jsonEncode(body);
+        return body?.toString();
+      },
+      'setReqBody': (args) {
+        final body = args['body'];
+        final bodyStr = body is String ? body : jsonEncode(body);
+        ReqService.setBody(ref, args['id'], bodyStr);
+      },
+      'setReqHeaders': (args) {
+        final rawHeaders = args['headers'];
+        final headers = <String, String>{};
+        if (rawHeaders is Map) {
+          rawHeaders.forEach(
+            (k, v) => headers[k.toString()] = v?.toString() ?? '',
+          );
+        }
+        ReqService.setHeaders(ref, args['id'], headers);
+      },
+      'setReqHeader': (args) {
+        final id = args['id'];
+        final key = args['key'];
+        final value = args['value'];
+        if (id != null && key != null) {
+          final node = ref.read(fileTreeProvider).nodeMap[id];
+          if (node is RequestNode) {
+            final headers = List<KeyValueItem>.from(node.config.headers);
+            final matchKey = key.toString().toLowerCase();
+            int index = -1;
 
-    void registerAsyncHandler(
-      String channel,
-      Future<dynamic> Function(Map args) handler,
-    ) {
-      jsRuntime.onMessage(channel, (dynamic args) {
+            // Search from last
+            for (var i = headers.length - 1; i >= 0; i--) {
+              if (headers[i].isEnabled &&
+                  headers[i].key.toLowerCase() == matchKey) {
+                index = i;
+                break;
+              }
+            }
+
+            if (index != -1) {
+              debugPrint("Found header: $key");
+              // Replace value
+              headers[index] = headers[index].copyWith(
+                value: value?.toString() ?? '',
+              );
+            } else {
+              // Add new
+              headers.add(
+                KeyValueItem(key: key, value: value?.toString() ?? ''),
+              );
+            }
+            ref
+                .read(fileTreeProvider.notifier)
+                .updateHeaders(id, List<KeyValueItem>.from(headers));
+          }
+        }
+      },
+      'addReqHeader': (args) {
+        final id = args['id'];
+        final key = args['key'];
+        final value = args['value'];
+        if (id != null && key != null) {
+          final node = ref.read(fileTreeProvider).nodeMap[id];
+          if (node is RequestNode) {
+            final headers = List<KeyValueItem>.from(node.config.headers);
+            headers.add(KeyValueItem(key: key, value: value?.toString() ?? ''));
+            ref.read(fileTreeProvider.notifier).updateHeaders(id, headers);
+          }
+        }
+      },
+      'addReqHeaders': (args) {
+        final id = args['id'];
+        final dynamic newHeaders = args['headers'];
+        if (id != null && newHeaders != null) {
+          final node = ref.read(fileTreeProvider).nodeMap[id];
+          if (node is RequestNode) {
+            final headers = List<KeyValueItem>.from(node.config.headers);
+            if (newHeaders is Map) {
+              newHeaders.forEach((k, v) {
+                headers.add(
+                  KeyValueItem(key: k.toString(), value: v?.toString() ?? ''),
+                );
+              });
+            } else if (newHeaders is List) {
+              for (var h in newHeaders) {
+                if (h is Map) {
+                  headers.add(
+                    KeyValueItem(
+                      key: h['key']?.toString() ?? '',
+                      value: h['value']?.toString() ?? '',
+                    ),
+                  );
+                }
+              }
+            }
+            ref.read(fileTreeProvider.notifier).updateHeaders(id, headers);
+          }
+        }
+      },
+      'getReqHeaders': (args) {
+        final node = ref.read(fileTreeProvider).nodeMap[args['id']];
+        final List<Map<String, String>> headersList = [];
+        if (node is RequestNode) {
+          for (final h in node.config.headers) {
+            if (h.isEnabled) headersList.add({'key': h.key, 'value': h.value});
+          }
+        }
+        return jsonEncode(headersList);
+      },
+      'getReqHeadersMap': (args) {
+        return jsonEncode(ReqService.getHeaders(ref, args['id']));
+      },
+      'getResolvedReq': (args) async {
+        final id = args['id'];
+        if (id != null) {
+          final resolved = await ref
+              .read(requestResolverProvider)
+              .resolveForExecution(id, context: context);
+          return jsonEncode(resolved.toMap());
+        }
+        return null;
+      },
+      'getReqHeader': (args) {
+        final node = ref.read(fileTreeProvider).nodeMap[args['id']];
+        final key = args['key']?.toString().toLowerCase();
+        if (node is RequestNode && key != null) {
+          // Search from last
+          for (var i = node.config.headers.length - 1; i >= 0; i--) {
+            final h = node.config.headers[i];
+            if (h.isEnabled && h.key.toLowerCase() == key) {
+              return h.value;
+            }
+          }
+        }
+        return null;
+      },
+      'toast': (args) {
+        final dynamic msgRaw = args['msg'];
+        String msg;
+        debugPrint("Toast: ${msgRaw.runtimeType}");
+        if (msgRaw is String) {
+          msg = msgRaw;
+        } else {
+          try {
+            msg = jsonEncode(msgRaw);
+          } catch (_) {
+            msg = msgRaw?.toString() ?? 'null';
+          }
+        }
+
+        final String type = args['type'];
+        final String? description = args['description'];
+        final duration = Duration(seconds: args['duration'] ?? 4);
+
+        final toastType = ToastType.values.firstWhere(
+          (e) => e.name == type,
+          orElse: () => ToastType.info,
+        );
+
+        Sonner.toast(
+          duration: duration,
+          builder: (context, close) => StandardToast(
+            message: msg,
+            description: description,
+            type: toastType,
+            onDismiss: close,
+          ),
+        );
+      },
+      'prompt': (args) async {
+        final msg = args['msg'] ?? 'Prompt';
+        return await showInputDialog(context: context, title: msg);
+      },
+      'resolveId': (args) {
+        final target = args['id'];
+        final contextId = args['contextId'];
+        if (target == null) return null;
+        return _resolveNodeId(target.toString(), contextId: contextId);
+      },
+      // Cookie Handlers
+      'getCookie': (args) {
+        final jar = ref.read(environmentProvider).selectedCookieJar;
+        if (jar != null) {
+          final c = jar.cookies.where((c) => c.key == args['key']).firstOrNull;
+          return c != null ? jsonEncode(c.toMap()) : null;
+        }
+        return null;
+      },
+      'addCookie': (args) {
+        final repo = ref.read(dataRepositoryProvider);
+        final jar = ref.read(environmentProvider).selectedCookieJar;
+        if (jar != null) {
+          final newCookie = CookieDef.fromMap(args);
+          final updated = jar.cookies
+              .where(
+                (c) =>
+                    !(c.key == newCookie.key &&
+                        c.domain == newCookie.domain &&
+                        c.path == newCookie.path),
+              )
+              .toList();
+          updated.add(newCookie);
+          repo.updateCookieJar(jar.copyWith(cookies: updated));
+        }
+      },
+      'updateCookie': (args) {
+        // Same as add for now
+        final repo = ref.read(dataRepositoryProvider);
+        final jar = ref.read(environmentProvider).selectedCookieJar;
+        if (jar != null) {
+          final newCookie = CookieDef.fromMap(args);
+          final updated = jar.cookies
+              .where(
+                (c) =>
+                    !(c.key == newCookie.key &&
+                        c.domain == newCookie.domain &&
+                        c.path == newCookie.path),
+              )
+              .toList();
+          updated.add(newCookie);
+          repo.updateCookieJar(jar.copyWith(cookies: updated));
+        }
+      },
+      'removeCookie': (args) {
+        final repo = ref.read(dataRepositoryProvider);
+        final jar = ref.read(environmentProvider).selectedCookieJar;
+        if (jar != null) {
+          final key = args['key'];
+          final updated = jar.cookies.where((c) => c.key != key).toList();
+          repo.updateCookieJar(jar.copyWith(cookies: updated));
+        }
+      },
+      'runRequest': (args) async {
+        final path = args['path'];
+        final contextId = args['contextId'];
+        if (path is String) {
+          final id = _resolveNodeId(path, contextId: contextId);
+          if (id != null) {
+            /*
+            running request, triggers pre script,post script, so same ref cause circular ref
+            */
+            final r = ref.read(refProvider);
+            final response = await HttpService().run(r, id, context: context);
+            debugPrint("Response: ${response.body}");
+            return jsonEncode({
+              'status': response.statusCode,
+              'statusText': response.statusMessage,
+              'headers': Map.fromEntries(
+                response.headers.map((e) => MapEntry(e[0], e[1])),
+              ),
+              'body': response.body, // Dynamic
+              'responseTime': response.durationMs,
+            });
+          }
+        }
+        return null;
+      },
+      'sendRequest': (args) async {
+        final method = args['method'] ?? 'GET';
+        final url = args['url'];
+        final headersRaw = args['headers'];
+        final data = args['data']; // body
+
+        if (url == null) throw Exception("URL required");
+
+        final headers = <List<String>>[];
+        if (headersRaw is Map) {
+          headersRaw.forEach(
+            (k, v) => headers.add([k.toString(), v.toString()]),
+          );
+        }
+
+        final response = await sendRawHttp(
+          method: method,
+          url: Uri.parse(url),
+          headers: headers,
+          body: data is Map ? jsonEncode(data) : data?.toString(),
+          requestId: 'adhoc',
+        );
+
+        return jsonEncode({
+          'status': response.statusCode,
+          'statusText': response.statusMessage,
+          'headers': Map.fromEntries(
+            response.headers.map((e) => MapEntry(e[0], e[1])),
+          ),
+          'body': response.body,
+          'responseTime': response.durationMs,
+        });
+      },
+      'setNextRequest': (args) {
+        final nextName = args['next'];
+        debugPrint("Runner setNextRequest: $nextName");
+        // TODO: Wire up to Runner state
+      },
+    };
+
+    // 2. Register Channels
+    handlers.forEach((channel, handler) {
+      engine.onMessage(channel, (dynamic args) {
         Map<String, dynamic> mapArgs = {};
         if (args is String) {
           try {
@@ -49,223 +379,12 @@ class JsEngineService {
         } else if (args is Map) {
           mapArgs = Map<String, dynamic>.from(args);
         }
-
-        final String? callbackId = mapArgs['callbackId'];
-        if (callbackId == null) {
-          handler(mapArgs);
-          return;
-        }
-
-        pendingOps++;
-        handler(mapArgs)
-            .then((value) {
-              final safeValue = jsonEncode(value);
-              jsRuntime.evaluate(
-                "api._resolveCallback('$callbackId', $safeValue)",
-              );
-            })
-            .catchError((e) {
-              debugPrint("JS: Async handler error $e");
-              jsRuntime.evaluate("api._rejectCallback('$callbackId', '$e')");
-            })
-            .whenComplete(() {
-              pendingOps--;
-              tryDispose();
-            });
+        return handler(mapArgs);
       });
-    }
+    });
 
     try {
-      // 0. Pre-load Active Cookie Jar
-      final repo = ref.read(dataRepositoryProvider);
-      final collection = ref.read(selectedCollectionProvider);
-      final jar = ref.read(environmentProvider).selectedCookieJar;
-
-      // 1. Inject API bridge
-      final syncHandlers = {
-        'done': (Map args) {
-          scriptFinished = true;
-          // Defer disposal significantly to ensure evaluate() and channel return paths are clear
-          Future.delayed(const Duration(milliseconds: 100), tryDispose);
-        },
-        'setVariable': (Map args) {
-          final String key = args['key'];
-          final dynamic value = args['value'];
-          debugPrint('JS: Setting variable $key = $value');
-          EnvService.setVariable(ref, key: key, value: value?.toString() ?? '');
-        },
-        'getVariable': (Map args) {
-          final String key = args['key'];
-          return EnvService.getVariable(ref, key);
-        },
-        'getReqUrl': (Map args) {
-          debugPrint('JS: Getting request URL ${args['id']}');
-          return ReqService.getUrl(ref, args['id']);
-        },
-        'setReqUrl': (Map args) {
-          ReqService.setUrl(ref, args['id'], args['url']);
-        },
-        'getReqMethod': (Map args) {
-          return ReqService.getMethod(ref, args['id']);
-        },
-        'setReqMethod': (Map args) {
-          ReqService.setMethod(ref, args['id'], args['method']);
-        },
-        'setReqBody': (Map args) {
-          final body = args['body'];
-          final bodyStr = body is String ? body : jsonEncode(body);
-          ReqService.setBody(ref, args['id'], bodyStr);
-        },
-        'setReqHeaders': (Map args) {
-          final rawHeaders = args['headers'];
-          final headers = <String, String>{};
-          if (rawHeaders is Map) {
-            rawHeaders.forEach((k, v) {
-              headers[k.toString()] = v?.toString() ?? '';
-            });
-          }
-          ReqService.setHeaders(ref, args['id'], headers);
-        },
-        'log': (Map args) {
-          final String msg = args['msg'];
-          debugPrint('JS: $msg');
-        },
-        'toast': (Map args) {
-          final dynamic msgRaw = args['msg'];
-          String msg;
-          if (msgRaw is String) {
-            msg = msgRaw;
-          } else if (msgRaw is Map || msgRaw is List) {
-            try {
-              msg = jsonEncode(msgRaw);
-            } catch (e) {
-              msg = msgRaw.toString();
-            }
-          } else {
-            msg = msgRaw?.toString() ?? 'null';
-          }
-          final String type = args['type'];
-          final String? description = args['description'];
-          final int? durationSec = args['duration'];
-          final duration = durationSec != null
-              ? Duration(seconds: durationSec)
-              : null;
-
-          final toastType = ToastType.values.firstWhere(
-            (e) => e.name == type,
-            orElse: () => ToastType.info,
-          );
-
-          debugPrint("JS: Toast $msg $type $description $duration");
-
-          Sonner.toast(
-            duration: duration,
-            builder: (context, close) => StandardToast(
-              message: msg,
-              description: description,
-              type: toastType,
-              onDismiss: close,
-            ),
-          );
-        },
-        // Cookie Handlers
-        'getCookie': (Map args) {
-          if (jar == null) return null;
-          final String key = args['key'];
-          debugPrint("JS: Getting cookie $key");
-          final cookie = jar.cookies.where((c) => c.key == key).firstOrNull;
-          return cookie != null ? jsonEncode(cookie.toMap()) : null;
-        },
-        'getCookieByPath': (Map args) {
-          if (jar == null) return null;
-          final String path = args['path'];
-          final cookies = jar.cookies
-              .where((c) => c.path == path)
-              .map((e) => e.toMap())
-              .toList();
-          return jsonEncode(cookies);
-        },
-        'getAllCookies': (Map args) {
-          if (jar == null) return [];
-          return jsonEncode(jar.cookies.map((e) => e.toMap()).toList());
-        },
-        'addCookie': (Map args) {
-          if (jar == null) return;
-          debugPrint("JS: Adding cookie map $args");
-          final newCookie = CookieDef.fromMap(Map<String, dynamic>.from(args));
-          debugPrint("JS: Adding cookie object ${newCookie.toMap()}");
-
-          final updatedCookies = jar!.cookies.where((c) {
-            final sameKey = c.key == newCookie.key;
-            final sameDomain = c.domain == newCookie.domain;
-            final samePath = c.path == newCookie.path;
-            return !(sameKey && sameDomain && samePath);
-          }).toList();
-
-          updatedCookies.add(newCookie);
-          final newJar = jar.copyWith(cookies: updatedCookies);
-          repo.updateCookieJar(newJar);
-        },
-        'updateCookie': (Map args) {
-          if (jar == null) return;
-          final newCookie = CookieDef.fromMap(Map<String, dynamic>.from(args));
-
-          final updatedCookies = jar!.cookies.where((c) {
-            final sameKey = c.key == newCookie.key;
-            final sameDomain = c.domain == newCookie.domain;
-            final samePath = c.path == newCookie.path;
-            return !(sameKey && sameDomain && samePath);
-          }).toList();
-
-          updatedCookies.add(newCookie);
-          final newJar = jar.copyWith(cookies: updatedCookies);
-          repo.updateCookieJar(newJar);
-        },
-        'removeCookie': (Map args) {
-          if (jar == null) return;
-          final String key = args['key'];
-          final updatedCookies = jar.cookies
-              .where((c) => c.key != key)
-              .toList();
-          final newJar = jar.copyWith(cookies: updatedCookies);
-          repo.updateCookieJar(newJar);
-        },
-      };
-
-      final asyncHandlers = {
-        'getReqBody': (Map args) {
-          return ReqService.getBody(ref, args['id']);
-        },
-        'prompt': (Map args) async {
-          final String msg = args['msg'] ?? 'Prompt';
-          final String? value = await showInputDialog(
-            context: context,
-            title: msg,
-          );
-          return value;
-        },
-      };
-
-      syncHandlers.forEach((channel, handler) {
-        jsRuntime.onMessage(channel, (dynamic args) {
-          Map<String, dynamic> mapArgs = {};
-          if (args is String) {
-            try {
-              mapArgs = jsonDecode(args);
-            } catch (e) {
-              /* ignore */
-            }
-          } else if (args is Map) {
-            mapArgs = Map<String, dynamic>.from(args);
-          }
-          return handler(mapArgs);
-        });
-      });
-
-      asyncHandlers.forEach((channel, handler) {
-        registerAsyncHandler(channel, handler);
-      });
-
+      // 3. Prepare Environment
       String responseJson = "null";
       if (response != null) {
         final Map<String, dynamic> resMap = {
@@ -275,9 +394,9 @@ class JsEngineService {
         };
         responseJson = jsonEncode(resMap);
       }
-
       final currentId = ref.read(activeReqIdProvider) ?? "";
 
+      // 4. Bridge Script - PURE AND SIMPLE
       final String bridge =
           """
         function _send(channel, args) {
@@ -292,109 +411,215 @@ class JsEngineService {
            return null;
         }
 
-        var _callbacks = {};
-        function _callAsync(channel, args) {
-           return new Promise(function(resolve, reject) {
-              var id = 'cb_' + Math.random().toString(36).substr(2, 9);
-              _callbacks[id] = { resolve: resolve, reject: reject };
-              _send(channel, Object.assign({}, args, {callbackId: id}));
-           });
-        }
+        var console = { log: function(msg) { _send('log', {msg:msg}); } };
+        var log = function(msg) { _send('log', {msg:msg}); };
+        var prompt = async function(msg) { return _send('prompt', {msg: msg}); };
         
-        console.log = function(msg) { return _send('log', { msg: msg }); };
-        var log = function(msg) { return _send('log', { msg: msg }); };
-        var prompt = function(msg) { return _callAsync('prompt', { msg: msg }); };
+        function getReq(idOrPath) {
+           var contextId = (typeof req !== 'undefined' && req && req.id) ? req.id : null;
+           var resolved = _send('resolveId', {id: idOrPath, contextId: contextId});
+           var finalId = resolved || idOrPath;
 
-        function getReq(id) {
            return {
-             id: id,
+             id: finalId,
              getUrl: function() { return _send('getReqUrl', {id: this.id}); },
-             setUrl: function(url) { return _send('setReqUrl', {id: this.id, url: url}); },
              getMethod: function() { return _send('getReqMethod', {id: this.id}); },
-             setMethod: function(method) { return _send('setReqMethod', {id: this.id, method: method}); },
-             getHeaders: function() { 
-                var res = _send('getReqHeaders', {id: this.id});
-                try { return JSON.parse(res); } catch(e) { return {}; }
+             
+             getResolved: async function() { 
+                 var res = await _send('getResolvedReq', {id: this.id});
+                 try { return JSON.parse(res); } catch(e) { return null; }
              },
-             setHeaders: function(headers) { return _send('setReqHeaders', {id: this.id, headers: headers}); },
-             getBody: function() { return _callAsync('getReqBody', {id: this.id}); },
-             setBody: function(body) { return _send('setReqBody', {id: this.id, body: body}); }
+
+             getBody: async function() { 
+                 var res = await _send('getReqBody', {id: this.id});
+                 try { return JSON.parse(res); } catch(e) { return res; }
+             },
+             
+             setUrl: function(u) { _send('setReqUrl', {id: this.id, url: u}); },
+             setMethod: function(m) { _send('setReqMethod', {id: this.id, method: m}); },
+             setBody: function(b) { _send('setReqBody', {id: this.id, body: b}); },
+
+            // Headers
+             getHeaders: function() { 
+                 var res = _send('getReqHeaders', {id: this.id});
+                 try { return JSON.parse(res); } catch(e) { return []; }
+             },
+             getHeadersMap: function() {
+                 var res = _send('getReqHeadersMap', {id: this.id});
+                 try { return JSON.parse(res); } catch(e) { return {}; }
+             },
+             getHeader: function(k) { return _send('getReqHeader', {id: this.id, key: k}); },
+             setHeaders: function(h) { _send('setReqHeaders', {id: this.id, headers: h}); },
+             setHeader: function(k, v) { _send('setReqHeader', {id: this.id, key: k, value: v}); },
+             addHeader: function(k, v) { _send('addReqHeader', {id: this.id, key: k, value: v}); },
+             addHeaders: function(h) { _send('addReqHeaders', {id: this.id, headers: h}); }
            };
         }
 
         var api = {
-          response: $responseJson,
-          setVariable: function(key, value) { return _send('setVariable', { key: key, value: value }); },
-          getVariable: function(key) { return _send('getVariable', { key: key }); },
-          getReq: function(id) { return getReq(id); },
-          _resolveCallback: function(id, value) {
-             if (_callbacks[id]) { _callbacks[id].resolve(value); delete _callbacks[id]; }
-          },
-          _rejectCallback: function(id, error) {
-             if (_callbacks[id]) { _callbacks[id].reject(error); delete _callbacks[id]; }
-          }
+           response: $responseJson,
+           setVar: function(k, v) { _send('setVar', {key:k, value:v}); },
+           getVar: function(k) { return _send('getVar', {key:k}); },
+           getReq: function(id) { return getReq(id); },
+           
+           runRequest: async function(path) {
+               var res = await _send('runRequest', {path: path, contextId: req.id});
+               try { return JSON.parse(res); } catch(e) { return null; }
+           },
+           sendRequest: async function(opts, callback) {
+               try {
+                   var res = await _send('sendRequest', opts);
+                   var parsed = JSON.parse(res);
+                   if (callback) callback(null, parsed);
+                   return parsed;
+               } catch(e) {
+                   if (callback) callback(e, null);
+                   throw e;
+               }
+           },
+           setNextRequest: function(next) { _send('setNextRequest', {next: next}); },
+           runner: {
+               setNextRequest: function(next) { _send('setNextRequest', {next: next}); }
+           }
         };
+
+        var bru = api;
+        var bruno = api;
 
         var toast = {
-          success: function(msg, options) { var opts = options || {}; return _send('toast', { type: 'success', msg: msg, description: opts.description, duration: opts.duration }); },
-          error: function(msg, options) { var opts = options || {}; return _send('toast', { type: 'error', msg: msg, description: opts.description, duration: opts.duration }); },
-          warn: function(msg, options) { var opts = options || {}; return _send('toast', { type: 'warning', msg: msg, description: opts.description, duration: opts.duration }); },
-          info: function(msg, options) { var opts = options || {}; return _send('toast', { type: 'info', msg: msg, description: opts.description, duration: opts.duration }); },
+           success: function(m, o) { _send('toast', {type:'success', msg:m, description: o?.description, duration: o?.duration}); },
+           error: function(m, o) { _send('toast', {type:'error', msg:m, description: o?.description, duration: o?.duration}); },
+           info: function(m, o) { _send('toast', {type:'info', msg:m, description: o?.description, duration: o?.duration}); },
+           warn: function(m, o) { _send('toast', {type:'warning', msg:m, description: o?.description, duration: o?.duration}); },
         };
+
+        var req = getReq('$currentId');
 
         var jar = {
-          get: function(key) { var res = _send('getCookie', {key: key}); try { return JSON.parse(res); } catch(e) { return null; } },
-          getByPath: function(path) { var res = _send('getCookieByPath', {path: path}); try { return JSON.parse(res); } catch(e) { return []; } },
-          getAll: function() { var res = _send('getAllCookies', {}); try { return JSON.parse(res); } catch(e) { return []; } },
-          add: function(cookie) { return _send('addCookie', cookie); },
-          update: function(cookie) { return _send('updateCookie', cookie); },
-          remove: function(key) { return _send('removeCookie', {key: key}); }
+           get: function(k) { 
+               var res = _send('getCookie', {key:k});
+               try { return res ? JSON.parse(res) : null; } catch(e) { return null; }
+           },
+           add: function(c) { _send('addCookie', c); },
+           update: function(c) { _send('updateCookie', c); },
+           remove: function(k) { _send('removeCookie', {key:k}); }
         };
-        
-        var req = getReq('$currentId');
       """;
 
-      final result = jsRuntime.evaluate("""$bridge \n\n async function main() { 
-             try { 
-                $script 
-             } catch(e) { 
-                _send('toast', {type:'error', msg:'Runtime Error', description: e.toString()}); 
-             } finally {
-                _send('done');
-             }
-        }\n\n main(); 0;""");
+      // 5. Execute
+      final fullScript =
+          """
+      $bridge
+      (async function() {
+          try {
+              $script
+          } catch(e) {
+              _send('toast', {type:'error', msg: 'Runtime Error', description: e.toString(), duration: 4});
+          } finally {
+              _send('script_done');
+          }
+      })();
+      """;
 
-      if (result.isError) {
-        final errorMsg = 'JS Script Error: ${result.stringResult}';
-        debugPrint(errorMsg);
-        ToastService.error(
-          "Script Execution Failed",
-          description: result.stringResult,
-          duration: const Duration(seconds: 5),
-        );
-      }
+      engine.evaluate(fullScript);
+
+      await scriptCompleter.future;
     } catch (e) {
-      final errorMsg = 'JS Runtime Error: $e';
-      debugPrint(errorMsg);
-      ToastService.error(
-        "Script Runtime Error",
-        description: e.toString(),
-        duration: const Duration(seconds: 5),
-      );
+      debugPrint("JS Engine Logic Error: $e");
+      ToastService.error("Script Error", description: e.toString());
     } finally {
-      scriptExecuted = true;
-      // Use fallback timeout in case done signal is missed (e.g. native crash or extreme freeze)
-      Future.delayed(const Duration(seconds: 30), () {
-        if (!scriptFinished) {
-          debugPrint("JS: Script timed out. Disposing.");
-          scriptFinished = true;
-          tryDispose();
-        }
-      });
+      engine.dispose();
     }
   }
-}
 
-// const name = await prompt();
-// console.log(`name is: ${name}`);
-// prompt("name").then(n=>log(`your name is : ${n}`))
+  static String dynamicToString(dynamic value) {
+    if (value is String) return value;
+    if (value is Map || value is List) return jsonEncode(value);
+    return value?.toString() ?? 'null';
+  }
+
+  String? _resolveNodeId(String target, {String? contextId}) {
+    final nodeMap = ref.read(fileTreeProvider).nodeMap;
+
+    // 0. Check for Direct ID (Legacy/Default support)
+    if (nodeMap.containsKey(target)) return target;
+
+    // 1. Check for Direct ID (@id:...)
+    if (target.startsWith('@id:')) {
+      final id = target.substring(4);
+      return nodeMap.containsKey(id) ? id : null;
+    }
+
+    // 2. Resolve Paths
+    final collectionId = ref.read(selectedCollectionProvider)?.id;
+    if (collectionId == null) return null;
+
+    String? currentParentId;
+    List<String> segments;
+
+    if (target.startsWith('/')) {
+      // Absolute Path from Collection Root
+      currentParentId = collectionId;
+      segments = target.split('/').where((s) => s.isNotEmpty).toList();
+    } else if (target.startsWith('./') || target.startsWith('../')) {
+      // Relative Path
+      if (contextId == null) {
+        currentParentId = collectionId;
+        segments = target.split('/').where((s) => s.isNotEmpty).toList();
+      } else {
+        final contextNode = nodeMap[contextId];
+        if (contextNode == null) return null;
+        currentParentId = contextNode.parentId ?? collectionId;
+        segments = target.split('/').where((s) => s.isNotEmpty).toList();
+      }
+    } else {
+      // Default: Absolute like Bruno
+      currentParentId = collectionId;
+      segments = target.split('/').where((s) => s.isNotEmpty).toList();
+    }
+
+    // Traverse
+    for (int i = 0; i < segments.length; i++) {
+      final name = segments[i];
+      final isLast = i == segments.length - 1;
+
+      if (name == '.') continue;
+      if (name == '..') {
+        if (currentParentId == collectionId) continue;
+        final parentNode = nodeMap[currentParentId];
+        currentParentId = parentNode?.parentId ?? collectionId;
+        continue;
+      }
+
+      Node? match;
+      for (final node in nodeMap.values) {
+        final pId = node.parentId;
+        bool parentMatches = false;
+        if (currentParentId == collectionId) {
+          parentMatches = (pId == collectionId || pId == null);
+        } else {
+          parentMatches = (pId == currentParentId);
+        }
+
+        if (parentMatches && node.name == name) {
+          match = node;
+          break;
+        }
+      }
+
+      if (match == null) return null;
+
+      if (isLast) {
+        return match is RequestNode ? match.id : null;
+      } else {
+        if (match is FolderNode) {
+          currentParentId = match.id;
+        } else {
+          // Path segment is file but not last
+          return null;
+        }
+      }
+    }
+    return null;
+  }
+}

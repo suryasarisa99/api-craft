@@ -238,7 +238,7 @@ List<MenuElement> _getFileSpecificMenuActions({
     MenuAction(
       title: 'Copy Id',
       callback: () {
-        Clipboard.setData(ClipboardData(text: node.id));
+        Clipboard.setData(ClipboardData(text: '@id:${node.id}'));
       },
     ),
   ];
