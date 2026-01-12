@@ -7,6 +7,7 @@ import 'package:sonner_toast/sonner_toast.dart';
 
 import 'package:window_manager/window_manager.dart'; // Use for better logging
 
+const kTopBarClr = Color(0xFF1B1B1B);
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   // doWhenWindowReady(() {

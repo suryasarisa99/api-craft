@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:api_craft/core/models/models.dart';
 import 'package:api_craft/core/network/raw/raw_http_req.dart';
+import 'package:api_craft/features/console/models/console_log_entry.dart';
+import 'package:api_craft/features/console/providers/console_logs_provider.dart';
 import 'package:api_craft/core/providers/providers.dart';
 import 'package:api_craft/core/providers/ref_provider.dart';
 import 'package:api_craft/core/services/env_service.dart';
@@ -37,7 +39,35 @@ class JsEngineService {
     // The value is the handler function which can be async and return a value directly.
     final handlers = <String, FutureOr<dynamic> Function(Map<String, dynamic>)>{
       'log': (args) {
-        debugPrint('JS:log: ${args['msg']}');
+        final list = args['args'] ?? [args['msg']?.toString() ?? ''];
+        debugPrint('JS:log: $list');
+        ref
+            .read(consoleLogsProvider.notifier)
+            .log(list, source: ConsoleLogSource.javascript);
+      },
+      'debug': (args) {
+        final list = args['args'] ?? [args['msg']?.toString() ?? ''];
+        ref
+            .read(consoleLogsProvider.notifier)
+            .debug(list, source: ConsoleLogSource.javascript);
+      },
+      'error': (args) {
+        final list = args['args'] ?? [args['msg']?.toString() ?? ''];
+        ref
+            .read(consoleLogsProvider.notifier)
+            .error(list, source: ConsoleLogSource.javascript);
+      },
+      'warn': (args) {
+        final list = args['args'] ?? [args['msg']?.toString() ?? ''];
+        ref
+            .read(consoleLogsProvider.notifier)
+            .warn(list, source: ConsoleLogSource.javascript);
+      },
+      'info': (args) {
+        final list = args['args'] ?? [args['msg']?.toString() ?? ''];
+        ref
+            .read(consoleLogsProvider.notifier)
+            .info(list, source: ConsoleLogSource.javascript);
       },
       'script_done': (args) {
         if (!scriptCompleter.isCompleted) {
@@ -226,6 +256,24 @@ class JsEngineService {
           orElse: () => ToastType.info,
         );
 
+        // Log to console
+        final level = toastType == ToastType.error
+            ? ConsoleLogLevel.error
+            : toastType == ToastType.warning
+            ? ConsoleLogLevel.warning
+            : ConsoleLogLevel.info;
+
+        ref
+            .read(consoleLogsProvider.notifier)
+            .add(
+              ConsoleLogEntry(
+                timestamp: DateTime.now(),
+                level: level,
+                source: ConsoleLogSource.system,
+                args: [msg, if (description != null) description],
+              ),
+            );
+
         Sonner.toast(
           duration: duration,
           builder: (context, close) => StandardToast(
@@ -409,8 +457,14 @@ class JsEngineService {
            return null;
         }
 
-        var console = { log: function(msg) { _send('log', {msg:msg}); } };
-        var log = function(msg) { _send('log', {msg:msg}); };
+        var console = { 
+            log: function(...args) { _send('log', {args:args}); },
+            debug: function(...args) { _send('debug', {args:args}); },
+            error: function(...args) { _send('error', {args:args}); },
+            warn: function(...args) { _send('warn', {args:args}); },
+            info: function(...args) { _send('info', {args:args}); }
+        };
+        var log = function(...args) { _send('log', {args:args}); };
         var prompt = async function(msg) { return _send('prompt', {msg: msg}); };
         
         function getReq(idOrPath) {

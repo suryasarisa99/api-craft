@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:api_craft/main.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:flutter/material.dart';
@@ -13,8 +14,6 @@ class TopBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    const topBarColor = Color.fromARGB(255, 27, 27, 27);
-
     return GestureDetector(
       onPanStart: (details) {
         windowManager.startDragging();
@@ -30,7 +29,7 @@ class TopBar extends ConsumerWidget {
       child: Ink(
         height: topBarHeight,
         decoration: BoxDecoration(
-          color: topBarColor,
+          color: kTopBarClr,
           border: Border(bottom: BorderSide(color: const Color(0xFF3D3D3D))),
         ),
         child: Row(

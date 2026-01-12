@@ -11,6 +11,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
 import 'package:multi_split_view/multi_split_view.dart';
+import 'package:api_craft/features/panel/bottom_panel.dart';
+import 'package:api_craft/features/panel/status_bar.dart';
+import 'package:api_craft/features/panel/panel_state_provider.dart';
 import 'package:suryaicons/bulk_rounded.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -34,31 +37,43 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   static const sideBarWidget = FileExplorerView();
   final debouncer = Debouncer(Duration(milliseconds: 500));
 
-  late final MultiSplitViewController _controller = MultiSplitViewController(
-    areas: [
-      Area(
-        id: 1,
-        min: sidebarMinWidth,
-        size: getInitialSidebarWidth(),
-        data: 'side-bar',
-      ),
-      Area(
-        id: 2,
-        flex: prefs.getDouble('request_flex') ?? 1,
-        data: 'request-tab',
-      ),
-      Area(
-        id: 3,
-        flex: prefs.getDouble('response_flex') ?? 1,
-        data: 'response-tab',
-      ),
-    ],
-  );
+  late final MultiSplitViewController _rootController =
+      MultiSplitViewController(
+        areas: [
+          Area(
+            id: 1,
+            min: sidebarMinWidth,
+            size: getInitialSidebarWidth(),
+            data: 'side-bar',
+          ),
+          Area(id: 2, flex: 1, data: 'main-content'),
+        ],
+      );
+
+  late final MultiSplitViewController _verticalController =
+      MultiSplitViewController(
+        areas: [
+          Area(data: 'content', flex: 1),
+          Area(data: 'bottom-panel', size: 0),
+        ],
+      );
+
+  late final MultiSplitViewController _reqResController =
+      MultiSplitViewController(
+        areas: [
+          Area(data: 'request-tab', flex: prefs.getDouble('request_flex') ?? 1),
+          Area(
+            data: 'response-tab',
+            flex: prefs.getDouble('response_flex') ?? 1,
+          ),
+        ],
+      );
 
   @override
   void initState() {
     super.initState();
-    _controller.addListener(_listener);
+    _rootController.addListener(_sidebarListener);
+    _reqResController.addListener(_reqResListener);
     WidgetsBinding.instance.addObserver(this);
     final hk = HardwareKeyboard.instance;
     hk.addHandler((event) {
@@ -66,6 +81,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       final ctrl = hk.isMetaPressed || hk.isControlPressed;
       if (ctrl && event.logicalKey == LogicalKeyboardKey.keyB) {
         toggleSidebar();
+        return true;
+      }
+      if (ctrl && event.logicalKey == LogicalKeyboardKey.keyJ) {
+        _toggleBottomPanel();
         return true;
       }
       return false;
@@ -84,28 +103,28 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     super.dispose();
   }
 
-  void _listener() {
-    final sidebarWidth = _controller.areas[0].size ?? 0;
-    final reqFlex = _controller.areas[1].flex;
-    final resFlex = _controller.areas[2].flex;
+  void _reqResListener() {
+    final reqFlex = _reqResController.areas[0].flex;
+    final resFlex = _reqResController.areas[1].flex;
+    debouncer.run(() {
+      prefs.setDouble('request_flex', reqFlex ?? 1);
+      prefs.setDouble('response_flex', resFlex ?? 1);
+    });
+  }
 
-    // key distinction: isSidebarVisible is TRUE during drag-to-close, but FALSE during toggle-close (checked before listener)
-    // Actually toggle sets manual=true immediately, so isSidebarVisible becomes false.
-    // So if width is small AND isSidebarVisible is true => It's a drag event.
+  void _sidebarListener() {
+    final sidebarWidth = _rootController.areas[0].size ?? 0;
+
     final isDragClose =
         sidebarWidth < (sidebarMinWidth + 2) && isSidebarVisible;
 
     debouncer.run(() {
       prefs.setDouble('sidebar_width', sidebarWidth);
-      prefs.setDouble('request_flex', reqFlex ?? 1);
-      prefs.setDouble('response_flex', resFlex ?? 1);
 
       if (isDragClose) {
-        // User dragged to close -> Open should reset to default (250)
         prefs.remove('last_valid_sidebar_width');
         prefs.setBool('sidebar_closed', true);
       } else {
-        // Normal state or Toggle Close
         if (sidebarWidth > 100) {
           prefs.setDouble('last_valid_sidebar_width', sidebarWidth);
         }
@@ -138,25 +157,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     windowWidth = getWindowWidth();
 
     if (windowWidth < sidebarThresholdWidth && isSidebarVisible) {
-      // small window + sidebar shows => auto close sidebar
       isSidebarAutoClosed = true;
       closeSidebar();
       setState(() {});
     } else if (windowWidth >= sidebarThresholdWidth) {
-      // large window + sidebar auto closed => reopen sidebar
       if (isSidebarAutoClosed) {
         isSidebarAutoClosed = false;
         openSidebar();
         setState(() {});
       }
-      // close scaffold may be if opened
       scaffoldKey.currentState?.closeDrawer();
     }
   }
 
   void closeSidebar() {
     setState(() {
-      _controller.areas[0].size = 0;
+      _rootController.areas[0].size = 0;
     });
     prefs.setDouble('sidebar_width', 0);
     prefs.setBool('sidebar_closed', true);
@@ -170,24 +186,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     }
 
     setState(() {
-      _controller.areas[0].size = restoreWidth;
+      _rootController.areas[0].size = restoreWidth;
     });
     prefs.setDouble('sidebar_width', restoreWidth);
     prefs.setBool('sidebar_closed', false);
-
-    // Also reset last valid if we just defaulted? No, keeping it is fine.
   }
 
   double getInitialSidebarWidth() {
     if (isSidebarManuallyClosed) {
       return 0;
     }
-    // Restoration logic on startup
     double width = prefs.getDouble('sidebar_width') ?? sidebarInitialWidth;
 
-    // If it was somehow saved as 0 but NOT marked as closed check last valid
     if (width < 50) {
-      // Try to recover
       width =
           prefs.getDouble('last_valid_sidebar_width') ?? sidebarInitialWidth;
     }
@@ -207,15 +218,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     }
 
     if (isSidebarVisible) {
-      // sidebar shows
       isSidebarManuallyClosed = true;
-      _controller.areas[0].size = 0;
+      _rootController.areas[0].size = 0;
       prefs.setBool('sidebar_closed', true);
       scaffoldKey.currentState?.closeDrawer();
     } else {
-      // sidebar closed
       if (smallWindow) {
-        // use drawer for small window
         scaffoldKey.currentState?.openDrawer();
       } else {
         openSidebar();
@@ -225,8 +233,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     setState(() {});
   }
 
+  void _toggleBottomPanel() {
+    ref.read(isBottomPanelVisibleProvider.notifier).toggle();
+  }
+
   @override
   Widget build(BuildContext context) {
+    final isBottomPanelVisible = ref.watch(isBottomPanelVisibleProvider);
+    final panelState = ref.watch(panelStateProvider);
+
+    if (!panelState.isMaximized) {
+      if (isBottomPanelVisible) {
+        if ((_verticalController.areas[1].size ?? 0) < 50) {
+          _verticalController.areas[1].size = 300;
+        }
+      } else {
+        _verticalController.areas[1].size = 0;
+      }
+    }
+
     return Scaffold(
       key: scaffoldKey,
       drawer: Container(
@@ -236,15 +261,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       ),
       body: Column(
         children: [
-          // const HomeTopBar(),
           TopBar(
             right: [],
             left: [
               IconButton(
                 onPressed: toggleSidebar,
-                // icon: Icon(
-                //   isSidebarVisible ? Icons.chevron_left : Icons.chevron_right,
-                // ),
                 icon: isSidebarVisible
                     ? const SuryaThemeIcon(BulkRounded.sidebarLeft01)
                     : const SuryaThemeIcon(BulkRounded.sidebarLeft),
@@ -255,7 +276,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               const EnvironmentButton(),
             ],
           ),
-          // Expanded(child: MultiSplitView(controller: _controller)),
           Expanded(
             child: MultiSplitViewTheme(
               data: MultiSplitViewThemeData(
@@ -268,16 +288,40 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                 ),
               ),
               child: MultiSplitView(
-                controller: _controller,
+                controller: _rootController,
                 builder: (context, area) {
                   switch (area.data) {
                     case 'side-bar':
-                      // return const FileExplorerView();
                       return sideBarWidget;
-                    case 'request-tab':
-                      return const ReqTabWrapper();
-                    case 'response-tab':
-                      return const ResponseTAb();
+                    case 'main-content':
+                      if (isBottomPanelVisible && panelState.isMaximized) {
+                        return const BottomPanel();
+                      }
+                      return MultiSplitView(
+                        axis: Axis.vertical,
+                        controller: _verticalController,
+                        builder: (context, vArea) {
+                          if (vArea.data == 'content') {
+                            return MultiSplitView(
+                              controller: _reqResController,
+                              builder: (context, rArea) {
+                                if (rArea.data == 'request-tab') {
+                                  return const ReqTabWrapper();
+                                }
+                                if (rArea.data == 'response-tab') {
+                                  return const ResponseTAb();
+                                }
+                                return const SizedBox.shrink();
+                              },
+                            );
+                          }
+                          if (vArea.data == 'bottom-panel') {
+                            return const BottomPanel();
+                          }
+                          return const SizedBox.shrink();
+                        },
+                      );
+
                     default:
                       return const SizedBox.shrink();
                   }
@@ -285,6 +329,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               ),
             ),
           ),
+          const StatusBar(),
         ],
       ),
     );
