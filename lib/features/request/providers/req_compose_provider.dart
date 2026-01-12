@@ -120,6 +120,10 @@ class ReqComposeNotifier extends Notifier<UiRequestContext> {
     _treeNotifier.updateFolderVariables(id, variables);
   }
 
+  void updateAssertions(List<AssertionDefinition> assertions) {
+    _treeNotifier.updateAssertions(id, assertions, persist: true);
+  }
+
   void addHistoryEntry(RawHttpResponse entry, {int limit = 10}) {
     // History State is managed by RequestDetailsProvider
     _detailsNotifier.addHistoryEntry(entry, limit: limit);

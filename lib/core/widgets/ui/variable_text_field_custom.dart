@@ -40,6 +40,7 @@ class VariableTextFieldCustom extends ConsumerStatefulWidget {
   final int? minLines;
   final bool isKeyVal;
   final TextStyle? textStyle;
+  final String? hintText;
 
   const VariableTextFieldCustom({
     super.key,
@@ -58,6 +59,7 @@ class VariableTextFieldCustom extends ConsumerStatefulWidget {
     this.minLines,
     this.isKeyVal = false,
     this.textStyle,
+    this.hintText,
   });
 
   @override
@@ -480,7 +482,7 @@ class _VariableTextFieldCustomState
               widget.decoration ??
               InputDecoration(
                 labelStyle: TextStyle(fontSize: 12),
-                hintText: widget.placeHolder,
+                hintText: widget.hintText ?? widget.placeHolder,
               ),
         ),
       ),

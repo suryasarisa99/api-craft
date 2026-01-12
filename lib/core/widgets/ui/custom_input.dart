@@ -18,6 +18,7 @@ class CustomInput extends StatefulWidget {
   final bool isExtra;
   final FocusNode? focusNode;
   final bool autofocus;
+  final String? hintText;
   // final String flowId;
 
   const CustomInput({
@@ -35,6 +36,7 @@ class CustomInput extends StatefulWidget {
     this.isEnabled = true,
     this.isExtra = false,
     this.onExtraInputChange,
+    this.hintText,
     super.key,
   });
 
@@ -72,6 +74,7 @@ class _CustomInputState extends State<CustomInput> {
   Widget build(BuildContext context) {
     return VariableTextFieldCustom(
       id: widget.id,
+      hintText: widget.hintText,
       enableSuggestions: widget.enableSuggestions,
       focusNode: widget.focusNode,
       controller: _controller,

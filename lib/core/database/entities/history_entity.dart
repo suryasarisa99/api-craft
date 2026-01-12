@@ -47,6 +47,7 @@ class HistoryEntity {
   String? finalUrl;
 
   String? testResultsJson;
+  String? assertionResultsJson;
 
   HistoryEntity({
     this.id = 0,
@@ -66,6 +67,7 @@ class HistoryEntity {
     this.redirectUrls,
     this.finalUrl,
     this.testResultsJson,
+    this.assertionResultsJson,
   });
 
   factory HistoryEntity.fromModel(RawHttpResponse model, String collectionId) {
@@ -89,6 +91,9 @@ class HistoryEntity {
       testResultsJson: jsonEncode(
         model.testResults.map((e) => e.toMap()).toList(),
       ),
+      assertionResultsJson: jsonEncode(
+        model.assertionResults.map((e) => e.toMap()).toList(),
+      ),
     );
   }
 
@@ -111,6 +116,16 @@ class HistoryEntity {
       }
     }
 
+    List<TestResult> assertions = [];
+    if (assertionResultsJson != null) {
+      try {
+        final List<dynamic> list = jsonDecode(assertionResultsJson!);
+        assertions = list.map((e) => TestResult.fromMap(e)).toList();
+      } catch (e) {
+        // failed to parse assertions
+      }
+    }
+
     return RawHttpResponse(
       id: uid,
       requestId: requestId,
@@ -127,6 +142,7 @@ class HistoryEntity {
       redirectUrls: redirectUrls ?? [],
       finalUrl: finalUrl,
       testResults: tests,
+      assertionResults: assertions,
     );
   }
 }

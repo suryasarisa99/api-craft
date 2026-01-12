@@ -12,6 +12,9 @@ import 'package:api_craft/core/services/script_execution_service.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:api_craft/features/request/models/node_model.dart';
+import 'package:api_craft/core/services/assertion_service.dart';
+
 class HttpService {
   Future<RawHttpResponse> run(
     Ref ref,
@@ -141,10 +144,23 @@ class HttpService {
         }
       }
 
-      // 5. Update Response with Tests
-      response = response.copyWith(testResults: allTestResults);
+      // 5. Evaluate Assertions
+      List<TestResult> assertionResults = [];
+      final node = ref.read(fileTreeProvider).nodeMap[requestId];
+      if (node is RequestNode && node.reqConfig.assertions.isNotEmpty) {
+        assertionResults = AssertionService.evaluate(
+          node.reqConfig.assertions,
+          response,
+        );
+      }
 
-      // 6. Store into History
+      // 6. Update Response with Tests & Assertions
+      response = response.copyWith(
+        testResults: allTestResults,
+        assertionResults: assertionResults,
+      );
+
+      // 7. Store into History
       if (isActiveReq) {
         composer?.addHistoryEntry(response);
       } else {

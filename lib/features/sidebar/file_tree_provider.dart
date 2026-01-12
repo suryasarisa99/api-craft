@@ -382,6 +382,31 @@ class FileTreeNotifier extends Notifier<TreeData> {
     }
   }
 
+  void updateAssertions(
+    String id,
+    List<AssertionDefinition> assertions, {
+    bool persist = false,
+  }) {
+    final node = map[id];
+    if (node == null) return;
+
+    // Both Request and Folder can have assertions if we extended FolderNode to support it fully in UI,
+    // but primarily RequestNode for now according to requirements.
+    // However, NodeConfig has assertions, so both support it.
+
+    if (node is RequestNode) {
+      updateNode(
+        node.copyWith(config: node.config.copyWith(assertions: assertions)),
+        persist: persist,
+      );
+    } else if (node is FolderNode) {
+      updateNode(
+        node.copyWith(config: node.config.copyWith(assertions: assertions)),
+        persist: persist,
+      );
+    }
+  }
+
   void updateStatusCode(String id, int statusCode) {
     final node = map[id];
     if (node is RequestNode) {

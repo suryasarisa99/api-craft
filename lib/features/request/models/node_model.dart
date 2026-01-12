@@ -35,6 +35,13 @@ abstract class Node<T extends NodeConfig> {
         .toList();
   }
 
+  static List<AssertionDefinition> parseAssertions(dynamic source) {
+    if (source == null || source == '') return [];
+    return (source as List)
+        .map((e) => AssertionDefinition.fromMap(e as Map<String, dynamic>))
+        .toList();
+  }
+
   // --- Factory ---
   static Node<NodeConfig> fromMap(Map<String, dynamic> map) {
     if (map['type'] == NodeType.folder.toString()) {
@@ -102,6 +109,9 @@ class FolderNode extends Node<FolderNodeConfig> {
     folderConfig.postRequestScript = details['post_request_script'];
     folderConfig.testScript = details['test_script'] ?? details['scripts'];
 
+    // Assertions
+    folderConfig.assertions = Node.parseAssertions(details['assertions']);
+
     // 2. Mark as loaded
     folderConfig.isDetailLoaded = true;
 
@@ -128,6 +138,7 @@ class FolderNode extends Node<FolderNodeConfig> {
         preRequestScript: map['pre_request_script'],
         postRequestScript: map['post_request_script'],
         testScript: map['test_script'] ?? map['scripts'],
+        assertions: hasDetails ? Node.parseAssertions(map['assertions']) : [],
       ),
     );
   }
@@ -168,6 +179,7 @@ class FolderNode extends Node<FolderNodeConfig> {
       'pre_request_script': folderConfig.preRequestScript,
       'post_request_script': folderConfig.postRequestScript,
       'test_script': folderConfig.testScript,
+      'assertions': folderConfig.assertions.map((e) => e.toMap()).toList(),
     };
   }
 
@@ -255,6 +267,7 @@ class RequestNode extends Node<RequestNodeConfig> {
     config.preRequestScript = details['pre_request_script'];
     config.postRequestScript = details['post_request_script'];
     config.testScript = details['test_script'] ?? details['scripts'];
+    config.assertions = Node.parseAssertions(details['assertions']);
     config.historyId = details['history_id'];
     config.isDetailLoaded = true;
   }
@@ -292,6 +305,7 @@ class RequestNode extends Node<RequestNodeConfig> {
         preRequestScript: map['pre_request_script'],
         postRequestScript: map['post_request_script'],
         testScript: map['test_script'] ?? map['scripts'],
+        assertions: hasDetails ? Node.parseAssertions(map['assertions']) : [],
         historyId: map['history_id'],
       ),
     );
@@ -347,6 +361,7 @@ class RequestNode extends Node<RequestNodeConfig> {
       'post_request_script': reqConfig.postRequestScript,
       'test_script': reqConfig.testScript,
       'scripts': reqConfig.testScript, // Legacy alias
+      'assertions': reqConfig.assertions.map((e) => e.toMap()).toList(),
     };
   }
 

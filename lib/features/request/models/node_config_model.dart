@@ -1,6 +1,55 @@
 import 'package:nanoid/nanoid.dart';
 import '../../../core/models/models.dart';
 
+class AssertionDefinition {
+  final String id;
+  String expression;
+  String operator;
+  String expectedValue;
+  bool isEnabled;
+
+  AssertionDefinition({
+    String? id,
+    this.expression = '',
+    this.operator = 'equal',
+    this.expectedValue = '',
+    this.isEnabled = true,
+  }) : id = id ?? nanoid(8);
+
+  factory AssertionDefinition.fromMap(Map<String, dynamic> map) {
+    return AssertionDefinition(
+      id: map['id'],
+      expression: map['expression'] ?? '',
+      operator: map['operator'] ?? 'equal',
+      expectedValue: map['expectedValue'] ?? '',
+      isEnabled: map['isEnabled'] ?? true,
+    );
+  }
+
+  Map<String, dynamic> toMap() => {
+    'id': id,
+    'expression': expression,
+    'operator': operator,
+    'expectedValue': expectedValue,
+    'isEnabled': isEnabled,
+  };
+
+  AssertionDefinition copyWith({
+    String? expression,
+    String? operator,
+    String? expectedValue,
+    bool? isEnabled,
+  }) {
+    return AssertionDefinition(
+      id: id,
+      expression: expression ?? this.expression,
+      operator: operator ?? this.operator,
+      expectedValue: expectedValue ?? this.expectedValue,
+      isEnabled: isEnabled ?? this.isEnabled,
+    );
+  }
+}
+
 abstract class NodeConfig {
   List<KeyValueItem> headers;
   AuthData auth;
@@ -10,6 +59,8 @@ abstract class NodeConfig {
   String? postRequestScript;
   String? testScript;
 
+  List<AssertionDefinition> assertions;
+
   NodeConfig({
     List<KeyValueItem>? headers,
     this.auth = const AuthData(),
@@ -18,7 +69,10 @@ abstract class NodeConfig {
     this.preRequestScript,
     this.postRequestScript,
     this.testScript,
-  }) : headers = headers ?? [];
+
+    List<AssertionDefinition>? assertions,
+  }) : headers = headers ?? [],
+       assertions = assertions ?? [];
 
   NodeConfig copyWith({
     List<KeyValueItem>? headers,
@@ -27,11 +81,13 @@ abstract class NodeConfig {
     bool? isDetailLoaded,
     String? preRequestScript,
     String? postRequestScript,
+
     String? testScript,
+    List<AssertionDefinition>? assertions,
   });
   @override
   String toString() {
-    return ':::NodeConfig:::\n  description: $description\n  headers: ${headers.length}\n isDetailLoaded: $isDetailLoaded\n';
+    return ':::NodeConfig:::\n  description: $description\n  headers: ${headers.length}\n assertions: ${assertions.length}\n isDetailLoaded: $isDetailLoaded\n';
   }
 
   NodeConfig clone();
@@ -48,6 +104,7 @@ class FolderNodeConfig extends NodeConfig {
     super.preRequestScript,
     super.postRequestScript,
     super.testScript,
+    super.assertions,
     List<KeyValueItem>? variables,
   }) : variables = variables ?? [];
 
@@ -62,6 +119,7 @@ class FolderNodeConfig extends NodeConfig {
     String? preRequestScript,
     String? postRequestScript,
     String? testScript,
+    List<AssertionDefinition>? assertions,
     List<KeyValueItem>? variables,
   }) {
     return FolderNodeConfig(
@@ -72,6 +130,7 @@ class FolderNodeConfig extends NodeConfig {
       preRequestScript: preRequestScript ?? this.preRequestScript,
       postRequestScript: postRequestScript ?? this.postRequestScript,
       testScript: testScript ?? this.testScript,
+      assertions: assertions ?? this.assertions,
       variables: variables ?? this.variables,
     );
   }
@@ -86,6 +145,10 @@ class FolderNodeConfig extends NodeConfig {
       preRequestScript: preRequestScript,
       postRequestScript: postRequestScript,
       testScript: testScript,
+
+      assertions: List<AssertionDefinition>.from(
+        assertions.map((e) => e.copyWith()),
+      ),
       variables: List<KeyValueItem>.from(variables),
     );
   }
@@ -103,7 +166,8 @@ class RequestNodeConfig extends NodeConfig {
     super.isDetailLoaded,
     super.preRequestScript,
     super.postRequestScript,
-    super.testScript,
+    super.testScript, // Add this
+    super.assertions,
     required this.queryParameters,
     this.bodyType,
     this.historyId,
@@ -125,6 +189,7 @@ class RequestNodeConfig extends NodeConfig {
     String? postRequestScript,
     String? testScript,
     String? historyId,
+    List<AssertionDefinition>? assertions,
 
     // force historyId to null
     bool forceNullHistoryId = false,
@@ -140,6 +205,7 @@ class RequestNodeConfig extends NodeConfig {
       description: description ?? this.description,
       isDetailLoaded: isDetailLoaded ?? this.isDetailLoaded,
       historyId: forceNullHistoryId ? null : historyId ?? this.historyId,
+      assertions: assertions ?? this.assertions,
     );
   }
 
@@ -155,6 +221,10 @@ class RequestNodeConfig extends NodeConfig {
       preRequestScript: preRequestScript,
       postRequestScript: postRequestScript,
       testScript: testScript,
+
+      assertions: List<AssertionDefinition>.from(
+        assertions.map((e) => e.copyWith()),
+      ),
       historyId: historyId,
     );
   }

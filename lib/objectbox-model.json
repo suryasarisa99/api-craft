@@ -142,7 +142,7 @@
     },
     {
       "id": "4:1589747562368478009",
-      "lastPropertyId": "17:1668853121119644400",
+      "lastPropertyId": "18:437133856617834985",
       "name": "HistoryEntity",
       "properties": [
         {
@@ -236,13 +236,18 @@
           "id": "17:1668853121119644400",
           "name": "testResultsJson",
           "type": 9
+        },
+        {
+          "id": "18:437133856617834985",
+          "name": "assertionResultsJson",
+          "type": 9
         }
       ],
       "relations": []
     },
     {
       "id": "5:7045792345788763009",
-      "lastPropertyId": "22:4227094779604650812",
+      "lastPropertyId": "23:6704107075947963788",
       "name": "NodeEntity",
       "properties": [
         {
@@ -361,6 +366,11 @@
           "id": "22:4227094779604650812",
           "name": "postRequestScript",
           "type": 9
+        },
+        {
+          "id": "23:6704107075947963788",
+          "name": "assertions",
+          "type": 13
         }
       ],
       "relations": []

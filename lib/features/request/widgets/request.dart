@@ -7,6 +7,7 @@ import 'package:api_craft/features/request/widgets/tabs/headers_tab.dart';
 import 'package:api_craft/features/request/widgets/tabs/query_params.dart';
 import 'package:api_craft/features/request/widgets/tabs/body_tab.dart';
 import 'package:api_craft/features/request/widgets/tabs/script_tab.dart';
+import 'package:api_craft/features/request/widgets/tabs/assertions_tab.dart';
 import 'package:api_craft/features/request/widgets/tabs/tab_titles.dart';
 
 import 'package:flutter/material.dart';
@@ -56,10 +57,11 @@ class _RequestTabState extends ConsumerState<RequestTab>
       child: AuthTab(id: widget.node.id),
     ),
     ScriptTab(id: widget.node.id),
+    AssertionsTab(id: widget.node.id),
   ];
 
   late final TabController _tabController = TabController(
-    length: 5,
+    length: 6,
     vsync: this,
   );
 
@@ -168,6 +170,22 @@ class _RequestTabState extends ConsumerState<RequestTab>
                 ),
                 AuthTabHeader(widget.node.id, controller: _tabController),
                 const Tab(text: "Scripts"),
+                Consumer(
+                  builder: (context, ref, child) {
+                    final assertCount = ref.watch(
+                      _provider.select(
+                        (value) => (value.node as RequestNode)
+                            .reqConfig
+                            .assertions
+                            .length,
+                      ),
+                    );
+                    return Tab(
+                      text:
+                          "Asserts${assertCount > 0 ? ' ($assertCount)' : ''}",
+                    );
+                  },
+                ),
               ],
             ),
           ),

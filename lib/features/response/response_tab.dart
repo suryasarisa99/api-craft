@@ -250,7 +250,10 @@ class _ResponseTAbState extends ConsumerState<ResponseTAb>
                         ),
                       ),
                       const Tab(text: "Headers"),
-                      Tab(text: "Tests (${response!.testResults.length})"),
+                      Tab(
+                        text:
+                            "Tests (${response!.testResults.length + response!.assertionResults.length})",
+                      ),
                       const Tab(text: "Info"),
                     ],
                   ),
@@ -262,7 +265,10 @@ class _ResponseTAbState extends ConsumerState<ResponseTAb>
                     children: [
                       ResponseBodyTab(response: response, mode: _bodyViewMode),
                       ResponseHeaders(id: id),
-                      TestsResultTab(results: response.testResults),
+                      TestsResultTab(
+                        results: response.testResults,
+                        assertionResults: response.assertionResults,
+                      ),
                       ResponseInfoTab(response: response),
                     ],
                   ),

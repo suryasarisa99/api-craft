@@ -42,6 +42,7 @@ class RawHttpResponse {
   final List<String> redirectUrls;
   final String? finalUrl;
   final List<TestResult> testResults;
+  final List<TestResult> assertionResults;
 
   RawHttpResponse({
     required this.id,
@@ -60,6 +61,7 @@ class RawHttpResponse {
     this.redirectUrls = const [],
     this.finalUrl,
     this.testResults = const [],
+    this.assertionResults = const [],
   });
 
   RawHttpResponse copyWith({
@@ -78,6 +80,7 @@ class RawHttpResponse {
     List<String>? redirectUrls,
     String? finalUrl,
     List<TestResult>? testResults,
+    List<TestResult>? assertionResults,
   }) {
     return RawHttpResponse(
       id: id ?? this.id,
@@ -95,6 +98,7 @@ class RawHttpResponse {
       redirectUrls: redirectUrls ?? this.redirectUrls,
       finalUrl: finalUrl ?? this.finalUrl,
       testResults: testResults ?? this.testResults,
+      assertionResults: assertionResults ?? this.assertionResults,
     );
   }
 
@@ -128,6 +132,11 @@ class RawHttpResponse {
               ?.map((e) => TestResult.fromMap(e))
               .toList() ??
           [],
+      assertionResults:
+          (map['assertion_results'] as List?)
+              ?.map((e) => TestResult.fromMap(e))
+              .toList() ??
+          [],
     );
   }
 
@@ -149,6 +158,7 @@ class RawHttpResponse {
       'redirect_urls': redirectUrls,
       'final_url': finalUrl,
       'test_results': testResults.map((e) => e.toMap()).toList(),
+      'assertion_results': assertionResults.map((e) => e.toMap()).toList(),
     };
   }
 
@@ -168,6 +178,7 @@ class RawHttpResponse {
       'redirectUrls': redirectUrls,
       'finalUrl': finalUrl,
       'testResults': testResults.map((e) => e.toMap()).toList(),
+      'assertionResults': assertionResults.map((e) => e.toMap()).toList(),
     };
   }
 }

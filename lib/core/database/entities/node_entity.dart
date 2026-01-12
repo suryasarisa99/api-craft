@@ -43,6 +43,7 @@ class NodeEntity {
 
   // Folder specific - List<Map>
   List<Map<String, dynamic>>? variables;
+  List<Map<String, dynamic>>? assertions; // New field for assertions
 
   NodeEntity({
     this.id = 0,
@@ -66,6 +67,7 @@ class NodeEntity {
     this.historyId,
     this.description,
     this.variables,
+    this.assertions,
     this.statusCode,
   });
 
@@ -95,7 +97,9 @@ class NodeEntity {
             .map((e) => e.toMap())
             .toList(),
         description: node.reqConfig.description,
+
         historyId: node.reqConfig.historyId,
+        assertions: node.reqConfig.assertions.map((e) => e.toMap()).toList(),
       );
     } else if (node is FolderNode) {
       return NodeEntity(
@@ -112,7 +116,9 @@ class NodeEntity {
         description: node.folderConfig.description,
         preRequestScript: node.folderConfig.preRequestScript,
         postRequestScript: node.folderConfig.postRequestScript,
+
         scripts: node.folderConfig.testScript,
+        assertions: node.folderConfig.assertions.map((e) => e.toMap()).toList(),
       );
     }
     throw UnimplementedError("Unknown node type");
@@ -135,7 +141,11 @@ class NodeEntity {
               variables?.map((e) => KeyValueItem.fromMap(e)).toList() ?? [],
           preRequestScript: preRequestScript,
           postRequestScript: postRequestScript,
+
           testScript: scripts,
+          assertions:
+              assertions?.map((e) => AssertionDefinition.fromMap(e)).toList() ??
+              [],
         ),
       );
     } else {
@@ -162,8 +172,12 @@ class NodeEntity {
           bodyType: bodyType,
           preRequestScript: preRequestScript,
           postRequestScript: postRequestScript,
+
           testScript: scripts,
           historyId: historyId,
+          assertions:
+              assertions?.map((e) => AssertionDefinition.fromMap(e)).toList() ??
+              [],
         ),
       );
     }
