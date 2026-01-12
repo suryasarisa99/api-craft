@@ -350,21 +350,7 @@ class EnvironmentNotifier extends Notifier<EnvironmentState> {
   ) async {
     final jar = state.cookieJars.firstWhere((j) => j.id == jarId);
 
-    final currentCookies = List<CookieDef>.from(jar.cookies);
-
-    for (final nc in newCookies) {
-      final idx = currentCookies.indexWhere(
-        (c) => c.key == nc.key && c.domain == nc.domain && c.path == nc.path,
-      );
-
-      if (idx != -1) {
-        currentCookies[idx] = nc;
-      } else {
-        currentCookies.add(nc);
-      }
-    }
-
-    final updatedJar = jar.copyWith(cookies: currentCookies);
+    final updatedJar = jar.copyWith(cookies: newCookies);
     await updateCookieJar(updatedJar);
   }
 }

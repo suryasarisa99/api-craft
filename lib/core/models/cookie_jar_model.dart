@@ -1,4 +1,7 @@
+import 'package:nanoid/nanoid.dart';
+
 class CookieDef {
+  final String id;
   final String domain;
   final String path;
   final String key;
@@ -10,6 +13,7 @@ class CookieDef {
   final bool isEnabled;
 
   CookieDef({
+    String? id,
     this.domain = '',
     this.path = '/',
     required this.key,
@@ -19,10 +23,11 @@ class CookieDef {
     this.isHostOnly = false,
     this.expires,
     this.isEnabled = true,
-  });
+  }) : id = id ?? nanoid();
 
   Map<String, dynamic> toMap() {
     return {
+      'id': id,
       'domain': domain,
       'path': path,
       'key': key,
@@ -37,6 +42,7 @@ class CookieDef {
 
   factory CookieDef.fromMap(Map<String, dynamic> map) {
     return CookieDef(
+      id: map['id'],
       domain: map['domain'] ?? '',
       path: map['path'] ?? '/',
       key: map['key'] ?? '',
@@ -50,6 +56,7 @@ class CookieDef {
   }
 
   CookieDef copyWith({
+    String? id,
     String? domain,
     String? path,
     String? key,
@@ -61,6 +68,7 @@ class CookieDef {
     bool? isEnabled,
   }) {
     return CookieDef(
+      id: id ?? this.id,
       domain: domain ?? this.domain,
       path: path ?? this.path,
       key: key ?? this.key,

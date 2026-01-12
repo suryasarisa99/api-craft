@@ -36,6 +36,7 @@ class CookieJarEditorDialog extends ConsumerWidget {
                     itemBuilder: (context, index) {
                       final cookie = jar.cookies[index];
                       return Card(
+                        key: ValueKey(cookie.id),
                         color: Colors.white10,
                         margin: const EdgeInsets.only(bottom: 8),
                         child: Padding(
