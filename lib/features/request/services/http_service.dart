@@ -7,6 +7,7 @@ import 'package:api_craft/core/network/raw/raw_http_req.dart';
 import 'package:api_craft/core/models/models.dart';
 import 'package:api_craft/core/providers/providers.dart';
 import 'package:api_craft/core/services/js_engine.dart';
+import 'package:api_craft/core/services/script_execution_service.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -30,6 +31,20 @@ class HttpService {
         context: context,
       );
       debugPrint('Executing request to URL: ${req.uri}');
+
+      // 1. Run Pre-Request Script
+      final preScripts = ref
+          .read(scriptExecutionProvider)
+          .getScriptsToRun(requestId, ScriptType.preRequest);
+
+      if (preScripts.isNotEmpty) {
+        debugPrint("Running ${preScripts.length} pre-request scripts...");
+        for (final script in preScripts) {
+          await ref
+              .read(jsEngineProvider)
+              .executeScript(script, context: context);
+        }
+      }
 
       composer?.startSending();
       final response = await sendRawHttp(
@@ -90,12 +105,28 @@ class HttpService {
       }
 
       // 4. Run Scripts
-      final scripts = req.request.reqConfig.scripts;
-      if (scripts != null && scripts.isNotEmpty) {
-        debugPrint("Running post-response script...");
-        await ref
-            .read(jsEngineProvider)
-            .executeScript(scripts, response: response, context: context);
+      final postScripts = ref
+          .read(scriptExecutionProvider)
+          .getScriptsToRun(requestId, ScriptType.postRequest);
+      if (postScripts.isNotEmpty) {
+        debugPrint("Running ${postScripts.length} post-request scripts...");
+        for (final script in postScripts) {
+          await ref
+              .read(jsEngineProvider)
+              .executeScript(script, response: response, context: context);
+        }
+      }
+
+      final testScripts = ref
+          .read(scriptExecutionProvider)
+          .getScriptsToRun(requestId, ScriptType.test);
+      if (testScripts.isNotEmpty) {
+        debugPrint("Running ${testScripts.length} test scripts...");
+        for (final script in testScripts) {
+          await ref
+              .read(jsEngineProvider)
+              .executeScript(script, response: response, context: context);
+        }
       }
 
       composer?.finishSending();

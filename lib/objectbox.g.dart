@@ -292,7 +292,7 @@ final _entities = <obx_int.ModelEntity>[
   obx_int.ModelEntity(
     id: const obx_int.IdUid(5, 7045792345788763009),
     name: 'NodeEntity',
-    lastPropertyId: const obx_int.IdUid(20, 5331732017826239985),
+    lastPropertyId: const obx_int.IdUid(22, 4227094779604650812),
     flags: 0,
     properties: <obx_int.ModelProperty>[
       obx_int.ModelProperty(
@@ -416,6 +416,18 @@ final _entities = <obx_int.ModelEntity>[
         id: const obx_int.IdUid(20, 5331732017826239985),
         name: 'statusCode',
         type: 6,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(21, 7277178374742236862),
+        name: 'preRequestScript',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(22, 4227094779604650812),
+        name: 'postRequestScript',
+        type: 9,
         flags: 0,
       ),
     ],
@@ -996,7 +1008,13 @@ obx_int.ModelDefinition getObjectBoxModel() {
         final variablesOffset = object.variables == null
             ? null
             : fbb.writeListInt8(obx_int.toFlexBuffer(object.variables!));
-        fbb.startTable(21);
+        final preRequestScriptOffset = object.preRequestScript == null
+            ? null
+            : fbb.writeString(object.preRequestScript!);
+        final postRequestScriptOffset = object.postRequestScript == null
+            ? null
+            : fbb.writeString(object.postRequestScript!);
+        fbb.startTable(23);
         fbb.addInt64(0, object.id);
         fbb.addOffset(1, uidOffset);
         fbb.addOffset(2, collectionIdOffset);
@@ -1017,6 +1035,8 @@ obx_int.ModelDefinition getObjectBoxModel() {
         fbb.addOffset(17, descriptionOffset);
         fbb.addOffset(18, variablesOffset);
         fbb.addInt64(19, object.statusCode);
+        fbb.addOffset(20, preRequestScriptOffset);
+        fbb.addOffset(21, postRequestScriptOffset);
         fbb.finish(fbb.endTable());
         return object.id;
       },
@@ -1076,6 +1096,12 @@ obx_int.ModelDefinition getObjectBoxModel() {
         final bodyTypeParam = const fb.StringReader(
           asciiOptimization: true,
         ).vTableGetNullable(buffer, rootOffset, 32);
+        final preRequestScriptParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGetNullable(buffer, rootOffset, 44);
+        final postRequestScriptParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGetNullable(buffer, rootOffset, 46);
         final scriptsParam = const fb.StringReader(
           asciiOptimization: true,
         ).vTableGetNullable(buffer, rootOffset, 34);
@@ -1111,6 +1137,8 @@ obx_int.ModelDefinition getObjectBoxModel() {
           queryParameters: queryParametersParam,
           body: bodyParam,
           bodyType: bodyTypeParam,
+          preRequestScript: preRequestScriptParam,
+          postRequestScript: postRequestScriptParam,
           scripts: scriptsParam,
           historyId: historyIdParam,
           description: descriptionParam,
@@ -1523,6 +1551,16 @@ class NodeEntity_ {
   /// See [NodeEntity.statusCode].
   static final statusCode = obx.QueryIntegerProperty<NodeEntity>(
     _entities[4].properties[19],
+  );
+
+  /// See [NodeEntity.preRequestScript].
+  static final preRequestScript = obx.QueryStringProperty<NodeEntity>(
+    _entities[4].properties[20],
+  );
+
+  /// See [NodeEntity.postRequestScript].
+  static final postRequestScript = obx.QueryStringProperty<NodeEntity>(
+    _entities[4].properties[21],
   );
 }
 

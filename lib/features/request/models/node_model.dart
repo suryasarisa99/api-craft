@@ -97,6 +97,11 @@ class FolderNode extends Node<FolderNodeConfig> {
 
     folderConfig.variables = Node.parseKeyValueItems(details['variables']);
 
+    // Scripts
+    folderConfig.preRequestScript = details['pre_request_script'];
+    folderConfig.postRequestScript = details['post_request_script'];
+    folderConfig.testScript = details['test_script'] ?? details['scripts'];
+
     // 2. Mark as loaded
     folderConfig.isDetailLoaded = true;
 
@@ -120,6 +125,9 @@ class FolderNode extends Node<FolderNodeConfig> {
             ? AuthData.fromMap(map['auth'])
             : const AuthData(),
         variables: hasDetails ? Node.parseKeyValueItems(map['variables']) : [],
+        preRequestScript: map['pre_request_script'],
+        postRequestScript: map['post_request_script'],
+        testScript: map['test_script'] ?? map['scripts'],
       ),
     );
   }
@@ -157,6 +165,9 @@ class FolderNode extends Node<FolderNodeConfig> {
       'headers': folderConfig.headers.map((e) => e.toMap()).toList(),
       'auth': folderConfig.auth.toMap(),
       'variables': folderConfig.variables.map((e) => e.toMap()).toList(),
+      'pre_request_script': folderConfig.preRequestScript,
+      'post_request_script': folderConfig.postRequestScript,
+      'test_script': folderConfig.testScript,
     };
   }
 
@@ -241,7 +252,9 @@ class RequestNode extends Node<RequestNodeConfig> {
       details['query_parameters'],
     );
     config.bodyType = details['body_type'];
-    config.scripts = details['scripts'];
+    config.preRequestScript = details['pre_request_script'];
+    config.postRequestScript = details['post_request_script'];
+    config.testScript = details['test_script'] ?? details['scripts'];
     config.historyId = details['history_id'];
     config.isDetailLoaded = true;
   }
@@ -276,7 +289,9 @@ class RequestNode extends Node<RequestNodeConfig> {
             ? Node.parseKeyValueItems(map['query_parameters'])
             : [],
         bodyType: map['body_type'],
-        scripts: map['scripts'],
+        preRequestScript: map['pre_request_script'],
+        postRequestScript: map['post_request_script'],
+        testScript: map['test_script'] ?? map['scripts'],
         historyId: map['history_id'],
       ),
     );
@@ -328,7 +343,10 @@ class RequestNode extends Node<RequestNodeConfig> {
           .map((e) => e.toMap())
           .toList(),
       'body_type': reqConfig.bodyType,
-      'scripts': reqConfig.scripts,
+      'pre_request_script': reqConfig.preRequestScript,
+      'post_request_script': reqConfig.postRequestScript,
+      'test_script': reqConfig.testScript,
+      'scripts': reqConfig.testScript, // Legacy alias
     };
   }
 

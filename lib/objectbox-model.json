@@ -237,7 +237,7 @@
     },
     {
       "id": "5:7045792345788763009",
-      "lastPropertyId": "20:5331732017826239985",
+      "lastPropertyId": "22:4227094779604650812",
       "name": "NodeEntity",
       "properties": [
         {
@@ -346,6 +346,16 @@
           "id": "20:5331732017826239985",
           "name": "statusCode",
           "type": 6
+        },
+        {
+          "id": "21:7277178374742236862",
+          "name": "preRequestScript",
+          "type": 9
+        },
+        {
+          "id": "22:4227094779604650812",
+          "name": "postRequestScript",
+          "type": 9
         }
       ],
       "relations": []

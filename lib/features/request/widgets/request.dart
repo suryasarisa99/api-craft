@@ -39,10 +39,22 @@ class _RequestTabState extends ConsumerState<RequestTab>
     with SingleTickerProviderStateMixin {
   /// tabs
   late final List<Widget> children = [
-    BodyTab(id: widget.node.id),
-    QueryParamsTab(id: widget.node.id),
-    HeadersTab(id: widget.node.id),
-    AuthTab(id: widget.node.id),
+    Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: BodyTab(id: widget.node.id),
+    ),
+    Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: QueryParamsTab(id: widget.node.id),
+    ),
+    Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: HeadersTab(id: widget.node.id),
+    ),
+    Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: AuthTab(id: widget.node.id),
+    ),
     ScriptTab(id: widget.node.id),
   ];
 
@@ -159,7 +171,6 @@ class _RequestTabState extends ConsumerState<RequestTab>
               ],
             ),
           ),
-          const SizedBox(height: 12),
           Expanded(
             child: LazyLoadIndexedStack(index: _index, children: children),
           ),

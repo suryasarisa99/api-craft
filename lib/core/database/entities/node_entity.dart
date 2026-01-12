@@ -35,6 +35,8 @@ class NodeEntity {
 
   String? body;
   String? bodyType;
+  String? preRequestScript;
+  String? postRequestScript;
   String? scripts;
   String? historyId;
   String? description;
@@ -58,6 +60,8 @@ class NodeEntity {
     this.queryParameters,
     this.body,
     this.bodyType,
+    this.preRequestScript,
+    this.postRequestScript,
     this.scripts,
     this.historyId,
     this.description,
@@ -81,7 +85,9 @@ class NodeEntity {
         // body not available in RequestNode, set null (repo must preserve it)
         body: null,
         bodyType: node.reqConfig.bodyType,
-        scripts: node.reqConfig.scripts,
+        preRequestScript: node.reqConfig.preRequestScript,
+        postRequestScript: node.reqConfig.postRequestScript,
+        scripts: node.reqConfig.testScript,
         statusCode: node.statusCode,
         headers: node.reqConfig.headers.map((e) => e.toMap()).toList(),
         auth: node.reqConfig.auth.toMap(),
@@ -104,6 +110,9 @@ class NodeEntity {
         headers: node.folderConfig.headers.map((e) => e.toMap()).toList(),
         auth: node.folderConfig.auth.toMap(),
         description: node.folderConfig.description,
+        preRequestScript: node.folderConfig.preRequestScript,
+        postRequestScript: node.folderConfig.postRequestScript,
+        scripts: node.folderConfig.testScript,
       );
     }
     throw UnimplementedError("Unknown node type");
@@ -124,6 +133,9 @@ class NodeEntity {
           auth: auth != null ? AuthData.fromMap(auth!) : const AuthData(),
           variables:
               variables?.map((e) => KeyValueItem.fromMap(e)).toList() ?? [],
+          preRequestScript: preRequestScript,
+          postRequestScript: postRequestScript,
+          testScript: scripts,
         ),
       );
     } else {
@@ -148,7 +160,9 @@ class NodeEntity {
               queryParameters?.map((e) => KeyValueItem.fromMap(e)).toList() ??
               [],
           bodyType: bodyType,
-          scripts: scripts,
+          preRequestScript: preRequestScript,
+          postRequestScript: postRequestScript,
+          testScript: scripts,
           historyId: historyId,
         ),
       );

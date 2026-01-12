@@ -2,8 +2,6 @@ import 'package:api_craft/features/request/providers/request_details_provider.da
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:api_craft/core/models/models.dart';
 import 'package:api_craft/core/providers/providers.dart';
-import 'package:api_craft/features/collection/collection_model.dart';
-import 'package:api_craft/features/collection/collections_provider.dart';
 
 final reqComposeProvider = NotifierProvider.autoDispose
     .family<ReqComposeNotifier, UiRequestContext, String>(
@@ -82,8 +80,16 @@ class ReqComposeNotifier extends Notifier<UiRequestContext> {
     _treeNotifier.updateQueryParameters(id, queryParameters);
   }
 
-  void updateScripts(String scripts) {
-    _treeNotifier.updateScripts(id, scripts);
+  void updateTestScript(String script) {
+    _treeNotifier.updateTestScript(id, script);
+  }
+
+  void updatePreRequestScript(String script) {
+    _treeNotifier.updatePreRequestScript(id, script);
+  }
+
+  void updatePostRequestScript(String script) {
+    _treeNotifier.updatePostRequestScript(id, script);
   }
 
   void updateBodyText(String text) {

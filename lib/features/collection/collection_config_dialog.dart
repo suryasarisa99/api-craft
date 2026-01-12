@@ -6,6 +6,7 @@ import 'package:api_craft/core/widgets/ui/variable_text_field_custom.dart';
 import 'package:api_craft/features/auth/auth_tab.dart';
 import 'package:api_craft/features/collection/collection_model.dart';
 import 'package:api_craft/features/request/widgets/tabs/headers_tab.dart';
+import 'package:api_craft/features/request/widgets/tabs/script_tab.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lazy_load_indexed_stack/lazy_load_indexed_stack.dart';
@@ -90,7 +91,7 @@ class _CollectionConfigDialogState
   }
 
   Widget _buildDialog() {
-    final tabs = ["General", "Storage", "Headers", "Auth"];
+    final tabs = ["General", "Storage", "Headers", "Auth", "Scripts"];
     return Padding(
       padding: const EdgeInsets.all(0),
       child: Column(
@@ -202,6 +203,7 @@ class _CollectionConfigDialogState
                       HeadersTab(id: widget.collectionId),
                       // 4. Auth Tab
                       AuthTab(id: widget.collectionId),
+                      ScriptTab(id: widget.collectionId),
                     ],
                   ),
                 ),

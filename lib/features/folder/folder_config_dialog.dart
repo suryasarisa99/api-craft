@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:api_craft/core/models/models.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lazy_load_indexed_stack/lazy_load_indexed_stack.dart';
+import 'package:api_craft/features/request/widgets/tabs/script_tab.dart';
 
 class FolderConfigDialog extends ConsumerStatefulWidget {
   final String id;
@@ -74,8 +75,8 @@ class _FolderConfigDialogState extends ConsumerState<FolderConfigDialog> {
         }
       },
       child: CustomDialog(
-        width: 900,
-        height: 600,
+        width: 1200,
+        height: 800,
         // insetPadding: const EdgeInsets.all(24),
         // shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         child: NotificationListener<SwitchTabNotification>(
@@ -92,7 +93,7 @@ class _FolderConfigDialogState extends ConsumerState<FolderConfigDialog> {
   }
 
   Widget _buildDialog() {
-    final tabs = ["General", "Headers", "Auth", "Environment"];
+    final tabs = ["General", "Headers", "Auth", "Environment", "Scripts"];
     return Padding(
       padding: const EdgeInsets.all(00),
       child: Column(
@@ -216,6 +217,7 @@ class _FolderConfigDialogState extends ConsumerState<FolderConfigDialog> {
                       EnvironmentTab(id: widget.id),
                       // 4. Variables Tab
                       // _VariablesTab(controller: _controller),
+                      ScriptTab(id: widget.id),
                     ],
                   ),
                 ),

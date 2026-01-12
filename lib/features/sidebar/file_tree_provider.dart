@@ -269,11 +269,60 @@ class FileTreeNotifier extends Notifier<TreeData> {
     }
   }
 
-  void updateScripts(String id, String scripts, {bool persist = false}) {
+  void updateTestScript(String id, String script, {bool persist = false}) {
     final node = map[id];
+    if (node == null) return;
+
     if (node is RequestNode) {
       updateNode(
-        node.copyWith(config: node.config.copyWith(scripts: scripts)),
+        node.copyWith(config: node.config.copyWith(testScript: script)),
+        persist: persist,
+      );
+    } else if (node is FolderNode) {
+      updateNode(
+        node.copyWith(config: node.config.copyWith(testScript: script)),
+        persist: persist,
+      );
+    }
+  }
+
+  void updatePreRequestScript(
+    String id,
+    String script, {
+    bool persist = false,
+  }) {
+    final node = map[id];
+    if (node == null) return;
+
+    if (node is RequestNode) {
+      updateNode(
+        node.copyWith(config: node.config.copyWith(preRequestScript: script)),
+        persist: persist,
+      );
+    } else if (node is FolderNode) {
+      updateNode(
+        node.copyWith(config: node.config.copyWith(preRequestScript: script)),
+        persist: persist,
+      );
+    }
+  }
+
+  void updatePostRequestScript(
+    String id,
+    String script, {
+    bool persist = false,
+  }) {
+    final node = map[id];
+    if (node == null) return;
+
+    if (node is RequestNode) {
+      updateNode(
+        node.copyWith(config: node.config.copyWith(postRequestScript: script)),
+        persist: persist,
+      );
+    } else if (node is FolderNode) {
+      updateNode(
+        node.copyWith(config: node.config.copyWith(postRequestScript: script)),
         persist: persist,
       );
     }

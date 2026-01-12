@@ -160,6 +160,29 @@ class MainApp extends StatelessWidget {
             ),
           ),
         ),
+        tabBarTheme: TabBarThemeData(
+          tabAlignment: TabAlignment.start,
+          dividerColor: Colors.transparent,
+          indicator: BoxDecoration(
+            color: Colors.transparent,
+            border: Border(
+              bottom: BorderSide(
+                color: const Color.fromARGB(255, 255, 189, 250),
+                width: 2,
+              ),
+            ),
+          ),
+          labelPadding: .symmetric(horizontal: 10),
+          // indicatorSize: TabBarIndicatorSize.tab,
+          labelStyle: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w400,
+          ),
+          unselectedLabelStyle: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w400,
+          ),
+        ),
       ),
       debugShowCheckedModeBanner: false,
       home: Scaffold(body: HomeScreen()),

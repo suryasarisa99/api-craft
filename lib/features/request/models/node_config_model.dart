@@ -6,12 +6,18 @@ abstract class NodeConfig {
   AuthData auth;
   String description;
   bool isDetailLoaded;
+  String? preRequestScript;
+  String? postRequestScript;
+  String? testScript;
 
   NodeConfig({
     List<KeyValueItem>? headers,
     this.auth = const AuthData(),
     this.description = '',
     this.isDetailLoaded = false,
+    this.preRequestScript,
+    this.postRequestScript,
+    this.testScript,
   }) : headers = headers ?? [];
 
   NodeConfig copyWith({
@@ -19,6 +25,9 @@ abstract class NodeConfig {
     AuthData? auth,
     String? description,
     bool? isDetailLoaded,
+    String? preRequestScript,
+    String? postRequestScript,
+    String? testScript,
   });
   @override
   String toString() {
@@ -36,6 +45,9 @@ class FolderNodeConfig extends NodeConfig {
     super.auth,
     super.description,
     super.isDetailLoaded,
+    super.preRequestScript,
+    super.postRequestScript,
+    super.testScript,
     List<KeyValueItem>? variables,
   }) : variables = variables ?? [];
 
@@ -47,6 +59,9 @@ class FolderNodeConfig extends NodeConfig {
     AuthData? auth,
     String? description,
     bool? isDetailLoaded,
+    String? preRequestScript,
+    String? postRequestScript,
+    String? testScript,
     List<KeyValueItem>? variables,
   }) {
     return FolderNodeConfig(
@@ -54,6 +69,9 @@ class FolderNodeConfig extends NodeConfig {
       auth: auth ?? this.auth,
       description: description ?? this.description,
       isDetailLoaded: isDetailLoaded ?? this.isDetailLoaded,
+      preRequestScript: preRequestScript ?? this.preRequestScript,
+      postRequestScript: postRequestScript ?? this.postRequestScript,
+      testScript: testScript ?? this.testScript,
       variables: variables ?? this.variables,
     );
   }
@@ -65,6 +83,9 @@ class FolderNodeConfig extends NodeConfig {
       auth: auth.clone(),
       description: description,
       isDetailLoaded: isDetailLoaded,
+      preRequestScript: preRequestScript,
+      postRequestScript: postRequestScript,
+      testScript: testScript,
       variables: List<KeyValueItem>.from(variables),
     );
   }
@@ -73,7 +94,6 @@ class FolderNodeConfig extends NodeConfig {
 class RequestNodeConfig extends NodeConfig {
   List<KeyValueItem> queryParameters;
   String? bodyType;
-  String? scripts;
   String? historyId;
 
   RequestNodeConfig({
@@ -81,17 +101,15 @@ class RequestNodeConfig extends NodeConfig {
     super.auth,
     super.description,
     super.isDetailLoaded,
+    super.preRequestScript,
+    super.postRequestScript,
+    super.testScript,
     required this.queryParameters,
     this.bodyType,
-    this.scripts,
     this.historyId,
   });
 
-  RequestNodeConfig.empty()
-    : queryParameters = [],
-      bodyType = null,
-      scripts = null,
-      super();
+  RequestNodeConfig.empty() : queryParameters = [], bodyType = null, super();
 
   @override
   RequestNodeConfig copyWith({
@@ -103,7 +121,9 @@ class RequestNodeConfig extends NodeConfig {
     String? url,
     List<KeyValueItem>? queryParameters,
     String? bodyType,
-    String? scripts,
+    String? preRequestScript,
+    String? postRequestScript,
+    String? testScript,
     String? historyId,
 
     // force historyId to null
@@ -113,7 +133,9 @@ class RequestNodeConfig extends NodeConfig {
       headers: headers ?? this.headers,
       queryParameters: queryParameters ?? this.queryParameters,
       bodyType: bodyType ?? this.bodyType,
-      scripts: scripts ?? this.scripts,
+      preRequestScript: preRequestScript ?? this.preRequestScript,
+      postRequestScript: postRequestScript ?? this.postRequestScript,
+      testScript: testScript ?? this.testScript,
       auth: auth ?? this.auth,
       description: description ?? this.description,
       isDetailLoaded: isDetailLoaded ?? this.isDetailLoaded,
@@ -130,7 +152,9 @@ class RequestNodeConfig extends NodeConfig {
       isDetailLoaded: isDetailLoaded,
       queryParameters: List<KeyValueItem>.from(queryParameters),
       bodyType: bodyType,
-      scripts: scripts,
+      preRequestScript: preRequestScript,
+      postRequestScript: postRequestScript,
+      testScript: testScript,
       historyId: historyId,
     );
   }

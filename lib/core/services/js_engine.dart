@@ -30,20 +30,18 @@ class JsEngineService {
   }) async {
     final JavascriptRuntime engine = getJavascriptRuntime();
     final Completer<void> scriptCompleter = Completer();
+    debugPrint("===: Executing script");
 
     // 1. Define Bridge Handlers
     // The key is the channel name.
     // The value is the handler function which can be async and return a value directly.
     final handlers = <String, FutureOr<dynamic> Function(Map<String, dynamic>)>{
       'log': (args) {
-        debugPrint('JS: ${args['msg']}');
+        debugPrint('JS:log: ${args['msg']}');
       },
       'script_done': (args) {
         if (!scriptCompleter.isCompleted) {
-          Future.delayed(
-            const Duration(milliseconds: 100),
-            () => scriptCompleter.complete(),
-          );
+          scriptCompleter.complete();
         }
       },
       'setVar': (args) {
@@ -528,7 +526,10 @@ class JsEngineService {
       debugPrint("JS Engine Logic Error: $e");
       ToastService.error("Script Error", description: e.toString());
     } finally {
-      engine.dispose();
+      // Delay disposal to prevent native crash on nested executions (macOS/flutter_js issue)
+      Future.delayed(const Duration(milliseconds: 500), () {
+        engine.dispose();
+      });
     }
   }
 
