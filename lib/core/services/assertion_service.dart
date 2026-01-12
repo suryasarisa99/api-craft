@@ -2,6 +2,19 @@ import 'dart:convert';
 import 'package:api_craft/features/request/models/node_config_model.dart';
 import 'package:api_craft/features/response/models/http_response_model.dart';
 import 'package:flutter/widgets.dart';
+import 'package:json_path/json_path.dart';
+
+var fakeReq = {
+  "headers": [
+    ["content-type", "application/json"],
+  ],
+  "url": "https://example.com",
+  "body": '{"foo": "bar"}',
+  "method": "GET",
+};
+var fakeReqHeaders = [
+  ["content-type", "application/json"],
+];
 
 class AssertionService {
   static List<TestResult> evaluate(
@@ -41,74 +54,90 @@ class AssertionService {
     RawHttpResponse res,
     Map<String, dynamic>? jsonBody,
   ) {
-    final exp = expression.trim();
-    if (exp == 'res') {
+    if (expression.trim() == 'res') {
       return res.toJsMap();
+    } else if (expression.trim() == 'req') {
+      return fakeReq;
     }
+
+    String exp = expression.trim();
+
+    // 1. Try JSON Path
+    try {
+      String jsonPath = exp;
+      Map<String, dynamic>? contextMap;
+
+      if (exp.startsWith('res.')) {
+        jsonPath = exp.replaceFirst('res.', '\$.');
+        contextMap = res.toJsMap();
+        // Inject parsed body for easier access if body matches string
+        if (jsonBody != null && contextMap['body'] is String) {
+          contextMap['body'] = jsonBody;
+        }
+      } else if (exp.startsWith('req.')) {
+        jsonPath = exp.replaceFirst('req.', '\$.');
+        contextMap = fakeReq;
+      }
+
+      if (contextMap != null) {
+        final matches = JsonPath(jsonPath).read(contextMap);
+        if (matches.isNotEmpty) {
+          if (matches.length == 1) return matches.first.value;
+          return matches.map((e) => e.value).toList();
+        }
+      }
+    } catch (e) {
+      // Ignore JSON Path parsing errors
+    }
+
+    // 2. Fallback: Custom Header Logic (Case-insensitive)
+    // res.headers.key or res.headers['key']
+    if (exp.startsWith('res.headers') || exp.startsWith('req.headers')) {
+      final targetHeaders = exp.startsWith('res.headers')
+          ? res.headers
+          : fakeReqHeaders;
+
+      // Extract key
+      String? key;
+      // Check dot notation
+      final dotPattern = RegExp(r'\.headers\.([a-zA-Z0-9\-_]+)');
+      final matchDot = dotPattern.firstMatch(exp);
+      if (matchDot != null) {
+        key = matchDot.group(1);
+      }
+
+      // Check bracket notation
+      if (key == null) {
+        final bracketPattern = RegExp(r"\.headers\['([^']+)'\]");
+        final matchBracket = bracketPattern.firstMatch(exp);
+        key = matchBracket?.group(1);
+      }
+      if (key == null) {
+        final bracketPatternDouble = RegExp(r'\.headers\["([^"]+)"\]');
+        final matchBracketDouble = bracketPatternDouble.firstMatch(exp);
+        key = matchBracketDouble?.group(1);
+      }
+
+      if (key != null) {
+        // Headers are List<List<String>>
+        final header = targetHeaders.firstWhere(
+          (h) => h[0].toString().toLowerCase() == key!.toLowerCase(),
+          orElse: () => [],
+        );
+        return header.isNotEmpty ? header[1] : null;
+      }
+    }
+
+    // 3. Simple Fallbacks
     if (exp == 'res.status' || exp == 'res.statusCode') {
       return res.statusCode;
     } else if (exp == 'res.responseTime') {
       return res.durationMs;
-    } else if (exp.startsWith('res.body')) {
-      if (exp == 'res.body') return res.body;
-      // Handle res.body.token or res.body['token']
-      // Simple parsing: remove 'res.body.' and treat rest as key path
-      if (jsonBody == null) return null;
-      final path = exp.replaceFirst('res.body.', '');
-      return _getValueFromPath(jsonBody, path);
     } else if (exp == "res.headers") {
       return res.headers;
-    } else if (exp.startsWith('res.headers')) {
-      // res.headers['content-type']
-      // Simplified: res.headers.content-type
-      final path = exp
-          .replaceFirst(RegExp(r'^res\.headers[\.\[]'), '')
-          .replaceAll(
-            RegExp(
-              r'[\]"'
-              "'"
-              '\\s]',
-            ),
-            '',
-          );
-      // Headers is List<List<String>>
-      // Find header
-      final header = res.headers.firstWhere(
-        (h) => h[0].toLowerCase() == path.toLowerCase(),
-        orElse: () => [],
-      );
-      return header.isNotEmpty ? header[1] : null;
     }
+
     return null;
-  }
-
-  static dynamic _getValueFromPath(Map<String, dynamic> data, String path) {
-    final parts = path.split('.');
-    dynamic current = data;
-    for (final part in parts) {
-      if (current == null) return null;
-
-      // Special properties
-      if (part == 'length') {
-        if (current is List) return current.length;
-        if (current is String) return current.length;
-        if (current is Map) return current.length;
-      }
-
-      if (current is Map && current.containsKey(part)) {
-        current = current[part];
-      } else if (current is List) {
-        final index = int.tryParse(part);
-        if (index != null && index >= 0 && index < current.length) {
-          current = current[index];
-        } else {
-          return null;
-        }
-      } else {
-        return null;
-      }
-    }
-    return current;
   }
 
   static void _evaluateAssertion(
@@ -431,4 +460,93 @@ class AssertionService {
     }
     return false;
   }
+
+  static AssertionInspection inspectPath(
+    String expression,
+    RawHttpResponse res, {
+    Map<String, dynamic>? jsonBody,
+  }) {
+    String exp = expression.trim();
+    dynamic value;
+    List<String> suggestions = [];
+    String validExp = exp;
+    String pendingExp = "";
+
+    // 1. Try exact match first
+    value = _getActualValue(exp, res, jsonBody);
+
+    // 2. If null, try to find the longest valid parent path
+    if (value == null && exp.contains('.')) {
+      final parts = exp.split('.');
+      for (int i = parts.length - 1; i >= 0; i--) {
+        final subPath = parts.sublist(0, i).join('.');
+        if (subPath.isEmpty) continue;
+
+        final subVal = _getActualValue(subPath, res, jsonBody);
+        if (subVal != null) {
+          value = subVal;
+          validExp = subPath;
+          pendingExp = exp.substring(validExp.length);
+          break;
+        }
+      }
+    }
+
+    // 3. If still null (and no parent found), maybe it's just root 'res' or 'req'
+    if (value == null) {
+      if (exp.startsWith('res')) {
+        value = res.toJsMap();
+        validExp = 'res';
+        pendingExp = exp.substring(3);
+      } else if (exp.startsWith('req')) {
+        value = fakeReq;
+        validExp = 'req';
+        pendingExp = exp.substring(3);
+      }
+    }
+
+    // 4. Generate Suggestions based on the resolved value
+    if (value is Map) {
+      suggestions = value.keys.map((e) => e.toString()).toList();
+    } else if (value is RawHttpResponse) {
+      // Should not happen as we convert toJsMap, but safety check
+      suggestions = ['statusCode', 'body', 'headers', 'responseTime'];
+    }
+
+    // Filter suggestions if there is a pending partial input
+    // e.g. valid: res.body (Map), pending: "use" -> suggest "username", "userID"
+    // e.g. valid: res.body (Map), pending: "use" -> suggest "username", "userID"
+    if (pendingExp.isNotEmpty) {
+      String search = pendingExp;
+      if (search.startsWith('.')) {
+        search = search.substring(1);
+      }
+
+      final firstPending = search.split('.').first;
+      suggestions = suggestions
+          .where((s) => s.toLowerCase().contains(firstPending.toLowerCase()))
+          .toList();
+    }
+
+    return AssertionInspection(
+      value: value,
+      validExpression: validExp,
+      pendingExpression: pendingExp,
+      suggestions: suggestions,
+    );
+  }
+}
+
+class AssertionInspection {
+  final dynamic value;
+  final String validExpression;
+  final String pendingExpression;
+  final List<String> suggestions;
+
+  AssertionInspection({
+    this.value,
+    required this.validExpression,
+    required this.pendingExpression,
+    this.suggestions = const [],
+  });
 }

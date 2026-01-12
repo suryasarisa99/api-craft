@@ -20,8 +20,7 @@ class TestsResultTab extends StatelessWidget {
     return SingleChildScrollView(
       child: Column(
         children: [
-          if (results.isNotEmpty)
-            _buildSection(context, "Test Scripts", results),
+          if (results.isNotEmpty) _buildSection(context, "Test Cases", results),
           if (results.isNotEmpty && assertionResults.isNotEmpty)
             const Divider(height: 1),
           if (assertionResults.isNotEmpty)
@@ -41,18 +40,25 @@ class TestsResultTab extends StatelessWidget {
 
     return ExpansionTile(
       initiallyExpanded: true,
+      dense: true,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+      collapsedShape: RoundedRectangleBorder(borderRadius: BorderRadius.zero),
       title: Text(title, style: Theme.of(context).textTheme.titleMedium),
       subtitle: Row(
         children: [
-          Text(
-            "$passed Passed",
-            style: const TextStyle(color: Colors.green, fontSize: 12),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            "$failed Failed",
-            style: const TextStyle(color: Colors.red, fontSize: 12),
-          ),
+          if (passed != 0) ...[
+            Text(
+              "$passed Passed",
+              style: const TextStyle(color: Colors.green, fontSize: 12),
+            ),
+
+            const SizedBox(width: 8),
+          ],
+          if (failed != 0)
+            Text(
+              "$failed Failed",
+              style: const TextStyle(color: Colors.red, fontSize: 12),
+            ),
         ],
       ),
       children: items.map((result) {
