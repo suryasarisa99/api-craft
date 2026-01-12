@@ -6,7 +6,9 @@ import 'package:api_craft/features/response/response_headers.dart';
 import 'package:api_craft/features/response/response_provider.dart';
 import 'package:api_craft/features/response/widgets/response_body_tab.dart';
 import 'package:api_craft/features/response/widgets/response_info_tab.dart';
+import 'package:api_craft/features/response/widgets/response_info_tab.dart';
 import 'package:api_craft/features/response/widgets/response_status_bar.dart';
+import 'package:api_craft/features/response/widgets/tests_result_tab.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -37,7 +39,7 @@ class _ResponseTAbState extends ConsumerState<ResponseTAb>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
   }
 
   @override
@@ -248,6 +250,7 @@ class _ResponseTAbState extends ConsumerState<ResponseTAb>
                         ),
                       ),
                       const Tab(text: "Headers"),
+                      Tab(text: "Tests (${response!.testResults.length})"),
                       const Tab(text: "Info"),
                     ],
                   ),
@@ -259,6 +262,7 @@ class _ResponseTAbState extends ConsumerState<ResponseTAb>
                     children: [
                       ResponseBodyTab(response: response, mode: _bodyViewMode),
                       ResponseHeaders(id: id),
+                      TestsResultTab(results: response.testResults),
                       ResponseInfoTab(response: response),
                     ],
                   ),

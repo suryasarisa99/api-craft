@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:typed_data';
 import 'package:objectbox/objectbox.dart';
 // import 'package:api_craft/features/response/models/http_response_model.dart';
@@ -45,6 +46,8 @@ class HistoryEntity {
 
   String? finalUrl;
 
+  String? testResultsJson;
+
   HistoryEntity({
     this.id = 0,
     required this.uid,
@@ -62,6 +65,7 @@ class HistoryEntity {
     this.errorMessage,
     this.redirectUrls,
     this.finalUrl,
+    this.testResultsJson,
   });
 
   factory HistoryEntity.fromModel(RawHttpResponse model, String collectionId) {
@@ -82,6 +86,9 @@ class HistoryEntity {
       errorMessage: model.errorMessage,
       redirectUrls: model.redirectUrls,
       finalUrl: model.finalUrl,
+      testResultsJson: jsonEncode(
+        model.testResults.map((e) => e.toMap()).toList(),
+      ),
     );
   }
 
@@ -93,6 +100,16 @@ class HistoryEntity {
       }
       return <String>[];
     }).toList();
+
+    List<TestResult> tests = [];
+    if (testResultsJson != null) {
+      try {
+        final List<dynamic> list = jsonDecode(testResultsJson!);
+        tests = list.map((e) => TestResult.fromMap(e)).toList();
+      } catch (e) {
+        // failed to parse tests
+      }
+    }
 
     return RawHttpResponse(
       id: uid,
@@ -109,6 +126,7 @@ class HistoryEntity {
       errorMessage: errorMessage,
       redirectUrls: redirectUrls ?? [],
       finalUrl: finalUrl,
+      testResults: tests,
     );
   }
 }

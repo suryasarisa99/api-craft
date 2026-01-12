@@ -71,7 +71,11 @@ class _ScriptTabState extends ConsumerState<ScriptTab> {
                         if (script != null && script.isNotEmpty) {
                           ref
                               .read(jsEngineProvider)
-                              .executeScript(script, context: context);
+                              .executeScript(
+                                script,
+                                context: context,
+                                isPreview: true,
+                              );
                         }
                       },
                       icon: const Icon(Icons.play_arrow),

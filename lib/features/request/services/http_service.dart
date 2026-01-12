@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 import 'dart:convert';
+import 'package:api_craft/features/response/models/http_response_model.dart';
 import 'package:nanoid/nanoid.dart';
 
 import 'package:api_craft/core/network/raw/raw_http_req.dart';
@@ -26,13 +27,8 @@ class HttpService {
     }
 
     try {
-      final req = await resolver.resolveForExecution(
-        requestId,
-        context: context,
-      );
-      debugPrint('Executing request to URL: ${req.uri}');
-
       // 1. Run Pre-Request Script
+      // We run pre-scripts BEFORE resolving the request, allowing them to modify the request node/config.
       final preScripts = ref
           .read(scriptExecutionProvider)
           .getScriptsToRun(requestId, ScriptType.preRequest);
@@ -46,8 +42,16 @@ class HttpService {
         }
       }
 
+      // 2. Resolve Request (Now reflects changes from pre-scripts)
+      final req = await resolver.resolveForExecution(
+        requestId,
+        context: context,
+      );
+      debugPrint('Executing request to URL: ${req.uri}');
+
       composer?.startSending();
-      final response = await sendRawHttp(
+
+      RawHttpResponse response = await sendRawHttp(
         method: req.request.method,
         url: req.uri,
         headers: req.headers,
@@ -60,14 +64,8 @@ class HttpService {
         'Response status: ${response.statusCode}: ${response.durationMs} ms',
       );
 
-      // store into history
-      if (isActiveReq) {
-        composer?.addHistoryEntry(response);
-      } else {
-        ref.read(dataRepositoryProvider).addHistoryEntry(response);
-      }
-
-      // Extract & Save Cookies
+      // Extract & Save Cookies (Before scripts in case scripts rely on them? Or after?)
+      // Scripts might want to access cookies.
       final cookieJarId = ref.read(environmentProvider).selectedCookieJarId;
       if (cookieJarId != null) {
         final newCookies = <CookieDef>[];
@@ -104,16 +102,19 @@ class HttpService {
         }
       }
 
-      // 4. Run Scripts
+      // 4. Run Scripts & Tests
+      List<TestResult> allTestResults = [];
+
       final postScripts = ref
           .read(scriptExecutionProvider)
           .getScriptsToRun(requestId, ScriptType.postRequest);
       if (postScripts.isNotEmpty) {
         debugPrint("Running ${postScripts.length} post-request scripts...");
         for (final script in postScripts) {
-          await ref
+          final results = await ref
               .read(jsEngineProvider)
               .executeScript(script, response: response, context: context);
+          allTestResults.addAll(results);
         }
       }
 
@@ -123,10 +124,21 @@ class HttpService {
       if (testScripts.isNotEmpty) {
         debugPrint("Running ${testScripts.length} test scripts...");
         for (final script in testScripts) {
-          await ref
+          final results = await ref
               .read(jsEngineProvider)
               .executeScript(script, response: response, context: context);
+          allTestResults.addAll(results);
         }
+      }
+
+      // 5. Update Response with Tests
+      response = response.copyWith(testResults: allTestResults);
+
+      // 6. Store into History
+      if (isActiveReq) {
+        composer?.addHistoryEntry(response);
+      } else {
+        ref.read(dataRepositoryProvider).addHistoryEntry(response);
       }
 
       composer?.finishSending();

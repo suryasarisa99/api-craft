@@ -2,8 +2,10 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:api_craft/core/models/models.dart';
 import 'package:api_craft/core/network/raw/raw_http_req.dart';
+import 'package:api_craft/core/services/chai_script.dart';
 import 'package:api_craft/features/console/models/console_log_entry.dart';
 import 'package:api_craft/features/console/providers/console_logs_provider.dart';
+import 'package:api_craft/features/response/models/http_response_model.dart';
 import 'package:api_craft/core/providers/providers.dart';
 import 'package:api_craft/core/providers/ref_provider.dart';
 import 'package:api_craft/core/services/env_service.dart';
@@ -25,18 +27,18 @@ class JsEngineService {
   final Ref ref;
   JsEngineService(this.ref);
 
-  Future<void> executeScript(
+  Future<List<TestResult>> executeScript(
     String script, {
     RawHttpResponse? response,
     required BuildContext context,
+    bool isPreview = false,
   }) async {
     final JavascriptRuntime engine = getJavascriptRuntime();
     final Completer<void> scriptCompleter = Completer();
+    final List<TestResult> collectedTests = [];
     debugPrint("===: Executing script");
 
     // 1. Define Bridge Handlers
-    // The key is the channel name.
-    // The value is the handler function which can be async and return a value directly.
     final handlers = <String, FutureOr<dynamic> Function(Map<String, dynamic>)>{
       'log': (args) {
         final list = args['args'] ?? [args['msg']?.toString() ?? ''];
@@ -68,6 +70,9 @@ class JsEngineService {
         ref
             .read(consoleLogsProvider.notifier)
             .info(list, source: ConsoleLogSource.javascript);
+      },
+      'record_test': (args) {
+        collectedTests.add(TestResult.fromMap(args));
       },
       'script_done': (args) {
         if (!scriptCompleter.isCompleted) {
@@ -127,7 +132,6 @@ class JsEngineService {
             final matchKey = key.toString().toLowerCase();
             int index = -1;
 
-            // Search from last
             for (var i = headers.length - 1; i >= 0; i--) {
               if (headers[i].isEnabled &&
                   headers[i].key.toLowerCase() == matchKey) {
@@ -138,12 +142,10 @@ class JsEngineService {
 
             if (index != -1) {
               debugPrint("Found header: $key");
-              // Replace value
               headers[index] = headers[index].copyWith(
                 value: value?.toString() ?? '',
               );
             } else {
-              // Add new
               headers.add(
                 KeyValueItem(key: key, value: value?.toString() ?? ''),
               );
@@ -223,7 +225,6 @@ class JsEngineService {
         final node = ref.read(fileTreeProvider).nodeMap[args['id']];
         final key = args['key']?.toString().toLowerCase();
         if (node is RequestNode && key != null) {
-          // Search from last
           for (var i = node.config.headers.length - 1; i >= 0; i--) {
             final h = node.config.headers[i];
             if (h.isEnabled && h.key.toLowerCase() == key) {
@@ -236,7 +237,6 @@ class JsEngineService {
       'toast': (args) {
         final dynamic msgRaw = args['msg'];
         String msg;
-        debugPrint("Toast: ${msgRaw.runtimeType}");
         if (msgRaw is String) {
           msg = msgRaw;
         } else {
@@ -246,7 +246,6 @@ class JsEngineService {
             msg = msgRaw?.toString() ?? 'null';
           }
         }
-
         final String type = args['type'];
         final String? description = args['description'];
         final duration = Duration(seconds: args['duration'] ?? 4);
@@ -256,7 +255,6 @@ class JsEngineService {
           orElse: () => ToastType.info,
         );
 
-        // Log to console
         final level = toastType == ToastType.error
             ? ConsoleLogLevel.error
             : toastType == ToastType.warning
@@ -294,7 +292,6 @@ class JsEngineService {
         if (target == null) return null;
         return _resolveNodeId(target.toString(), contextId: contextId);
       },
-      // Cookie Handlers
       'getCookie': (args) {
         final jar = ref.read(environmentProvider).selectedCookieJar;
         if (jar != null) {
@@ -321,7 +318,6 @@ class JsEngineService {
         }
       },
       'updateCookie': (args) {
-        // Same as add for now
         final repo = ref.read(dataRepositoryProvider);
         final jar = ref.read(environmentProvider).selectedCookieJar;
         if (jar != null) {
@@ -353,12 +349,8 @@ class JsEngineService {
         if (path is String) {
           final id = _resolveNodeId(path, contextId: contextId);
           if (id != null) {
-            /*
-            running request, triggers pre script,post script, so same ref cause circular ref
-            */
             final r = ref.read(refProvider);
             final response = await HttpService().run(r, id, context: context);
-            debugPrint("Response: ${response.body}");
             return jsonEncode({
               'status': response.statusCode,
               'statusText': response.statusMessage,
@@ -442,7 +434,7 @@ class JsEngineService {
       }
       final currentId = ref.read(activeReqIdProvider) ?? "";
 
-      // 4. Bridge Script - PURE AND SIMPLE
+      // 4. Bridge Script
       final String bridge =
           """
         function _send(channel, args) {
@@ -467,6 +459,9 @@ class JsEngineService {
         var log = function(...args) { _send('log', {args:args}); };
         var prompt = async function(msg) { return _send('prompt', {msg: msg}); };
         
+        $chaiScript
+        // --------------------------
+
         function getReq(idOrPath) {
            var contextId = (typeof req !== 'undefined' && req && req.id) ? req.id : null;
            var resolved = _send('resolveId', {id: idOrPath, contextId: contextId});
@@ -476,22 +471,17 @@ class JsEngineService {
              id: finalId,
              getUrl: function() { return _send('getReqUrl', {id: this.id}); },
              getMethod: function() { return _send('getReqMethod', {id: this.id}); },
-             
              getResolved: async function() { 
                  var res = await _send('getResolvedReq', {id: this.id});
                  try { return JSON.parse(res); } catch(e) { return null; }
              },
-
              getBody: async function() { 
                  var res = await _send('getReqBody', {id: this.id});
                  try { return JSON.parse(res); } catch(e) { return res; }
              },
-             
              setUrl: function(u) { _send('setReqUrl', {id: this.id, url: u}); },
              setMethod: function(m) { _send('setReqMethod', {id: this.id, method: m}); },
              setBody: function(b) { _send('setReqBody', {id: this.id, body: b}); },
-
-            // Headers
              getHeaders: function() { 
                  var res = _send('getReqHeaders', {id: this.id});
                  try { return JSON.parse(res); } catch(e) { return []; }
@@ -513,7 +503,6 @@ class JsEngineService {
            setVar: function(k, v) { _send('setVar', {key:k, value:v}); },
            getVar: function(k) { return _send('getVar', {key:k}); },
            getReq: function(id) { return getReq(id); },
-           
            runRequest: async function(path) {
                var res = await _send('runRequest', {path: path, contextId: req.id});
                try { return JSON.parse(res); } catch(e) { return null; }
@@ -585,6 +574,8 @@ class JsEngineService {
         engine.dispose();
       });
     }
+
+    return collectedTests;
   }
 
   static String dynamicToString(dynamic value) {

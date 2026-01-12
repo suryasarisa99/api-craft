@@ -183,7 +183,7 @@ final _entities = <obx_int.ModelEntity>[
   obx_int.ModelEntity(
     id: const obx_int.IdUid(4, 1589747562368478009),
     name: 'HistoryEntity',
-    lastPropertyId: const obx_int.IdUid(16, 4266804411084962393),
+    lastPropertyId: const obx_int.IdUid(17, 1668853121119644400),
     flags: 0,
     properties: <obx_int.ModelProperty>[
       obx_int.ModelProperty(
@@ -282,6 +282,12 @@ final _entities = <obx_int.ModelEntity>[
       obx_int.ModelProperty(
         id: const obx_int.IdUid(16, 4266804411084962393),
         name: 'finalUrl',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(17, 1668853121119644400),
+        name: 'testResultsJson',
         type: 9,
         flags: 0,
       ),
@@ -853,7 +859,10 @@ obx_int.ModelDefinition getObjectBoxModel() {
         final finalUrlOffset = object.finalUrl == null
             ? null
             : fbb.writeString(object.finalUrl!);
-        fbb.startTable(17);
+        final testResultsJsonOffset = object.testResultsJson == null
+            ? null
+            : fbb.writeString(object.testResultsJson!);
+        fbb.startTable(18);
         fbb.addInt64(0, object.id);
         fbb.addOffset(1, uidOffset);
         fbb.addOffset(2, requestIdOffset);
@@ -870,6 +879,7 @@ obx_int.ModelDefinition getObjectBoxModel() {
         fbb.addOffset(13, errorMessageOffset);
         fbb.addOffset(14, redirectUrlsOffset);
         fbb.addOffset(15, finalUrlOffset);
+        fbb.addOffset(16, testResultsJsonOffset);
         fbb.finish(fbb.endTable());
         return object.id;
       },
@@ -934,6 +944,9 @@ obx_int.ModelDefinition getObjectBoxModel() {
         final finalUrlParam = const fb.StringReader(
           asciiOptimization: true,
         ).vTableGetNullable(buffer, rootOffset, 34);
+        final testResultsJsonParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGetNullable(buffer, rootOffset, 36);
         final object = HistoryEntity(
           id: idParam,
           uid: uidParam,
@@ -951,6 +964,7 @@ obx_int.ModelDefinition getObjectBoxModel() {
           errorMessage: errorMessageParam,
           redirectUrls: redirectUrlsParam,
           finalUrl: finalUrlParam,
+          testResultsJson: testResultsJsonParam,
         );
 
         return object;
@@ -1468,6 +1482,11 @@ class HistoryEntity_ {
   /// See [HistoryEntity.finalUrl].
   static final finalUrl = obx.QueryStringProperty<HistoryEntity>(
     _entities[3].properties[15],
+  );
+
+  /// See [HistoryEntity.testResultsJson].
+  static final testResultsJson = obx.QueryStringProperty<HistoryEntity>(
+    _entities[3].properties[16],
   );
 }
 

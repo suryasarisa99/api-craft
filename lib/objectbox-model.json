@@ -142,7 +142,7 @@
     },
     {
       "id": "4:1589747562368478009",
-      "lastPropertyId": "16:4266804411084962393",
+      "lastPropertyId": "17:1668853121119644400",
       "name": "HistoryEntity",
       "properties": [
         {
@@ -230,6 +230,11 @@
         {
           "id": "16:4266804411084962393",
           "name": "finalUrl",
+          "type": 9
+        },
+        {
+          "id": "17:1668853121119644400",
+          "name": "testResultsJson",
           "type": 9
         }
       ],
