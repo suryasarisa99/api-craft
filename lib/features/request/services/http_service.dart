@@ -38,7 +38,7 @@ class HttpService {
         for (final script in preScripts) {
           await ref
               .read(jsEngineProvider)
-              .executeScript(script, context: context);
+              .executeScript(requestId, script, context: context);
         }
       }
 
@@ -113,7 +113,12 @@ class HttpService {
         for (final script in postScripts) {
           final results = await ref
               .read(jsEngineProvider)
-              .executeScript(script, response: response, context: context);
+              .executeScript(
+                requestId,
+                script,
+                response: response,
+                context: context,
+              );
           allTestResults.addAll(results);
         }
       }
@@ -126,7 +131,12 @@ class HttpService {
         for (final script in testScripts) {
           final results = await ref
               .read(jsEngineProvider)
-              .executeScript(script, response: response, context: context);
+              .executeScript(
+                requestId,
+                script,
+                response: response,
+                context: context,
+              );
           allTestResults.addAll(results);
         }
       }

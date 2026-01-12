@@ -142,13 +142,6 @@ Assertion.prototype = {
         return this.deep.equal(expected);
     },
     
-    // eql: function(expected) {
-    //     var v = JSON.stringify(this.val);
-    //     var e = JSON.stringify(expected);
-    //     this._assert(v === e, "Expected " + v + " to eql " + e);
-    //     return this;
-    // },
-    
     eqls: function(expected) {
         return this.eql(expected);
     },

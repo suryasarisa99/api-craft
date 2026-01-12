@@ -2,10 +2,10 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:api_craft/core/models/models.dart';
 import 'package:api_craft/core/network/raw/raw_http_req.dart';
-import 'package:api_craft/core/services/chai_script.dart';
+import 'package:api_craft/core/services/scripts/chai_script.dart';
+import 'package:api_craft/core/services/scripts/js_bridge_script.dart';
 import 'package:api_craft/features/console/models/console_log_entry.dart';
 import 'package:api_craft/features/console/providers/console_logs_provider.dart';
-import 'package:api_craft/features/response/models/http_response_model.dart';
 import 'package:api_craft/core/providers/providers.dart';
 import 'package:api_craft/core/providers/ref_provider.dart';
 import 'package:api_craft/core/services/env_service.dart';
@@ -13,6 +13,7 @@ import 'package:api_craft/core/services/req_service.dart';
 import 'package:api_craft/core/services/toast_service.dart';
 import 'package:api_craft/core/widgets/dialog/input_dialog.dart';
 import 'package:api_craft/features/request/services/http_service.dart';
+import 'package:api_craft/features/template-functions/functions/template_function_response.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_js/flutter_js.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -20,14 +21,12 @@ import 'package:sonner_toast/sonner_toast.dart';
 
 final jsEngineProvider = Provider((ref) => JsEngineService(ref));
 
-// for macos: sendMessage, for windows: SendMessage
-const sendMsg = "sendMessage";
-
 class JsEngineService {
   final Ref ref;
   JsEngineService(this.ref);
 
   Future<List<TestResult>> executeScript(
+    String id,
     String script, {
     RawHttpResponse? response,
     required BuildContext context,
@@ -94,6 +93,9 @@ class JsEngineService {
       },
       'setReqUrl': (args) {
         ReqService.setUrl(ref, args['id'], args['url']);
+      },
+      'getReqName': (args) {
+        return ReqService.getName(ref, args['id']);
       },
       'getReqMethod': (args) {
         return ReqService.getMethod(ref, args['id']);
@@ -402,6 +404,26 @@ class JsEngineService {
         debugPrint("Runner setNextRequest: $nextName");
         // TODO: Wire up to Runner state
       },
+      'getResponse': (args) async {
+        debugPrint("getResponse called");
+        final id = args['id'];
+        final behaviour = args['behaviour'] ?? Behavior.smart.toString();
+        final purpose =
+            args['purpose'] ??
+            (isPreview ? Purpose.preview.toString() : Purpose.send.toString());
+        final resolveId = _resolveNodeId(id, contextId: id);
+        debugPrint("::::behaviour: $behaviour, purpose: $purpose");
+        if (resolveId == null) return null;
+        final response = await getResponse(
+          ref,
+          purpose: purpose,
+          behavior: behaviour,
+          requestId: resolveId,
+          context: context,
+        );
+        debugPrint("::::response: ${response?.toJsMap()}");
+        return jsonEncode(response?.toJsMap());
+      },
     };
 
     // 2. Register Channels
@@ -425,132 +447,36 @@ class JsEngineService {
       // 3. Prepare Environment
       String responseJson = "null";
       if (response != null) {
-        final Map<String, dynamic> resMap = {
-          'statusCode': response.statusCode,
-          'body': response.body,
-          'headers': response.headers,
-        };
-        responseJson = jsonEncode(resMap);
+        // final Map<String, dynamic> resMap = {
+        //   'statusCode': response.statusCode,
+        //   'body': response.body,
+        //   'headers': response.headers,
+        // };
+        responseJson = jsonEncode(response.toJsMap());
+      } else if (isPreview) {
+        final response = await getResponse(
+          ref,
+          purpose: Purpose.preview.toString(),
+          behavior: Behavior.never.toString(),
+          requestId: id,
+          context: context,
+        );
+        // final Map<String, dynamic> resMap = {
+        //   'statusCode': response?.statusCode,
+        //   'body': response?.body,
+        //   'headers': response?.headers,
+        // };
+        responseJson = jsonEncode(response?.toJsMap());
       }
-      final currentId = ref.read(activeReqIdProvider) ?? "";
-
-      // 4. Bridge Script
-      final String bridge =
-          """
-        function _send(channel, args) {
-           var payload = JSON.stringify(args || {});
-           if (typeof $sendMsg !== 'undefined') {
-              return $sendMsg(channel, payload);
-           } else if (typeof sendMessage !== 'undefined') {
-              return sendMessage(channel, payload);
-           } else if (typeof SendMessage !== 'undefined') {
-              return SendMessage(channel, payload);
-           }
-           return null;
-        }
-
-        var console = { 
-            log: function(...args) { _send('log', {args:args}); },
-            debug: function(...args) { _send('debug', {args:args}); },
-            error: function(...args) { _send('error', {args:args}); },
-            warn: function(...args) { _send('warn', {args:args}); },
-            info: function(...args) { _send('info', {args:args}); }
-        };
-        var log = function(...args) { _send('log', {args:args}); };
-        var prompt = async function(msg) { return _send('prompt', {msg: msg}); };
-        
-        $chaiScript
-        // --------------------------
-
-        function getReq(idOrPath) {
-           var contextId = (typeof req !== 'undefined' && req && req.id) ? req.id : null;
-           var resolved = _send('resolveId', {id: idOrPath, contextId: contextId});
-           var finalId = resolved || idOrPath;
-
-           return {
-             id: finalId,
-             getUrl: function() { return _send('getReqUrl', {id: this.id}); },
-             getMethod: function() { return _send('getReqMethod', {id: this.id}); },
-             getResolved: async function() { 
-                 var res = await _send('getResolvedReq', {id: this.id});
-                 try { return JSON.parse(res); } catch(e) { return null; }
-             },
-             getBody: async function() { 
-                 var res = await _send('getReqBody', {id: this.id});
-                 try { return JSON.parse(res); } catch(e) { return res; }
-             },
-             setUrl: function(u) { _send('setReqUrl', {id: this.id, url: u}); },
-             setMethod: function(m) { _send('setReqMethod', {id: this.id, method: m}); },
-             setBody: function(b) { _send('setReqBody', {id: this.id, body: b}); },
-             getHeaders: function() { 
-                 var res = _send('getReqHeaders', {id: this.id});
-                 try { return JSON.parse(res); } catch(e) { return []; }
-             },
-             getHeadersMap: function() {
-                 var res = _send('getReqHeadersMap', {id: this.id});
-                 try { return JSON.parse(res); } catch(e) { return {}; }
-             },
-             getHeader: function(k) { return _send('getReqHeader', {id: this.id, key: k}); },
-             setHeaders: function(h) { _send('setReqHeaders', {id: this.id, headers: h}); },
-             setHeader: function(k, v) { _send('setReqHeader', {id: this.id, key: k, value: v}); },
-             addHeader: function(k, v) { _send('addReqHeader', {id: this.id, key: k, value: v}); },
-             addHeaders: function(h) { _send('addReqHeaders', {id: this.id, headers: h}); }
-           };
-        }
-
-        var api = {
-           response: $responseJson,
-           setVar: function(k, v) { _send('setVar', {key:k, value:v}); },
-           getVar: function(k) { return _send('getVar', {key:k}); },
-           getReq: function(id) { return getReq(id); },
-           runRequest: async function(path) {
-               var res = await _send('runRequest', {path: path, contextId: req.id});
-               try { return JSON.parse(res); } catch(e) { return null; }
-           },
-           sendRequest: async function(opts, callback) {
-               try {
-                   var res = await _send('sendRequest', opts);
-                   var parsed = JSON.parse(res);
-                   if (callback) callback(null, parsed);
-                   return parsed;
-               } catch(e) {
-                   if (callback) callback(e, null);
-                   throw e;
-               }
-           },
-           setNextRequest: function(next) { _send('setNextRequest', {next: next}); },
-           runner: {
-               setNextRequest: function(next) { _send('setNextRequest', {next: next}); }
-           }
-        };
-
-        var bru = api;
-        var bruno = api;
-
-        var toast = {
-           success: function(m, o) { _send('toast', {type:'success', msg:m, description: o?.description, duration: o?.duration}); },
-           error: function(m, o) { _send('toast', {type:'error', msg:m, description: o?.description, duration: o?.duration}); },
-           info: function(m, o) { _send('toast', {type:'info', msg:m, description: o?.description, duration: o?.duration}); },
-           warn: function(m, o) { _send('toast', {type:'warning', msg:m, description: o?.description, duration: o?.duration}); },
-        };
-
-        var req = getReq('$currentId');
-
-        var jar = {
-           get: function(k) { 
-               var res = _send('getCookie', {key:k});
-               try { return res ? JSON.parse(res) : null; } catch(e) { return null; }
-           },
-           add: function(c) { _send('addCookie', c); },
-           update: function(c) { _send('updateCookie', c); },
-           remove: function(k) { _send('removeCookie', {key:k}); }
-        };
-      """;
 
       // 5. Execute
       final fullScript =
           """
       $bridge
+      $chaiScript
+      var req = getReq('$id');
+      var res = $responseJson;
+
       (async function() {
           try {
               $script

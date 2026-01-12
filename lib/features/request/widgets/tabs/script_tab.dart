@@ -72,6 +72,7 @@ class _ScriptTabState extends ConsumerState<ScriptTab> {
                           ref
                               .read(jsEngineProvider)
                               .executeScript(
+                                widget.id,
                                 script,
                                 context: context,
                                 isPreview: true,

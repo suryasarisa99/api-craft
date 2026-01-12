@@ -151,4 +151,23 @@ class RawHttpResponse {
       'test_results': testResults.map((e) => e.toMap()).toList(),
     };
   }
+
+  Map<String, dynamic> toJsMap() {
+    return {
+      'id': id,
+      'requestId': requestId,
+      'executedAt': executeAt.millisecondsSinceEpoch,
+      'status': statusCode,
+      'durationMs': durationMs,
+      'protocolVersion': protocolVersion,
+      'statusMessage': statusMessage,
+      'headers': headers,
+      'body': body,
+      'bodyType': bodyType,
+      'errorMessage': errorMessage,
+      'redirectUrls': redirectUrls,
+      'finalUrl': finalUrl,
+      'testResults': testResults.map((e) => e.toMap()).toList(),
+    };
+  }
 }

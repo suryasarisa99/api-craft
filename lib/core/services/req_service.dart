@@ -18,6 +18,12 @@ class ReqService {
     return null;
   }
 
+  static String? getName(Ref ref, String requestId) {
+    final node = ref.read(fileTreeProvider).nodeMap[requestId];
+    if (node is RequestNode) return node.name;
+    return null;
+  }
+
   static Map<String, String> getHeaders(Ref ref, String requestId) {
     final node = ref.read(fileTreeProvider).nodeMap[requestId];
     if (node is RequestNode) {
