@@ -37,26 +37,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   static const sideBarWidget = FileExplorerView();
   final debouncer = Debouncer(Duration(milliseconds: 500));
 
-  late final MultiSplitViewController _rootController =
-      MultiSplitViewController(
-        areas: [
-          Area(
-            id: 1,
-            min: sidebarMinWidth,
-            size: getInitialSidebarWidth(),
-            data: 'side-bar',
-          ),
-          Area(id: 2, flex: 1, data: 'main-content'),
-        ],
-      );
+  // Layout configuration
+  final bool _useFullWidthLayout = false;
 
-  late final MultiSplitViewController _verticalController =
-      MultiSplitViewController(
-        areas: [
-          Area(data: 'content', flex: 1),
-          Area(data: 'bottom-panel', size: 0),
-        ],
-      );
+  late MultiSplitViewController _rootController;
+  late MultiSplitViewController _verticalController;
 
   late final MultiSplitViewController _reqResController =
       MultiSplitViewController(
@@ -72,7 +57,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   @override
   void initState() {
     super.initState();
-    _rootController.addListener(_sidebarListener);
+    _initControllers();
     _reqResController.addListener(_reqResListener);
     WidgetsBinding.instance.addObserver(this);
     final hk = HardwareKeyboard.instance;
@@ -144,6 +129,97 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     } else if (sidebarWidth > sidebarMinWidth + 2 && isSidebarManuallyClosed) {
       setState(() {
         isSidebarManuallyClosed = false;
+      });
+    }
+  }
+
+  void _initControllers() {
+    if (_useFullWidthLayout) {
+      // Full Width Layout: Vertical(Root(Sidebar, Content), Panel)
+      _rootController = MultiSplitViewController(
+        areas: [
+          Area(
+            id: 1,
+            min: sidebarMinWidth,
+            size: getInitialSidebarWidth(),
+            data: 'side-bar',
+          ),
+          Area(id: 2, flex: 1, data: 'content'),
+        ],
+      );
+
+      _verticalController = MultiSplitViewController(
+        areas: [
+          Area(data: 'main-content', flex: 1),
+          Area(data: 'bottom-panel', size: 0),
+        ],
+      );
+    } else {
+      // Content Width Layout: Root(Sidebar, Vertical(Content, Panel))
+      _rootController = MultiSplitViewController(
+        areas: [
+          Area(
+            id: 1,
+            min: sidebarMinWidth,
+            size: getInitialSidebarWidth(),
+            data: 'side-bar',
+          ),
+          Area(id: 2, flex: 1, data: 'main-content'),
+        ],
+      );
+
+      _verticalController = MultiSplitViewController(
+        areas: [
+          Area(data: 'content', flex: 1),
+          Area(data: 'bottom-panel', size: 0),
+        ],
+      );
+    }
+
+    _rootController.addListener(_sidebarListener);
+    _verticalController.addListener(_bottomPanelListener);
+  }
+
+  void _bottomPanelListener() {
+    final panelSize = _verticalController.areas[1].size ?? 0;
+    final isVisible = ref.read(isBottomPanelVisibleProvider);
+
+    // Immediate State Updates
+    if (panelSize > 50 && !isVisible) {
+      ref.read(isBottomPanelVisibleProvider.notifier).set(true);
+    } else if (panelSize < 50 && isVisible) {
+      ref.read(isBottomPanelVisibleProvider.notifier).set(false);
+    }
+
+    final windowHeight =
+        WidgetsBinding
+            .instance
+            .platformDispatcher
+            .views
+            .first
+            .physicalSize
+            .height /
+        WidgetsBinding.instance.platformDispatcher.views.first.devicePixelRatio;
+
+    final threshold = windowHeight - 100;
+    final isMaximized = ref.read(panelStateProvider).isMaximized;
+
+    // Update STATE only (Icon), do NOT force layout.
+    // Allow user to drag freely.
+    if (panelSize > threshold && !isMaximized) {
+      ref
+          .read(panelStateProvider.notifier)
+          .setMaximized(true, forceLayout: false);
+    } else if (panelSize < threshold && isMaximized && isVisible) {
+      ref
+          .read(panelStateProvider.notifier)
+          .setMaximized(false, forceLayout: false);
+    }
+
+    // Persist height with debounce ONLY if not maximized
+    if (panelSize > 50 && !isMaximized) {
+      debouncer.run(() {
+        prefs.setDouble('bottom_panel_height', panelSize);
       });
     }
   }
@@ -237,18 +313,60 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     ref.read(isBottomPanelVisibleProvider.notifier).toggle();
   }
 
+  Widget _buildReqResView() {
+    return MultiSplitView(
+      controller: _reqResController,
+      builder: (context, rArea) {
+        if (rArea.data == 'request-tab') {
+          return const ReqTabWrapper();
+        }
+        if (rArea.data == 'response-tab') {
+          return const ResponseTAb();
+        }
+        return const SizedBox.shrink();
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isBottomPanelVisible = ref.watch(isBottomPanelVisibleProvider);
     final panelState = ref.watch(panelStateProvider);
 
-    if (!panelState.isMaximized) {
-      if (isBottomPanelVisible) {
-        if ((_verticalController.areas[1].size ?? 0) < 50) {
-          _verticalController.areas[1].size = 300;
-        }
+    // Listen for maximize toggle to update layout explicitly without fighting drag
+    // Explicit Layout Snap Listener (Triggered by Buttons only)
+    ref.listen(panelStateProvider.select((s) => s.layoutVersion), (_, __) {
+      if (!ref.read(isBottomPanelVisibleProvider)) return;
+
+      final currentState = ref.read(panelStateProvider);
+      if (currentState.isMaximized) {
+        // Expand Button Clicked
+        _verticalController.areas[1].size = MediaQuery.of(context).size.height;
       } else {
-        _verticalController.areas[1].size = 0;
+        // Restore/Close Button Clicked
+        final last = prefs.getDouble('bottom_panel_height') ?? 300;
+        final windowHeight = MediaQuery.of(context).size.height;
+        // If saved height is suspiciously large (near full screen), default to 300
+        final target = (last >= windowHeight - 100) ? 300.0 : last;
+        _verticalController.areas[1].size = target > 50 ? target : 300;
+      }
+    });
+
+    // Layout State Management
+    if (!isBottomPanelVisible) {
+      // Store current height before closing if it's valid and we are not in a maximized state transition
+      final currentHeight = _verticalController.areas[1].size ?? 0;
+      if (currentHeight > 50 && !panelState.isMaximized) {
+        prefs.setDouble('bottom_panel_height', currentHeight);
+      }
+      _verticalController.areas[1].size = 0;
+    } else if (!panelState.isMaximized) {
+      // Visible and Not Maximized
+      // Only enforce min-height if it got too small somehow (safety)
+      // But avoid overriding user drag too aggressively.
+      if ((_verticalController.areas[1].size ?? 0) < 50) {
+        final lastHeight = prefs.getDouble('bottom_panel_height') ?? 300;
+        _verticalController.areas[1].size = lastHeight > 50 ? lastHeight : 300;
       }
     }
 
@@ -288,43 +406,56 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                 ),
               ),
               child: MultiSplitView(
-                controller: _rootController,
+                controller: _useFullWidthLayout
+                    ? _verticalController // Outer is Vertical
+                    : _rootController, // Outer is Horizontal
+                axis: _useFullWidthLayout ? Axis.vertical : Axis.horizontal,
                 builder: (context, area) {
-                  switch (area.data) {
-                    case 'side-bar':
-                      return sideBarWidget;
-                    case 'main-content':
-                      if (isBottomPanelVisible && panelState.isMaximized) {
-                        return const BottomPanel();
-                      }
-                      return MultiSplitView(
-                        axis: Axis.vertical,
-                        controller: _verticalController,
-                        builder: (context, vArea) {
-                          if (vArea.data == 'content') {
-                            return MultiSplitView(
-                              controller: _reqResController,
-                              builder: (context, rArea) {
-                                if (rArea.data == 'request-tab') {
-                                  return const ReqTabWrapper();
-                                }
-                                if (rArea.data == 'response-tab') {
-                                  return const ResponseTAb();
-                                }
-                                return const SizedBox.shrink();
-                              },
-                            );
-                          }
-                          if (vArea.data == 'bottom-panel') {
-                            return const BottomPanel();
-                          }
-                          return const SizedBox.shrink();
-                        },
-                      );
+                  // Common Widgets
+                  const sidebar = FileExplorerView();
+                  const bottomPanel = BottomPanel();
+                  final reqResSplit = _buildReqResView();
 
-                    default:
-                      return const SizedBox.shrink();
+                  if (_useFullWidthLayout) {
+                    // --- FULL WIDTH LAYOUT LOGIC ---
+                    switch (area.data) {
+                      case 'main-content':
+                        // Top part: Sidebar + Request/Response
+                        return MultiSplitView(
+                          controller: _rootController,
+                          builder: (c, a) {
+                            if (a.data == 'side-bar') return sidebar;
+                            if (a.data == 'content') return reqResSplit;
+                            return const SizedBox.shrink();
+                          },
+                        );
+                      case 'bottom-panel':
+                        return bottomPanel;
+                    }
+                  } else {
+                    // --- CONTENT WIDTH LAYOUT LOGIC (Original) ---
+                    switch (area.data) {
+                      case 'side-bar':
+                        return sidebar;
+                      case 'main-content':
+                        // REMOVED conditional maximization that destroys the splitter.
+                        // Always return the split view so drag handle remains available.
+                        return MultiSplitView(
+                          axis: Axis.vertical,
+                          controller: _verticalController,
+                          builder: (context, vArea) {
+                            if (vArea.data == 'content') {
+                              return reqResSplit;
+                            }
+                            if (vArea.data == 'bottom-panel') {
+                              return bottomPanel;
+                            }
+                            return const SizedBox.shrink();
+                          },
+                        );
+                    }
                   }
+                  return const SizedBox.shrink();
                 },
               ),
             ),

@@ -70,7 +70,13 @@ class BottomPanel extends ConsumerWidget {
                   constraints: const BoxConstraints(minWidth: 32),
                   splashRadius: 16,
                   onPressed: () {
-                    ref.read(panelStateProvider.notifier).toggleMaximized();
+                    // Force layout change when button is clicked
+                    ref
+                        .read(panelStateProvider.notifier)
+                        .setMaximized(
+                          !panelState.isMaximized,
+                          forceLayout: true,
+                        );
                   },
                 ),
                 // Close
@@ -81,11 +87,13 @@ class BottomPanel extends ConsumerWidget {
                   constraints: const BoxConstraints(minWidth: 32),
                   splashRadius: 16,
                   onPressed: () {
-                    // Restore size if maximized before closing?
-                    if (panelState.isMaximized) {
-                      ref.read(panelStateProvider.notifier).setMaximized(false);
-                    }
                     ref.read(isBottomPanelVisibleProvider.notifier).set(false);
+                    // Force layout update when closing via button to ensure clean state
+                    if (panelState.isMaximized) {
+                      ref
+                          .read(panelStateProvider.notifier)
+                          .setMaximized(false, forceLayout: true);
+                    }
                   },
                 ),
                 const SizedBox(width: 4),
