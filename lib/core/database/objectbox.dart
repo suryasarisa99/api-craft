@@ -11,7 +11,7 @@ class ObjectBox {
 
   /// Create an instance of ObjectBox to use throughout the app.
   static Future<ObjectBox> create() async {
-    final docsDir = await getApplicationDocumentsDirectory();
+    final docsDir = await getApplicationSupportDirectory();
     final dbPath = p.join(docsDir.path, "obx-api-craft");
     debugPrint("ObjectBox DB Path: $dbPath");
     final store = await openStore(directory: dbPath);

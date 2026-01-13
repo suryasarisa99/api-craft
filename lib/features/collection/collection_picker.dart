@@ -1,6 +1,7 @@
 import 'package:api_craft/core/constants/globals.dart';
 import 'package:api_craft/core/models/models.dart';
 import 'package:api_craft/core/providers/providers.dart';
+import 'package:api_craft/core/services/toast_service.dart';
 
 import 'package:api_craft/core/widgets/ui/custom_menu.dart';
 import 'package:api_craft/core/widgets/ui/surya_theme_icon.dart';
@@ -165,20 +166,27 @@ class _CreateCollectionDialogState
   }
 
   Future<void> _create() async {
-    final name = _nameController.text.trim();
-    if (name.isEmpty) return;
+    try {
+      final name = _nameController.text.trim();
+      if (name.isEmpty) return;
 
-    final type = _selectedPath != null
-        ? CollectionType.filesystem
-        : CollectionType.database;
+      final type = _selectedPath != null
+          ? CollectionType.filesystem
+          : CollectionType.database;
 
-    final newCollection = await ref
-        .read(collectionsProvider.notifier)
-        .createCollection(name, type: type, path: _selectedPath);
+      final newCollection = await ref
+          .read(collectionsProvider.notifier)
+          .createCollection(name, type: type, path: _selectedPath);
 
-    if (mounted) {
-      ref.read(selectedCollectionProvider.notifier).select(newCollection);
-      Navigator.pop(context);
+      if (mounted) {
+        ref.read(selectedCollectionProvider.notifier).select(newCollection);
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      ToastService.error(
+        "Collection creation failed",
+        description: e.toString(),
+      );
     }
   }
 
