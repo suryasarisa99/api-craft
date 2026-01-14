@@ -1,8 +1,9 @@
 import 'package:api_craft/core/models/models.dart';
 import 'package:api_craft/core/providers/providers.dart';
+import 'package:api_craft/features/auth/widgets/auth_tab_header.dart';
 import 'package:api_craft/features/request/widgets/request_url.dart';
 import 'package:api_craft/core/utils/debouncer.dart';
-import 'package:api_craft/features/auth/auth_tab.dart';
+import 'package:api_craft/features/auth/widgets/auth_tab.dart';
 import 'package:api_craft/features/request/widgets/tabs/headers_tab.dart';
 import 'package:api_craft/features/request/widgets/tabs/query_params.dart';
 import 'package:api_craft/features/request/widgets/tabs/body_tab.dart';
@@ -168,7 +169,17 @@ class _RequestTabState extends ConsumerState<RequestTab>
                     );
                   },
                 ),
-                AuthTabHeader(widget.node.id, controller: _tabController),
+                AuthTabHeader(
+                  widget.node.id,
+                  isTabActive: _index == 3,
+                  isFolder: false,
+                  handleSetTab: () {
+                    setState(() {
+                      _tabController.index = 3;
+                      _index = 3;
+                    });
+                  },
+                ),
                 const Tab(text: "Scripts"),
                 Consumer(
                   builder: (context, ref, child) {

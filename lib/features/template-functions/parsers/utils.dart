@@ -7,9 +7,9 @@ import 'package:api_craft/features/template-functions/functions/template_functio
 import 'package:api_craft/features/template-functions/functions/template_function_response.dart';
 import 'package:api_craft/features/template-functions/functions/template_function_xml.dart';
 
-Map<String, dynamic> getDefaultTemplateFunctionState(TemplateFunction fn) {
+Map<String, dynamic> getDefaultFormState(List<FormInput> inputs) {
   final Map<String, dynamic> defaultState = {};
-  for (final input in fn.args) {
+  for (final input in inputs) {
     if (input is FormInputBase) {
       defaultState[input.name] = input.defaultValue;
     } else if (input is FormInputHStack) {
@@ -26,10 +26,10 @@ Map<String, dynamic> getDefaultTemplateFunctionState(TemplateFunction fn) {
 
 // merges default values and provided state
 Map<String, dynamic> getFnState(
-  TemplateFunction fn,
+  List<FormInput> fn,
   Map<String, dynamic>? providedState,
 ) {
-  final defaultState = getDefaultTemplateFunctionState(fn);
+  final defaultState = getDefaultFormState(fn);
   if (providedState == null) {
     return defaultState;
   }

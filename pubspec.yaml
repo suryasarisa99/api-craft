@@ -55,6 +55,11 @@ dependencies:
   objectbox: ^5.1.0
   objectbox_flutter_libs: ^5.1.0
   sonner_toast: ^1.0.0
+  pointycastle: ^4.0.0
+  oauth2: ^2.0.5
+  dart_jsonwebtoken: ^3.3.1
+  aws_signature_v4: ^0.6.10
+  aws_common: ^0.7.12
 
 dev_dependencies:
   flutter_test:

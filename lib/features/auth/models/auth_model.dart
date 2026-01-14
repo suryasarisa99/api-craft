@@ -1,3 +1,7 @@
+import 'package:api_craft/core/models/models.dart';
+import 'package:api_craft/features/template-functions/models/form_input.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 enum AuthType {
   apiKey("API Key", "API Key"),
   awsSignature("AWS v4", "AWS Signature"),
@@ -13,6 +17,37 @@ enum AuthType {
   final String title;
   final String label;
   const AuthType(this.label, this.title);
+}
+
+class CallAuthFunctionArgs {
+  // final String contextId;
+  final String method;
+  final String url;
+  final List<List<String>> headers;
+  final dynamic values;
+
+  const CallAuthFunctionArgs({
+    required this.method,
+    required this.url,
+    required this.headers,
+    required this.values,
+  });
+}
+
+class Authenticaion {
+  final String type;
+  final String label;
+  final String shortLabel;
+  final List<FormInput> args;
+  final Function(Ref ref, CallAuthFunctionArgs args) onApply;
+
+  const Authenticaion({
+    required this.type,
+    required this.label,
+    required this.shortLabel,
+    required this.args,
+    required this.onApply,
+  });
 }
 
 class AuthData {

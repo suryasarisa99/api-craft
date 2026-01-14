@@ -30,7 +30,7 @@ class FormPopupWidget extends ConsumerStatefulWidget {
 
 class _FormPopupWidgetState extends ConsumerState<FormPopupWidget> {
   late Map<String, dynamic> fnState = getFnState(
-    widget.templateFn,
+    widget.templateFn.args,
     widget.fnPlaceholder.args,
   );
   String? renderedValue;
