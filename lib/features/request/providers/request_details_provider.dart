@@ -99,6 +99,18 @@ class RequestDetailsNotifier extends Notifier<RequestDetailsState> {
         (_, _) => refreshInheritance(),
         fireImmediately: false,
       );
+      ref.listen(
+        fileTreeProvider.select(
+          (tree) => (tree.nodeMap[id] as RequestNode?)?.config.auth,
+        ),
+        (previous, next) {
+          if (previous != next) {
+            // refreshInheritance();
+            refreshAuthInheritance();
+          }
+        },
+        fireImmediately: false,
+      );
     }
   }
 
@@ -148,6 +160,21 @@ class RequestDetailsNotifier extends Notifier<RequestDetailsState> {
     final x = await resolver.resolveInherit(id);
     debugPrint("Inherited request: ${x.headers.length}");
     return x;
+  }
+
+  (AuthData, Node?) _getAuthInheritance() {
+    final resolver = RequestResolver(ref);
+    final x = resolver.colllectInheritAuth(
+      ref.read(fileTreeProvider).nodeMap[id]!,
+    );
+    return x;
+  }
+
+  void refreshAuthInheritance() {
+    final (authData, node) = _getAuthInheritance();
+    state = state.copyWith(
+      inherit: state.inherit.copyWith(auth: authData, authSource: node),
+    );
   }
 
   // --- Body Update Methods ---

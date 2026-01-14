@@ -42,7 +42,7 @@ class RequestResolver {
     await _hydrator.hydrateAncestors(node);
 
     final inheritedHeaders = collectInheritedHeaders(node);
-    final authResult = resolveAuth(node);
+    final authResult = colllectInheritAuth(node);
     final vars = mergeVariables(node);
 
     return InheritedRequest(
@@ -94,7 +94,7 @@ class RequestResolver {
     final bodyStr = await ref.read(repositoryProvider).getBody(requestId);
 
     final inheritedHeaders = collectInheritedHeaders(node);
-    final auth = resolveAuth(node).$1;
+    final auth = colllectInheritAuth(node).$1;
     final mergedVars = mergeVariables(node);
     final resolver = LazyVariableResolver(mergedVars, this);
 
@@ -507,7 +507,7 @@ class RequestResolver {
     return result;
   }
 
-  (AuthData, Node?) resolveAuth(Node node) {
+  (AuthData, Node?) colllectInheritAuth(Node node) {
     final current = node.config.auth;
     if (current.type != AuthType.inherit) {
       return (current, node);
