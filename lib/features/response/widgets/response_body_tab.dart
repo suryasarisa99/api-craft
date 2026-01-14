@@ -87,7 +87,7 @@ class ResponseBodyTab extends StatelessWidget {
     }
 
     return CFCodeEditor(
-      key: ValueKey(response.bodyType),
+      key: ValueKey(response.id),
       text: text,
       language: response.bodyType,
       readOnly: true,

@@ -198,7 +198,8 @@ class RequestDetailsNotifier extends Notifier<RequestDetailsState> {
   }
 
   void refreshInheritance() async {
-    state = state.copyWith(inherit: await _getInheritance());
+    final inherit = await _getInheritance();
+    state = state.copyWith(inherit: inherit);
   }
 
   void addHistoryEntry(RawHttpResponse entry, {int limit = 10}) {
