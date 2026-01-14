@@ -10,7 +10,7 @@ import 'package:api_craft/features/request/models/inherited_request_model.dart';
 import 'package:api_craft/features/request/widgets/tabs/tab_titles.dart';
 import 'package:api_craft/features/template-functions/models/template_placeholder_model.dart';
 import 'package:api_craft/features/template-functions/parsers/parse.dart';
-import 'package:api_craft/features/template-functions/parsers/utils.dart';
+import 'package:api_craft/features/template-functions/template_function_registry.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

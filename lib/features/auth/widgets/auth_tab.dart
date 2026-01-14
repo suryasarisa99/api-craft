@@ -2,9 +2,9 @@ import 'package:api_craft/core/models/models.dart';
 import 'package:api_craft/core/providers/providers.dart';
 import 'package:api_craft/features/auth/auth_registry.dart';
 import 'package:api_craft/features/collection/collection_config_dialog.dart';
+import 'package:api_craft/features/dynamic-form/form_state.dart';
 import 'package:api_craft/features/sidebar/context_menu.dart';
-import 'package:api_craft/features/template-functions/parsers/utils.dart';
-import 'package:api_craft/features/template-functions/widget/form_input_widget.dart';
+import 'package:api_craft/features/dynamic-form/dynamic_form.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -104,7 +104,7 @@ class _AuthTabContentState extends ConsumerState<AuthTabContent> {
 
   @override
   Widget build(BuildContext context) {
-    return FormInputWidget(
+    return DynamicForm(
       inputs: authentication.args,
       onChanged: (v, _) {},
       data: s,

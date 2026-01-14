@@ -8,7 +8,7 @@ import 'package:api_craft/features/environment/environment_editor_dialog.dart';
 import 'package:api_craft/features/sidebar/context_menu.dart';
 import 'package:api_craft/features/template-functions/models/template_placeholder_model.dart';
 import 'package:api_craft/features/template-functions/parsers/parse.dart';
-import 'package:api_craft/features/template-functions/parsers/utils.dart';
+import 'package:api_craft/features/template-functions/template_function_registry.dart';
 import 'package:api_craft/features/template-functions/widget/form_popup_widget.dart';
 import 'package:api_craft/core/widgets/ui/filter.dart';
 import 'package:api_craft/core/widgets/ui/variable_text_builder.dart';

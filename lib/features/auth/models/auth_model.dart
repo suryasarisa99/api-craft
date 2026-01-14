@@ -1,5 +1,5 @@
 import 'package:api_craft/core/models/models.dart';
-import 'package:api_craft/features/template-functions/models/form_input.dart';
+import 'package:api_craft/features/dynamic-form/form_input.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 enum AuthType {

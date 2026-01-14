@@ -1,6 +1,6 @@
 import 'package:api_craft/features/template-functions/functions/template_common_args.dart';
 import 'package:api_craft/features/template-functions/models/enums.dart';
-import 'package:api_craft/features/template-functions/models/form_input.dart';
+import 'package:api_craft/features/dynamic-form/form_input.dart';
 import 'package:api_craft/features/template-functions/models/template_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:xml/xml.dart';

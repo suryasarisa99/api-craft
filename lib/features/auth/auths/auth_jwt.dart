@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:api_craft/features/auth/models/auth_model.dart';
-import 'package:api_craft/features/template-functions/models/form_input.dart';
+import 'package:api_craft/features/dynamic-form/form_input.dart';
 import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
 
 const algorithms = [

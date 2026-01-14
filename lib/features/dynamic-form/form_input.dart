@@ -5,9 +5,21 @@ import 'package:api_craft/core/models/models.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-// dynamic?: (ctx, args) => Promise<Partial<FormInputEditor>>;
 typedef DynamicFn =
-    FutureOr<dynamic> Function(WidgetRef ctx, CallTemplateFunctionArgs args);
+    FutureOr<dynamic> Function(WidgetRef ref, CallTemplateFunctionArgs args);
+
+enum ArgumentType {
+  text,
+  select,
+  accordion,
+  editor,
+  checkbox,
+  file,
+  httpRequest,
+  hStack,
+  banner,
+  markdown,
+}
 
 abstract class FormInput {
   final ArgumentType type;

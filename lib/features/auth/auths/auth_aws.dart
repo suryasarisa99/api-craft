@@ -1,5 +1,5 @@
 import 'package:api_craft/features/auth/models/auth_model.dart';
-import 'package:api_craft/features/template-functions/models/form_input.dart';
+import 'package:api_craft/features/dynamic-form/form_input.dart';
 import 'package:aws_common/aws_common.dart';
 import 'package:aws_signature_v4/aws_signature_v4.dart';
 

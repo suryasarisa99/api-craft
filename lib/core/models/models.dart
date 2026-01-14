@@ -12,5 +12,5 @@ export '../../features/request/models/ui_req_context.dart';
 export '../../features/request/models/resolved_req_context.dart';
 
 export 'package:api_craft/features/template-functions/models/enums.dart';
-export 'package:api_craft/features/template-functions/models/form_input.dart';
+export 'package:api_craft/features/dynamic-form/form_input.dart';
 export 'package:api_craft/features/template-functions/models/template_functions.dart';

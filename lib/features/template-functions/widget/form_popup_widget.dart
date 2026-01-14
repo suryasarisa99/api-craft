@@ -2,10 +2,10 @@ import 'package:api_craft/core/models/models.dart';
 import 'package:api_craft/core/providers/providers.dart';
 import 'package:api_craft/core/providers/ref_provider.dart';
 import 'package:api_craft/core/widgets/ui/custom_dialog.dart';
+import 'package:api_craft/features/dynamic-form/form_state.dart';
 import 'package:api_craft/features/template-functions/models/template_placeholder_model.dart';
-import 'package:api_craft/features/template-functions/parsers/utils.dart';
 import 'package:api_craft/features/template-functions/parsers/parse.dart';
-import 'package:api_craft/features/template-functions/widget/form_input_widget.dart';
+import 'package:api_craft/features/dynamic-form/dynamic_form.dart';
 import 'package:api_craft/core/utils/debouncer.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
@@ -136,7 +136,7 @@ class _FormPopupWidgetState extends ConsumerState<FormPopupWidget> {
           /// Form
           Form(
             key: _formKey,
-            child: FormInputWidget(
+            child: DynamicForm(
               id: widget.id,
               inputs: widget.templateFn.args,
               data: fnState,

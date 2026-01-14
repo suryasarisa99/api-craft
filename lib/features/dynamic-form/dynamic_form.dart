@@ -7,13 +7,13 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:collection/collection.dart';
 
-class FormInputWidget extends ConsumerStatefulWidget {
+class DynamicForm extends ConsumerStatefulWidget {
   final List<FormInput> inputs;
   final bool isVertical;
   final String? id;
   final Map<String, dynamic> data;
   final Function(String key, dynamic value) onChanged;
-  const FormInputWidget({
+  const DynamicForm({
     super.key,
     required this.inputs,
     required this.onChanged,
@@ -23,10 +23,10 @@ class FormInputWidget extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<FormInputWidget> createState() => _FormInputWidgetState();
+  ConsumerState<DynamicForm> createState() => _FormInputWidgetState();
 }
 
-class _FormInputWidgetState extends ConsumerState<FormInputWidget> {
+class _FormInputWidgetState extends ConsumerState<DynamicForm> {
   List<Map<String, dynamic>?> _overrides = [];
   // bool _isLoadingDynamicFns = false;
 
@@ -38,7 +38,7 @@ class _FormInputWidgetState extends ConsumerState<FormInputWidget> {
   }
 
   @override
-  void didUpdateWidget(FormInputWidget oldWidget) {
+  void didUpdateWidget(DynamicForm oldWidget) {
     super.didUpdateWidget(oldWidget);
     const eq = MapEquality();
     bool inputsChanged = !const ListEquality().equals(
@@ -286,7 +286,7 @@ class FormWidgetHStack extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FormInputWidget(
+    return DynamicForm(
       id: id,
       inputs: input.inputs ?? [],
       isVertical: false,
@@ -512,7 +512,7 @@ class _FormWidgetAccordionState extends State<FormWidgetAccordion> {
         childrenPadding: .symmetric(horizontal: 18, vertical: 14),
         onExpansionChanged: (val) => setState(() => _isExpanded = val),
         children: [
-          FormInputWidget(
+          DynamicForm(
             id: widget.id,
             inputs: widget.input.inputs ?? [],
             onChanged: widget.onChanged,
@@ -548,7 +548,7 @@ class FormWidgetBanner extends StatelessWidget {
         borderRadius: BorderRadius.circular(4),
         border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
-      child: FormInputWidget(
+      child: DynamicForm(
         id: id,
         inputs: input.inputs ?? [],
         onChanged: onChanged,

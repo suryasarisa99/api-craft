@@ -1,6 +1,6 @@
 import 'package:api_craft/core/services/app_service.dart';
 import 'package:api_craft/core/widgets/ui/custom_dialog.dart';
-import 'package:api_craft/features/template-functions/models/form_input.dart';
+import 'package:api_craft/features/dynamic-form/form_input.dart';
 import 'package:api_craft/features/template-functions/models/template_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

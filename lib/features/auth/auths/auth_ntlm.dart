@@ -1,7 +1,7 @@
 import 'package:api_craft/core/network/raw/raw_http_req.dart';
 import 'package:api_craft/core/nltm.dart';
 import 'package:api_craft/features/auth/models/auth_model.dart';
-import 'package:api_craft/features/template-functions/models/form_input.dart';
+import 'package:api_craft/features/dynamic-form/form_input.dart';
 import 'package:collection/collection.dart';
 
 final ntlmAuth = Authenticaion(

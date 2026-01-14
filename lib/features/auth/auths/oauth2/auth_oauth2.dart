@@ -1,7 +1,7 @@
 import 'package:api_craft/core/providers/ref_provider.dart';
 import 'package:api_craft/features/auth/auths/oauth2/store.dart';
 import 'package:api_craft/features/auth/models/auth_model.dart';
-import 'package:api_craft/features/template-functions/models/form_input.dart';
+import 'package:api_craft/features/dynamic-form/form_input.dart';
 
 import 'grants/authorization_code.dart';
 import 'grants/client_credentials.dart';
