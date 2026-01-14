@@ -108,19 +108,19 @@ final jwtAuth = Authenticaion(
     if (values['location'] == 'query') {
       final paramName = values['name'] ?? 'token';
       final paramValue = values['value'] ?? '';
-      return {
-        'setQueryParameters': [
-          {'name': paramName, 'value': paramValue},
+      return AuthResult(
+        queryParameters: [
+          [paramName, paramValue],
         ],
-      };
+      );
     }
     final headerPrefix = values['headerPrefix'] ?? 'Bearer';
     final headerName = values['name'] ?? 'Authorization';
     final headerValue = '$headerPrefix $token'.trim();
-    return {
-      'setHeaders': [
-        {'name': headerName, 'value': headerValue},
+    return AuthResult(
+      headers: [
+        [headerName, headerValue],
       ],
-    };
+    );
   },
 );

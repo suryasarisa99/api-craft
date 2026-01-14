@@ -91,11 +91,11 @@ final awsV4Auth = Authenticaion(
     );
 
     /// Apply signed headers (except content-type)
-    return {
-      'setHeaders': signedRequest.headers.entries
+    return AuthResult(
+      headers: signedRequest.headers.entries
           .where((e) => e.key.toLowerCase() != 'content-type')
-          .map((e) => {'name': e.key, 'value': e.value})
+          .map((e) => [e.key, e.value])
           .toList(),
-    };
+    );
   },
 );

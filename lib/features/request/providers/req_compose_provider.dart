@@ -112,9 +112,9 @@ class ReqComposeNotifier extends Notifier<UiRequestContext> {
     _treeNotifier.updateRequestBodyType(id, type);
   }
 
-  void updateAuth(AuthData auth) {
-    _treeNotifier.updateAuth(id, auth);
-  }
+  // void updateAuth(AuthData auth) {
+  //   _treeNotifier.updateAuth(id, auth);
+  // }
 
   void updateVariables(List<KeyValueItem> variables) {
     _treeNotifier.updateFolderVariables(id, variables);

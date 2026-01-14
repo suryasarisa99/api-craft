@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'dart:typed_data';
 import 'dart:convert';
-import 'package:api_craft/features/response/models/http_response_model.dart';
 import 'package:nanoid/nanoid.dart';
 
 import 'package:api_craft/core/network/raw/raw_http_req.dart';
@@ -12,7 +11,6 @@ import 'package:api_craft/core/services/script_execution_service.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:api_craft/features/request/models/node_model.dart';
 import 'package:api_craft/core/services/assertion_service.dart';
 
 class HttpService {
@@ -59,7 +57,7 @@ class HttpService {
         url: req.uri,
         headers: req.headers,
         body: req.body is Map ? jsonEncode(req.body) : req.body,
-        useProxy: false,
+        useProxy: true,
         requestId: req.request.id,
         maxRedirects: 50,
       );

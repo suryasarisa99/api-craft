@@ -74,10 +74,10 @@ final ntlmAuth = Authenticaion(
     );
 
     // STEP 6: Return Authorization header
-    return {
-      'setHeaders': [
-        {'name': 'Authorization', 'value': type3},
+    return AuthResult(
+      headers: [
+        ["Authorization", type3],
       ],
-    };
+    );
   },
 );

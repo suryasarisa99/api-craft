@@ -358,14 +358,43 @@ class FileTreeNotifier extends Notifier<TreeData> {
     }
   }
 
-  void updateAuth(String id, AuthData auth, {bool persist = false}) {
-    final node = map[id];
-    if (node != null) {
-      updateNode(
-        node.copyWith(config: node.config.copyWith(auth: auth)),
-        persist: persist,
-      );
-    }
+  // void updateAuth(String id, AuthData auth, {bool persist = false}) {
+  //   final node = map[id];
+  //   if (node != null) {
+  //     updateNode(
+  //       node.copyWith(config: node.config.copyWith(auth: auth)),
+  //       persist: persist,
+  //     );
+  //   }
+  // }
+
+  // Auth
+  void setAuthData(
+    String id,
+    AuthType authType,
+    Map<String, dynamic> data, {
+    bool persist = false,
+  }) {
+    final node = state.nodeMap[id]!;
+    updateNode(
+      node.copyWith(
+        config: node.config.copyWith(
+          auth: AuthData(type: authType, data: data),
+        ),
+      ),
+      persist: persist,
+    );
+  }
+
+  void setAuthType(String id, AuthType authType, {bool persist = false}) {
+    //resets data
+    final node = state.nodeMap[id]!;
+    updateNode(
+      node.copyWith(
+        config: node.config.copyWith(auth: AuthData(type: authType)),
+      ),
+      persist: persist,
+    );
   }
 
   void updateFolderVariables(

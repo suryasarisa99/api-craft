@@ -23,14 +23,12 @@ final bearerAuth = Authenticaion(
     ),
   ],
   onApply: (ref, args) {
-    return {
-      'setHeaders': [generateAuthorizationHeader(args.values)],
-    };
+    return AuthResult(headers: [generateAuthorizationHeader(args.values)]);
   },
 );
-Map<String, dynamic> generateAuthorizationHeader(Map<String, dynamic> values) {
+List<String> generateAuthorizationHeader(Map<String, dynamic> values) {
   final token = values['token'];
   final prefix = values['prefix'];
   final value = '$prefix $token'.trim();
-  return {'name': 'Authorization', 'value': value};
+  return ['Authorization', value];
 }

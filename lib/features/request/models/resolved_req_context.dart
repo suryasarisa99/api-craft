@@ -22,11 +22,7 @@ class ResolvedRequestContext {
       'method': request.method,
       'headers': headers.map((e) => {'key': e[0], 'value': e[1]}).toList(),
       'body': body is List<int> ? String.fromCharCodes(body) : body,
-      'auth': {
-        'type': auth.type.name,
-        'username': auth.username,
-        'token': auth.token,
-      },
+      'auth': {'type': auth.type.name, 'data': auth.data},
       'variables': variables.map((key, value) => MapEntry(key, value.value)),
     };
   }

@@ -44,16 +44,16 @@ final apiKeyAuth = Authenticaion(
     final location = args.values['location'];
 
     if (location == 'query') {
-      return {
-        'setQueryParameters': [
-          {'name': key, 'value': value},
+      return AuthResult(
+        queryParameters: [
+          [key, value],
         ],
-      };
+      );
     }
-    return {
-      'setHeaders': [
-        {'name': key, 'value': value},
+    return AuthResult(
+      headers: [
+        [key, value],
       ],
-    };
+    );
   },
 );

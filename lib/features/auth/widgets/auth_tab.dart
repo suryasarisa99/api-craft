@@ -3,6 +3,7 @@ import 'package:api_craft/core/providers/providers.dart';
 import 'package:api_craft/features/auth/auth_registry.dart';
 import 'package:api_craft/features/collection/collection_config_dialog.dart';
 import 'package:api_craft/features/dynamic-form/form_state.dart';
+import 'package:api_craft/features/request/providers/request_details_provider.dart';
 import 'package:api_craft/features/sidebar/context_menu.dart';
 import 'package:api_craft/features/dynamic-form/dynamic_form.dart';
 import 'package:flutter/material.dart';
@@ -95,20 +96,33 @@ class AuthTabContent extends ConsumerStatefulWidget {
 
 class _AuthTabContentState extends ConsumerState<AuthTabContent> {
   late final authentication = getAuth(widget.authType)!;
-  late final s = getFnState(authentication.args, {});
+  late final s = getFnState(
+    authentication.args,
+    ref.read(requestDetailsProvider(widget.id)).inherit.auth.data,
+  );
 
   @override
   void initState() {
     super.initState();
   }
 
+  void onChange(String k, dynamic v) {
+    s[k] = v;
+    debugPrint("set: $k: $v");
+    ref
+        .read(fileTreeProvider.notifier)
+        .setAuthData(widget.id, widget.authType, s);
+  }
+
   @override
   Widget build(BuildContext context) {
-    return DynamicForm(
-      inputs: authentication.args,
-      onChanged: (v, _) {},
-      data: s,
-      id: widget.id,
+    return Form(
+      child: DynamicForm(
+        inputs: authentication.args,
+        onChanged: onChange,
+        data: s,
+        id: widget.id,
+      ),
     );
   }
 }

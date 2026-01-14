@@ -6,6 +6,7 @@ import 'dart:io';
 import 'package:api_craft/core/network/header_utils.dart';
 import 'package:api_craft/core/models/models.dart';
 import 'package:api_craft/core/providers/providers.dart';
+import 'package:api_craft/features/auth/auth_registry.dart';
 import 'package:api_craft/features/request/models/inherited_request_model.dart';
 import 'package:api_craft/features/request/widgets/tabs/tab_titles.dart';
 import 'package:api_craft/features/template-functions/models/template_placeholder_model.dart';
@@ -131,7 +132,7 @@ class RequestResolver {
         ];
       }).toList(),
     );
-    final fullUri = _handleUri(uri, queryParams);
+    var fullUri = _handleUri(uri, queryParams);
 
     // Headers Handling
     final rawHeaders = await _handleHeaders(
@@ -184,19 +185,48 @@ class RequestResolver {
         }
       }
     }
-    final resolvedAuth = auth.copyWith(
-      token: await resolveVariables(auth.token, resolver, context: context),
-      username: await resolveVariables(
-        auth.username,
+
+    // resolve auth
+    final resolvedAuthData = <String, dynamic>{};
+    for (final entry in auth.data.entries) {
+      resolvedAuthData[entry.key] = await resolveVariables(
+        entry.value,
         resolver,
         context: context,
-      ),
-      password: await resolveVariables(
-        auth.password,
-        resolver,
-        context: context,
+      );
+    }
+    final resolvedAuth = auth.copyWith(data: resolvedAuthData);
+    //set headers or query params based on auth.
+    final data = await getAuth(resolvedAuth.type)?.onApply(
+      ref,
+      CallAuthFunctionArgs(
+        headers: headers,
+        url: fullUri.toString(),
+        values: resolvedAuthData,
+        method: node.method,
       ),
     );
+    if (data != null) {
+      if (data.headers != null) {
+        final filteredHeaders = data.headers!.where(
+          (h) => h.length == 2 && h[0].isNotEmpty,
+        );
+        headers.addAll(filteredHeaders);
+      }
+      if (data.queryParameters != null) {
+        final filteredQueryParams = data.queryParameters!.where(
+          (p) => p.isNotEmpty && (p[0].isNotEmpty || p[1].isNotEmpty),
+        );
+        final newParams = Map<String, List<String>>.from(
+          fullUri.queryParametersAll,
+        );
+
+        newParams.addEntries(
+          filteredQueryParams.map((p) => MapEntry(p[0], [p[1]])),
+        );
+        fullUri = fullUri.replace(queryParameters: newParams);
+      }
+    }
 
     // After all resolution, we can get only the variables that were actually used
     final finalResolvedVars = <String, VariableValue>{};
@@ -622,7 +652,7 @@ class RequestResolver {
       final value = trimValues ? item.value.trim() : item.value;
       final keyIsEmpty = key.isEmpty;
       if (keyIsEmpty && value.isEmpty) continue;
-      if (removeEmptyKeys && key.isEmpty) continue;
+      if (removeEmptyKeys && keyIsEmpty) continue;
       cleanedItems.add([key, value]);
     }
     return cleanedItems;

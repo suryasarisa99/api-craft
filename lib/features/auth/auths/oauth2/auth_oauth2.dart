@@ -155,11 +155,11 @@ final oauth2Auth = Authenticaion(
 
     final headerValue = "$headerPrefix $tokenValue".trim();
 
-    return {
-      'setHeaders': [
-        {'name': headerName, 'value': headerValue},
+    return AuthResult(
+      headers: [
+        [headerName, headerValue],
       ],
-    };
+    );
   },
   args: [
     FormInputSelect(

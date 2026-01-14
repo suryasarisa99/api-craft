@@ -20,9 +20,9 @@ final basicAuth = Authenticaion(
     final username = values['username'];
     final password = values['password'];
     final value = 'Basic ${base64Encode(utf8.encode('$username:$password'))}';
-    final auth = [
-      {'name': 'Authorization', value: value},
+    final headers = [
+      ['Authorization', value],
     ];
-    return {'setHeaders': auth};
+    return AuthResult(headers: headers);
   },
 );

@@ -229,4 +229,20 @@ class RequestDetailsNotifier extends Notifier<RequestDetailsState> {
     );
     _dataRepo.deleteCurrHistory(historyId);
   }
+
+  // Auth
+  void setAuthData(AuthType authType, Map<String, dynamic> data) {
+    state = state.copyWith(
+      inherit: state.inherit.copyWith(
+        auth: AuthData(type: authType, data: data),
+      ),
+    );
+  }
+
+  void setAuthType(AuthType authType) {
+    //resets data
+    state = state.copyWith(
+      inherit: state.inherit.copyWith(auth: AuthData(type: authType)),
+    );
+  }
 }
