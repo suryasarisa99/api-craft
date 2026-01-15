@@ -112,6 +112,9 @@ class FolderNode extends Node<FolderNodeConfig> {
     // Assertions
     folderConfig.assertions = Node.parseAssertions(details['assertions']);
 
+    // Encrypted Key
+    folderConfig.encryptedKey = details['encrypted_key'];
+
     // 2. Mark as loaded
     folderConfig.isDetailLoaded = true;
 
@@ -139,6 +142,7 @@ class FolderNode extends Node<FolderNodeConfig> {
         postRequestScript: map['post_request_script'],
         testScript: map['test_script'] ?? map['scripts'],
         assertions: hasDetails ? Node.parseAssertions(map['assertions']) : [],
+        encryptedKey: map['encrypted_key'],
       ),
     );
   }
@@ -180,6 +184,7 @@ class FolderNode extends Node<FolderNodeConfig> {
       'post_request_script': folderConfig.postRequestScript,
       'test_script': folderConfig.testScript,
       'assertions': folderConfig.assertions.map((e) => e.toMap()).toList(),
+      'encrypted_key': folderConfig.encryptedKey,
     };
   }
 
@@ -223,6 +228,26 @@ class CollectionNode extends FolderNode {
       config: config ?? this.config,
       children: children ?? this.children,
     );
+  }
+
+  @override
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'parent_id': parentId,
+      'name': name,
+      'type': NodeType.folder.toString(),
+      'sort_order': sortOrder,
+      // Delegate detailed fields to the config object
+      'description': folderConfig.description,
+      'headers': folderConfig.headers.map((e) => e.toMap()).toList(),
+      'auth': folderConfig.auth.toMap(),
+      'pre_request_script': folderConfig.preRequestScript,
+      'post_request_script': folderConfig.postRequestScript,
+      'test_script': folderConfig.testScript,
+      'assertions': folderConfig.assertions.map((e) => e.toMap()).toList(),
+      'encrypted_key': folderConfig.encryptedKey,
+    };
   }
 }
 

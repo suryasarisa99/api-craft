@@ -28,7 +28,7 @@ final _entities = <obx_int.ModelEntity>[
   obx_int.ModelEntity(
     id: const obx_int.IdUid(1, 5570044280377796997),
     name: 'CollectionEntity',
-    lastPropertyId: const obx_int.IdUid(10, 8467056271953228457),
+    lastPropertyId: const obx_int.IdUid(11, 9107515042770587633),
     flags: 0,
     properties: <obx_int.ModelProperty>[
       obx_int.ModelProperty(
@@ -304,7 +304,7 @@ final _entities = <obx_int.ModelEntity>[
   obx_int.ModelEntity(
     id: const obx_int.IdUid(5, 7045792345788763009),
     name: 'NodeEntity',
-    lastPropertyId: const obx_int.IdUid(23, 6704107075947963788),
+    lastPropertyId: const obx_int.IdUid(24, 5756939097608398950),
     flags: 0,
     properties: <obx_int.ModelProperty>[
       obx_int.ModelProperty(
@@ -446,6 +446,12 @@ final _entities = <obx_int.ModelEntity>[
         id: const obx_int.IdUid(23, 6704107075947963788),
         name: 'assertions',
         type: 13,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(24, 5756939097608398950),
+        name: 'encryptedKey',
+        type: 9,
         flags: 0,
       ),
     ],
@@ -617,6 +623,7 @@ obx_int.ModelDefinition getObjectBoxModel() {
       788942307543725488,
       4307797785585676034,
       8467056271953228457,
+      9107515042770587633,
     ],
     retiredRelationUids: const [],
     modelVersion: 5,
@@ -646,7 +653,7 @@ obx_int.ModelDefinition getObjectBoxModel() {
         final selectedJarIdOffset = object.selectedJarId == null
             ? null
             : fbb.writeString(object.selectedJarId!);
-        fbb.startTable(11);
+        fbb.startTable(12);
         fbb.addInt64(0, object.id);
         fbb.addOffset(1, uidOffset);
         fbb.addOffset(2, nameOffset);
@@ -1051,7 +1058,10 @@ obx_int.ModelDefinition getObjectBoxModel() {
         final assertionsOffset = object.assertions == null
             ? null
             : fbb.writeListInt8(obx_int.toFlexBuffer(object.assertions!));
-        fbb.startTable(24);
+        final encryptedKeyOffset = object.encryptedKey == null
+            ? null
+            : fbb.writeString(object.encryptedKey!);
+        fbb.startTable(25);
         fbb.addInt64(0, object.id);
         fbb.addOffset(1, uidOffset);
         fbb.addOffset(2, collectionIdOffset);
@@ -1075,6 +1085,7 @@ obx_int.ModelDefinition getObjectBoxModel() {
         fbb.addOffset(20, preRequestScriptOffset);
         fbb.addOffset(21, postRequestScriptOffset);
         fbb.addOffset(22, assertionsOffset);
+        fbb.addOffset(23, encryptedKeyOffset);
         fbb.finish(fbb.endTable());
         return object.id;
       },
@@ -1164,6 +1175,9 @@ obx_int.ModelDefinition getObjectBoxModel() {
           rootOffset,
           42,
         );
+        final encryptedKeyParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGetNullable(buffer, rootOffset, 50);
         final object = NodeEntity(
           id: idParam,
           uid: uidParam,
@@ -1188,6 +1202,7 @@ obx_int.ModelDefinition getObjectBoxModel() {
           variables: variablesParam,
           assertions: assertionsParam,
           statusCode: statusCodeParam,
+          encryptedKey: encryptedKeyParam,
         );
 
         return object;
@@ -1615,6 +1630,11 @@ class NodeEntity_ {
   /// See [NodeEntity.postRequestScript].
   static final postRequestScript = obx.QueryStringProperty<NodeEntity>(
     _entities[4].properties[21],
+  );
+
+  /// See [NodeEntity.encryptedKey].
+  static final encryptedKey = obx.QueryStringProperty<NodeEntity>(
+    _entities[4].properties[23],
   );
 }
 

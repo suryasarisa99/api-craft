@@ -5,7 +5,7 @@
   "entities": [
     {
       "id": "1:5570044280377796997",
-      "lastPropertyId": "10:8467056271953228457",
+      "lastPropertyId": "11:9107515042770587633",
       "name": "CollectionEntity",
       "properties": [
         {
@@ -247,7 +247,7 @@
     },
     {
       "id": "5:7045792345788763009",
-      "lastPropertyId": "23:6704107075947963788",
+      "lastPropertyId": "24:5756939097608398950",
       "name": "NodeEntity",
       "properties": [
         {
@@ -371,6 +371,11 @@
           "id": "23:6704107075947963788",
           "name": "assertions",
           "type": 13
+        },
+        {
+          "id": "24:5756939097608398950",
+          "name": "encryptedKey",
+          "type": 9
         }
       ],
       "relations": []
@@ -487,7 +492,8 @@
   "retiredPropertyUids": [
     788942307543725488,
     4307797785585676034,
-    8467056271953228457
+    8467056271953228457,
+    9107515042770587633
   ],
   "retiredRelationUids": [],
   "version": 1

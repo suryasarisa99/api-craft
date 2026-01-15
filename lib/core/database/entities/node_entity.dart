@@ -44,6 +44,7 @@ class NodeEntity {
   // Folder specific - List<Map>
   List<Map<String, dynamic>>? variables;
   List<Map<String, dynamic>>? assertions; // New field for assertions
+  String? encryptedKey; // Added field for collection security
 
   NodeEntity({
     this.id = 0,
@@ -69,6 +70,7 @@ class NodeEntity {
     this.variables,
     this.assertions,
     this.statusCode,
+    this.encryptedKey,
   });
 
   // Mapping from Domain Model
@@ -119,6 +121,7 @@ class NodeEntity {
 
         scripts: node.folderConfig.testScript,
         assertions: node.folderConfig.assertions.map((e) => e.toMap()).toList(),
+        encryptedKey: node.folderConfig.encryptedKey,
       );
     }
     throw UnimplementedError("Unknown node type");
@@ -146,6 +149,7 @@ class NodeEntity {
           assertions:
               assertions?.map((e) => AssertionDefinition.fromMap(e)).toList() ??
               [],
+          encryptedKey: encryptedKey,
         ),
       );
     } else {

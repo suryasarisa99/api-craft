@@ -4,7 +4,7 @@ class CollectionModel {
   final String id;
   final String name;
   final CollectionType type;
-  final String? path; // Only used if type == filesystem
+  final String? path;
   final String? selectedEnvId;
   final String? selectedJarId;
 
@@ -21,9 +21,7 @@ class CollectionModel {
     return CollectionModel(
       id: map['id'],
       name: map['name'],
-      type: map['type'] == 'database'
-          ? CollectionType.database
-          : CollectionType.filesystem,
+      type: CollectionType.values.byName(map['type'] ?? 'local'),
       path: map['path'],
       selectedEnvId: map['selected_env_id'],
       selectedJarId: map['selected_jar_id'],
@@ -34,7 +32,7 @@ class CollectionModel {
     return {
       'id': id,
       'name': name,
-      'type': type == CollectionType.database ? 'database' : 'filesystem',
+      'type': type.name,
       'path': path,
       'selected_env_id': selectedEnvId,
       'selected_jar_id': selectedJarId,

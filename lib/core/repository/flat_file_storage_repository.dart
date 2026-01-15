@@ -319,6 +319,25 @@ class FlatFileStorageRepository implements StorageRepository {
   }
 
   @override
+  Future<void> setCollectionEncryption(String id, String encryptedKey) async {
+    // Target the root node file (Folder type)
+    final file = _getNodeFile(id, NodeType.folder);
+
+    Map<String, dynamic> data = {};
+    if (await file.exists()) {
+      try {
+        data = jsonDecode(await file.readAsString());
+        data['encrypted_key'] = encryptedKey;
+        await file.writeAsString(_jsonEncoder.convert(data));
+      } catch (e) {
+        debugPrint('Error updating collection root for encryption: $e');
+      }
+    } else {
+      debugPrint("Root node file not found for encryption: ${file.path}");
+    }
+  }
+
+  @override
   Future<void> setHistoryIndex(String requestId, String? historyId) async {
     final file = _getNodeFile(requestId, NodeType.request);
     if (await file.exists()) {

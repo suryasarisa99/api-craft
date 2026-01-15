@@ -41,9 +41,7 @@ class CollectionEntity {
     return CollectionModel(
       id: uid,
       name: name,
-      type: type == CollectionType.database.name
-          ? CollectionType.database
-          : CollectionType.filesystem,
+      type: CollectionType.values.byName(type),
       path: path,
       selectedEnvId: selectedEnvId,
       selectedJarId: selectedJarId,

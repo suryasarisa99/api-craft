@@ -436,6 +436,17 @@ class FileTreeNotifier extends Notifier<TreeData> {
     }
   }
 
+  void updateEncryptionKey(String id, String key) {
+    final node = map[id];
+    if (node is FolderNode) {
+      final newConfig = node.config.clone()..encryptedKey = key;
+      updateNode(
+        node.copyWith(config: newConfig),
+        persist: false, // Persistence already handled by service
+      );
+    }
+  }
+
   void updateStatusCode(String id, int statusCode) {
     final node = map[id];
     if (node is RequestNode) {

@@ -8,6 +8,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:api_craft/core/providers/providers.dart';
 import 'package:api_craft/core/repository/data_repository.dart';
 import 'package:nanoid/nanoid.dart';
+import 'dart:io';
+import 'dart:convert';
+import 'package:path/path.dart' as p;
 
 final collectionsProvider =
     AsyncNotifierProvider<CollectionsNotifier, List<CollectionModel>>(
@@ -132,7 +135,10 @@ class CollectionsNotifier extends AsyncNotifier<List<CollectionModel>> {
           // to reflect the name change immediately in the UI tree
           final selectedId = ref.read(selectedCollectionProvider)?.id;
           if (selectedId == collection.id) {
-            ref.invalidate(fileTreeProvider);
+            // Update the tree node name directly without rebuilding the whole tree
+            ref
+                .read(fileTreeProvider.notifier)
+                .updateNodeName(collection.id, collection.name);
           }
         } catch (e) {
           debugPrint("Error syncing collection name to root node: $e");

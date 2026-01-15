@@ -3,20 +3,22 @@ import 'package:api_craft/core/providers/providers.dart';
 import 'package:api_craft/core/providers/ref_provider.dart';
 import 'package:api_craft/core/widgets/ui/custom_dialog.dart';
 import 'package:api_craft/features/dynamic-form/form_state.dart';
+import 'package:api_craft/features/template-functions/functions/secure_fn.dart';
 import 'package:api_craft/features/template-functions/models/template_placeholder_model.dart';
 import 'package:api_craft/features/template-functions/parsers/parse.dart';
 import 'package:api_craft/features/dynamic-form/dynamic_form.dart';
 import 'package:api_craft/core/utils/debouncer.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
+import 'package:api_craft/features/collection/services/collection_security_service.dart'; // collectionSecurityServiceProvider
 
-class FormPopupWidget extends ConsumerStatefulWidget {
+class TemplateFormPopup extends ConsumerStatefulWidget {
   final TemplateFnPlaceholder fnPlaceholder;
   final TemplateFunction templateFn;
   final void Function(String Function(String val) fn) updateField;
   final String? id;
 
-  const FormPopupWidget({
+  const TemplateFormPopup({
     super.key,
     required this.fnPlaceholder,
     required this.templateFn,
@@ -25,10 +27,10 @@ class FormPopupWidget extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<FormPopupWidget> createState() => _FormPopupWidgetState();
+  ConsumerState<TemplateFormPopup> createState() => _TemplateFormPopupState();
 }
 
-class _FormPopupWidgetState extends ConsumerState<FormPopupWidget> {
+class _TemplateFormPopupState extends ConsumerState<TemplateFormPopup> {
   late Map<String, dynamic> fnState = getFnState(
     widget.templateFn.args,
     widget.fnPlaceholder.args,
@@ -36,12 +38,24 @@ class _FormPopupWidgetState extends ConsumerState<FormPopupWidget> {
   String? renderedValue;
   final debouncer = Debouncer(Duration(milliseconds: 500));
   final _formKey = GlobalKey<FormState>();
+  bool _hasDecrypted = false;
 
   @override
   void initState() {
     super.initState();
     if (widget.templateFn.previewType == "auto") {
       renderPreview("auto");
+    }
+    if (widget.templateFn.name == 'secure') {
+      decryptValue(getRef(ref), fnState['value']).then((decrypted) {
+        debugPrint("decrypted: $decrypted");
+        if (mounted) {
+          setState(() {
+            fnState['value'] = decrypted;
+            _hasDecrypted = true;
+          });
+        }
+      });
     }
   }
 
@@ -53,10 +67,27 @@ class _FormPopupWidgetState extends ConsumerState<FormPopupWidget> {
       return;
     }
 
+    _processAndSubmit();
+  }
+
+  Future<void> _processAndSubmit() async {
+    Map<String, dynamic> finalState = Map.from(fnState);
+
+    if (widget.templateFn.name == 'secure') {
+      final value = finalState['value'];
+      if (value != null && value.isNotEmpty && !value.startsWith('ENC_')) {
+        final securityService = ref.read(collectionSecurityServiceProvider);
+        final encrypted = await securityService.encryptData(value);
+        finalState['value'] = encrypted;
+      }
+    }
+
+    if (!mounted) return;
+
     // update url
     // replace node url placeholder
     final fnStr = serializePlaceholder(
-      widget.fnPlaceholder.copyWithArgs(fnState),
+      widget.fnPlaceholder.copyWithArgs(finalState),
     );
     debugPrint("fnStr: $fnStr");
     debugPrint(
@@ -137,11 +168,11 @@ class _FormPopupWidgetState extends ConsumerState<FormPopupWidget> {
           Form(
             key: _formKey,
             child: DynamicForm(
+              key: ValueKey(_hasDecrypted),
               id: widget.id,
               inputs: widget.templateFn.args,
               data: fnState,
               onChanged: (key, value) {
-                debugPrint("Input changed: $key -> $value");
                 setState(() {
                   fnState = Map.from(fnState)..[key] = value;
                 });
@@ -156,28 +187,29 @@ class _FormPopupWidgetState extends ConsumerState<FormPopupWidget> {
 
           /// Preview
           const SizedBox(height: 16),
-          Container(
-            padding: .symmetric(vertical: 6, horizontal: 12),
-            decoration: BoxDecoration(
-              color: const Color.fromARGB(255, 64, 67, 67),
-              borderRadius: BorderRadius.circular(4),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: SelectableText(
-                    renderedValue ?? "",
-                    style: const TextStyle(color: Colors.white),
+          if (widget.templateFn.previewType != "disabled")
+            Container(
+              padding: .symmetric(vertical: 6, horizontal: 12),
+              decoration: BoxDecoration(
+                color: const Color.fromARGB(255, 64, 67, 67),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: SelectableText(
+                      renderedValue ?? "",
+                      style: const TextStyle(color: Colors.white),
+                    ),
                   ),
-                ),
-                const SizedBox(width: 20),
-                IconButton(
-                  onPressed: () => renderPreview("click"),
-                  icon: const Icon(Icons.refresh),
-                ),
-              ],
+                  const SizedBox(width: 20),
+                  IconButton(
+                    onPressed: () => renderPreview("click"),
+                    icon: const Icon(Icons.refresh),
+                  ),
+                ],
+              ),
             ),
-          ),
 
           /// Save Button
           const SizedBox(height: 16),

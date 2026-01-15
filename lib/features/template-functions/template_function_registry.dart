@@ -5,6 +5,7 @@ import 'package:api_craft/features/template-functions/functions/template_functio
 import 'package:api_craft/features/template-functions/functions/template_function_regex.dart';
 import 'package:api_craft/features/template-functions/functions/template_function_response.dart';
 import 'package:api_craft/features/template-functions/functions/template_function_xml.dart';
+import 'package:api_craft/features/template-functions/functions/secure_fn.dart';
 import 'package:api_craft/features/template-functions/models/template_functions.dart';
 
 final templates = [
@@ -22,6 +23,7 @@ final templates = [
   cookieValueFn,
   jsonPathFn,
   xmlPathFn,
+  secureFn,
 
   // ctx
   ctxWorkspaceIdFn,

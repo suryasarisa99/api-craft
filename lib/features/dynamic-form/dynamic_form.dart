@@ -257,7 +257,6 @@ class FormWidgetText extends StatelessWidget {
 
     return VariableTextFieldCustom(
       id: id,
-
       decoration: InputDecoration(
         labelText: label,
         hintText: placeholder,

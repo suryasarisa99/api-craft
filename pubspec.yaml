@@ -60,6 +60,8 @@ dependencies:
   dart_jsonwebtoken: ^3.3.1
   aws_signature_v4: ^0.6.10
   aws_common: ^0.7.12
+  flutter_secure_storage: ^10.0.0
+  cryptography: ^2.9.0
 
 dev_dependencies:
   flutter_test:

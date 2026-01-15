@@ -95,6 +95,7 @@ abstract class NodeConfig {
 
 class FolderNodeConfig extends NodeConfig {
   List<KeyValueItem> variables;
+  String? encryptedKey;
 
   FolderNodeConfig({
     super.headers,
@@ -106,9 +107,10 @@ class FolderNodeConfig extends NodeConfig {
     super.testScript,
     super.assertions,
     List<KeyValueItem>? variables,
+    this.encryptedKey,
   }) : variables = variables ?? [];
 
-  FolderNodeConfig.empty() : variables = [], super();
+  FolderNodeConfig.empty() : variables = [], encryptedKey = null, super();
 
   @override
   FolderNodeConfig copyWith({
@@ -121,6 +123,7 @@ class FolderNodeConfig extends NodeConfig {
     String? testScript,
     List<AssertionDefinition>? assertions,
     List<KeyValueItem>? variables,
+    String? encryptedKey,
   }) {
     return FolderNodeConfig(
       headers: headers ?? this.headers,
@@ -132,6 +135,7 @@ class FolderNodeConfig extends NodeConfig {
       testScript: testScript ?? this.testScript,
       assertions: assertions ?? this.assertions,
       variables: variables ?? this.variables,
+      encryptedKey: encryptedKey ?? this.encryptedKey,
     );
   }
 
@@ -150,6 +154,7 @@ class FolderNodeConfig extends NodeConfig {
         assertions.map((e) => e.copyWith()),
       ),
       variables: List<KeyValueItem>.from(variables),
+      encryptedKey: encryptedKey,
     );
   }
 }

@@ -4,8 +4,10 @@ import 'package:api_craft/objectbox.g.dart';
 import 'package:api_craft/core/models/models.dart';
 import 'package:api_craft/core/repository/storage_repository.dart';
 import 'package:api_craft/core/constants/globals.dart'; // Added import
+import 'package:flutter/cupertino.dart';
 import 'package:nanoid/nanoid.dart';
 import 'package:api_craft/core/database/entities/environment_entity.dart';
+import 'package:api_craft/core/database/entities/collection_entity.dart';
 
 class ObjectBoxStorageRepository implements StorageRepository {
   final Future<ObjectBox> _obxFuture;
@@ -242,6 +244,30 @@ class ObjectBoxStorageRepository implements StorageRepository {
     final q = box.query(EnvironmentEntity_.uid.equals(id)).build();
     q.remove();
     q.close();
+  }
+
+  @override
+  Future<void> setCollectionEncryption(String id, String encryptedKey) async {
+    // Determine the root node UID.
+    // In our architecture, the collection ID is often used as the root folder ID,
+    // OR there is a node with ID=collectionId.
+    // Let's assume the root node has uid == id (collection id).
+
+    final box = await _nodeBox;
+    final q = box.query(NodeEntity_.uid.equals(id)).build();
+    final node = q.findFirst();
+    q.close();
+
+    if (node != null) {
+      // Update the node's encryptedKey
+      // node is a NodeEntity, so we update the field directly.
+      node.encryptedKey = encryptedKey;
+      box.put(node);
+    } else {
+      // If root node doesn't exist (rare for synced collection?), create it?
+      // Usually it should exist if `getNodes` fetches it.
+      debugPrint("Warning: Root node not found for encryption update: $id");
+    }
   }
 
   @override

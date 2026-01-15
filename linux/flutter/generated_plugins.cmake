@@ -5,6 +5,7 @@
 list(APPEND FLUTTER_PLUGIN_LIST
   desktop_drop
   flutter_js
+  flutter_secure_storage_linux
   irondash_engine_context
   objectbox_flutter_libs
   screen_retriever_linux

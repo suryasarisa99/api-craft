@@ -34,18 +34,6 @@ abstract class StorageRepository {
   Future<void> createOne(Node node);
   Future<void> createMany(List<Node> nodes);
 
-  // --- Collections ---
-  // Managed by DataRepository explicitly now? Or leave updateCollectionSelection here?
-  // User said "keep only requests/folders and environement detail methods".
-  // Collection Selection is technically config, but private config in DB.
-  // It was moved to DataRepository.
-
-  /// Reads the configuration columns (headers, auth, vars, desc) for a node
-  // Future<NodeConfig> getNodeConfig(String id);
-
-  /// Updates only the configuration columns for a node
-  // Future<void> saveNodeConfig(String id, NodeConfig config);
-
   Future<void> updateNode(Node node);
   Future<void> updateRequestBody(String id, String body);
   Future<void> updateScripts(String id, String scripts);
@@ -57,4 +45,5 @@ abstract class StorageRepository {
   Future<void> createEnvironment(Environment env);
   Future<void> updateEnvironment(Environment env);
   Future<void> deleteEnvironment(String id);
+  Future<void> setCollectionEncryption(String id, String encryptedKey);
 }
