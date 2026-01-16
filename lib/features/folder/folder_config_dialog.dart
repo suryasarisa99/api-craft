@@ -4,6 +4,7 @@ import 'package:api_craft/core/widgets/ui/variable_text_field_custom.dart';
 import 'package:api_craft/core/utils/debouncer.dart';
 import 'package:api_craft/features/auth/widgets/auth_tab.dart';
 import 'package:api_craft/features/auth/widgets/auth_tab_header.dart';
+import 'package:api_craft/features/request/widgets/tabs/assertions_tab.dart';
 import 'package:api_craft/features/request/widgets/tabs/environment_tab.dart';
 import 'package:api_craft/features/request/widgets/tabs/headers_tab.dart';
 import 'package:flutter/material.dart';
@@ -95,7 +96,14 @@ class _FolderConfigDialogState extends ConsumerState<FolderConfigDialog> {
   }
 
   Widget _buildDialog() {
-    final tabs = ["General", "Headers", "Auth", "Environment", "Scripts"];
+    final tabs = [
+      "General",
+      "Headers",
+      "Auth",
+      "Assertions",
+      "Environment",
+      "Scripts",
+    ];
     return Padding(
       padding: const EdgeInsets.all(00),
       child: Column(
@@ -216,6 +224,9 @@ class _FolderConfigDialogState extends ConsumerState<FolderConfigDialog> {
                       HeadersTab(id: widget.id),
                       // 3. Auth Tab
                       AuthTab(id: widget.id),
+                      // 4. Assertions Tab
+                      AssertionsTab(id: widget.id),
+
                       EnvironmentTab(id: widget.id),
                       // 4. Variables Tab
                       // _VariablesTab(controller: _controller),

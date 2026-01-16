@@ -1241,10 +1241,10 @@ packages:
     dependency: "direct main"
     description:
       name: sonner_toast
-      sha256: d1a8540c7515bc0645ed418cb7b2a1c94dc21f2079cf5ef809ca92197450fa54
+      sha256: bc5d0614a7c359f3202c479157738da522fc9c8107f8df7156290d43e84eedcd
       url: "https://pub.dev"
     source: hosted
-    version: "1.0.0"
+    version: "2.0.1"
   source_gen:
     dependency: transitive
     description:

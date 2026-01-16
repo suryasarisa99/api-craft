@@ -14,9 +14,7 @@ class AssertionsTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final provider = reqComposeProvider(id);
     final assertions = ref.watch(
-      provider.select(
-        (value) => (value.node as RequestNode).reqConfig.assertions,
-      ),
+      provider.select((value) => (value.node).config.assertions),
     );
 
     return AssertionsEditor(
@@ -79,9 +77,14 @@ class _AssertionsEditorState extends State<AssertionsEditor> {
   @override
   Widget build(BuildContext context) {
     const itemHeight = 38.0;
+    const style = TextStyle(
+      fontSize: 12,
+      color: Colors.grey,
+      fontWeight: FontWeight.w400,
+    );
     return Scaffold(
       body: Padding(
-        padding: const EdgeInsets.only(left: 8, right: 4),
+        padding: const EdgeInsets.only(left: 8, right: 4, top: 12),
         child: SingleChildScrollView(
           child: Column(
             children: [
@@ -90,43 +93,23 @@ class _AssertionsEditorState extends State<AssertionsEditor> {
                 padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
                 child: Row(
                   children: const [
-                    SizedBox(width: 40), // Checkbox + drag
+                    SizedBox(width: 45), // Checkbox + drag
                     Expanded(
                       flex: 3,
-                      child: Text(
-                        "Expression (e.g. res.status)",
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
+                      child: Text("Expression (e.g. res.status)", style: style),
                     ),
                     SizedBox(width: 8),
-                    Expanded(
-                      flex: 2,
-                      child: Text(
-                        "Operator",
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
+                    Expanded(flex: 2, child: Text("Operator", style: style)),
                     SizedBox(width: 8),
                     Expanded(
                       flex: 3,
-                      child: Text(
-                        "Expected Value",
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
+                      child: Text("Expected Value", style: style),
                     ),
                     SizedBox(width: 32), // Delete
                   ],
                 ),
               ),
+              SizedBox(height: 4),
               FocusTraversalGroup(
                 child: ReorderableListView.builder(
                   padding: const EdgeInsets.only(bottom: 10),
@@ -415,6 +398,7 @@ class _AssertionRowState extends State<_AssertionRow> {
         id: widget.id,
         value: item.expression,
         autoFocus: shouldForceFocus,
+        hint: 'expr',
         isEnabled: item.isEnabled,
         onUpdate: (val) {
           widget.onUpdate(widget.index, item.copyWith(expression: val));

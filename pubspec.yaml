@@ -54,7 +54,7 @@ dependencies:
   nanoid: ^1.0.0
   objectbox: ^5.1.0
   objectbox_flutter_libs: ^5.1.0
-  sonner_toast: ^1.0.0
+  sonner_toast: ^2.0.1
   pointycastle: ^4.0.0
   oauth2: ^2.0.5
   dart_jsonwebtoken: ^3.3.1

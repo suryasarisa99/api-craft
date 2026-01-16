@@ -3,6 +3,7 @@ import 'package:api_craft/core/providers/providers.dart';
 import 'package:api_craft/core/services/assertion_service.dart';
 import 'package:api_craft/core/widgets/ui/custom_input.dart';
 import 'package:api_craft/features/request/models/node_model.dart';
+import 'package:api_craft/features/response/models/http_response_model.dart';
 import 'package:api_craft/features/response/response_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -14,6 +15,7 @@ class ExpressionInput extends ConsumerStatefulWidget {
   final String id;
   final bool autoFocus;
   final bool isEnabled;
+  final String? hint;
 
   const ExpressionInput({
     super.key,
@@ -22,6 +24,7 @@ class ExpressionInput extends ConsumerStatefulWidget {
     required this.id,
     this.autoFocus = false,
     this.isEnabled = true,
+    this.hint,
   });
 
   @override
@@ -37,6 +40,8 @@ class _ExpressionInputState extends ConsumerState<ExpressionInput> {
   List<String> _suggestions = [];
   int _selectedIndex = 0;
   final ScrollController _scrollController = ScrollController();
+
+  AssertionInspection? _lastInspection;
 
   @override
   void initState() {
@@ -111,6 +116,8 @@ class _ExpressionInputState extends ConsumerState<ExpressionInput> {
 
   void _handleFocusChange() {
     if (_fn.hasFocus) {
+      // Update suggestions when gaining focus to ensure freshness
+      _updateSuggestions();
       _showOverlay();
     }
   }
@@ -121,13 +128,9 @@ class _ExpressionInputState extends ConsumerState<ExpressionInput> {
     _overlayEntry = OverlayEntry(
       builder: (context) => _ExpressionOverlay(
         layerLink: _layerLink,
-        expression: _ctrl.text,
-        requestId: widget.id,
+        inspection: _lastInspection,
         groupId: _groupId,
         onHide: _hideOverlay,
-        // We recalculate suggestions here only if needed, but optimally we should pass them
-        // To minimize refactor, let's keep logic but now we need to sync state.
-        // Better: Compute suggestions in _onChanged and pass them.
         suggestions: _suggestions,
         selectedIndex: _selectedIndex,
         scrollController: _scrollController,
@@ -145,43 +148,58 @@ class _ExpressionInputState extends ConsumerState<ExpressionInput> {
   }
 
   void _updateOverlay() {
-    // Rebuild the overlay with new expression
     _overlayEntry?.markNeedsBuild();
   }
 
   void _applySuggestion(String suggestion) {
-    // We need to fetch the inspection to know where to append
-    final res = ref.read(responseProvider(widget.id));
-    if (res == null) return;
+    // If we have a cached inspection, use it to get the prefix
+    final inspection = _lastInspection;
+    debugPrint("inspection is null: ${inspection == null}");
 
-    Map<String, dynamic>? jsonBody;
-    try {
-      jsonBody = jsonDecode(res.body);
-    } catch (_) {}
+    // Fallback if inspection is null (shouldn't happen if suggestions exist)
+    if (inspection == null) {
+      // Try to update info just in case
+      final res = getRes();
+      if (res != null) {
+        Map<String, dynamic>? jsonBody;
+        try {
+          jsonBody = jsonDecode(res.body);
+        } catch (_) {}
+        final insp = AssertionService.inspectPath(
+          _ctrl.text,
+          res,
+          jsonBody: jsonBody,
+        );
+        _applySuggestionLogic(suggestion, insp);
+        return;
+      }
+      return;
+    } else {}
 
-    final inspection = AssertionService.inspectPath(
-      _ctrl.text,
-      res,
-      jsonBody: jsonBody,
-    );
+    _applySuggestionLogic(suggestion, inspection);
+  }
 
+  void _applySuggestionLogic(
+    String suggestion,
+    AssertionInspection inspection,
+  ) {
     String newText;
     if (inspection.validExpression.isEmpty) {
-      // Should not happen if suggestions are shown, but safe fallback
       newText = suggestion;
     } else {
       newText = "${inspection.validExpression}.$suggestion";
     }
 
-    // Keep focus first to avoid platform overwriting selection
     _fn.requestFocus();
 
     _ctrl.text = newText;
     _ctrl.selection = TextSelection.collapsed(offset: newText.length);
 
     widget.onUpdate(newText);
-    _updateSuggestions();
-    _updateOverlay();
+    _updateSuggestions(); // Recalculate based on new text
+    if (_overlayEntry != null) {
+      _updateOverlay();
+    }
   }
 
   @override
@@ -194,9 +212,10 @@ class _ExpressionInputState extends ConsumerState<ExpressionInput> {
         child: TextField(
           controller: _ctrl,
           focusNode: _fn,
+          decoration: InputDecoration(hintText: widget.hint),
           onChanged: (val) {
             widget.onUpdate(val);
-            _updateSuggestions(); // Update suggestions on text change
+            _updateSuggestions(); // Update suggestions & inspection
             if (_overlayEntry != null) {
               _updateOverlay();
             } else {
@@ -208,10 +227,30 @@ class _ExpressionInputState extends ConsumerState<ExpressionInput> {
     );
   }
 
+  RawHttpResponse? getRes() {
+    final tree = ref.read(fileTreeProvider);
+    final map = tree.nodeMap;
+    final node = map[widget.id];
+
+    if (node is FolderNode) {
+      for (final childId in node.children) {
+        final child = map[childId];
+        if (child is RequestNode) {
+          return ref.read(responseProvider(child.id));
+        }
+      }
+      return RawHttpResponse.dummyRes();
+    } else {
+      // If node is not found or is RequestNode
+      return ref.read(responseProvider(widget.id));
+    }
+  }
+
   void _updateSuggestions() {
-    final res = ref.read(responseProvider(widget.id));
+    final res = getRes();
     if (res == null) {
       _suggestions = [];
+      _lastInspection = null;
       return;
     }
 
@@ -225,17 +264,16 @@ class _ExpressionInputState extends ConsumerState<ExpressionInput> {
       res,
       jsonBody: jsonBody,
     );
+
+    _lastInspection = inspection;
     _suggestions = inspection.suggestions;
-    _selectedIndex = 0; // Reset selection
+    _selectedIndex = 0;
   }
 
   void _scrollToSelected() {
     if (!_scrollController.hasClients) return;
-    // itemHeight ~32? + padding. Let's estimate or better use ensureVisible if we had keys.
-    // Simple estimation:
-    const itemHeight = 32.0; // Approximation
+    const itemHeight = 32.0;
     final offset = _selectedIndex * itemHeight;
-    // We want to keep it in view.
     if (offset < _scrollController.offset) {
       _scrollController.jumpTo(offset);
     } else if (offset + itemHeight >
@@ -250,8 +288,7 @@ class _ExpressionInputState extends ConsumerState<ExpressionInput> {
 
 class _ExpressionOverlay extends ConsumerWidget {
   final LayerLink layerLink;
-  final String expression;
-  final String requestId;
+  final AssertionInspection? inspection;
   final Object groupId;
   final VoidCallback onHide;
   final ValueChanged<String> onSuggestionSelected;
@@ -261,8 +298,7 @@ class _ExpressionOverlay extends ConsumerWidget {
 
   const _ExpressionOverlay({
     required this.layerLink,
-    required this.expression,
-    required this.requestId,
+    required this.inspection,
     required this.groupId,
     required this.onHide,
     required this.onSuggestionSelected,
@@ -273,25 +309,18 @@ class _ExpressionOverlay extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final res = ref.watch(responseProvider(requestId));
+    // Used cached inspection result
+    final insp = inspection;
 
-    if (res == null || expression.trim().isEmpty) {
+    if (insp == null && suggestions.isEmpty) {
       return const SizedBox.shrink();
     }
 
-    Map<String, dynamic>? jsonBody;
-    try {
-      jsonBody = jsonDecode(res.body);
-    } catch (_) {}
-
-    final inspection = AssertionService.inspectPath(
-      expression,
-      res,
-      jsonBody: jsonBody,
-    );
+    // If inspection is null for some reason but we have suggestions? Should be synced.
+    // But if insp is null, we can't show preview.
 
     return Positioned(
-      width: 400, // Fixed width for now, or could match layerLink size
+      width: 400,
       child: CompositedTransformFollower(
         link: layerLink,
         targetAnchor: Alignment.bottomLeft,
@@ -314,62 +343,63 @@ class _ExpressionOverlay extends ConsumerWidget {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Top: Preview
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: const BoxDecoration(
-                      border: Border(bottom: BorderSide(color: Colors.white12)),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Query breakdown
-                        RichText(
-                          text: TextSpan(
-                            style: const TextStyle(fontSize: 12),
-                            children: [
-                              TextSpan(
-                                text: inspection.validExpression,
-                                style: const TextStyle(
-                                  color: Colors.greenAccent,
-                                ),
-                              ),
-                              if (inspection.pendingExpression.isNotEmpty)
+                  // Top: Preview (Only if we have inspection)
+                  if (insp != null)
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: const BoxDecoration(
+                        border: Border(
+                          bottom: BorderSide(color: Colors.white12),
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Query breakdown
+                          RichText(
+                            text: TextSpan(
+                              style: const TextStyle(fontSize: 12),
+                              children: [
                                 TextSpan(
-                                  text: inspection.pendingExpression,
+                                  text: insp.validExpression,
                                   style: const TextStyle(
-                                    color: Colors.redAccent,
-                                    decoration: TextDecoration.lineThrough,
+                                    color: Colors.greenAccent,
                                   ),
                                 ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        // Value Preview
-                        ConstrainedBox(
-                          constraints: const BoxConstraints(
-                            maxHeight: 100,
-                            minWidth: double.infinity,
-                          ),
-                          child: SingleChildScrollView(
-                            child: Text(
-                              inspection.value != null
-                                  ? _formatValue(inspection.value)
-                                  : "null",
-                              style: const TextStyle(
-                                fontFamily: 'RobotoMono',
-                                fontSize: 11,
-                                color: Colors.white70,
-                              ),
-                              // maxLines: 5,
-                              // overflow: TextOverflow.ellipsis,
+                                if (insp.pendingExpression.isNotEmpty)
+                                  TextSpan(
+                                    text: insp.pendingExpression,
+                                    style: const TextStyle(
+                                      color: Colors.redAccent,
+                                      decoration: TextDecoration.lineThrough,
+                                    ),
+                                  ),
+                              ],
                             ),
                           ),
-                        ),
-                      ],
+                          const SizedBox(height: 4),
+                          // Value Preview
+                          ConstrainedBox(
+                            constraints: const BoxConstraints(
+                              maxHeight: 100,
+                              minWidth: double.infinity,
+                            ),
+                            child: SingleChildScrollView(
+                              child: Text(
+                                insp.value != null
+                                    ? _formatValue(insp.value)
+                                    : "null",
+                                style: const TextStyle(
+                                  fontFamily: 'RobotoMono',
+                                  fontSize: 11,
+                                  color: Colors.white70,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
 
                   // Bottom: Suggestions
                   if (suggestions.isNotEmpty)
@@ -384,7 +414,6 @@ class _ExpressionOverlay extends ConsumerWidget {
                           final isSelected = index == selectedIndex;
                           return InkWell(
                             onTap: () => onSuggestionSelected(suggestion),
-                            // hoverColor: Colors.white10,
                             child: Container(
                               color: isSelected
                                   ? Colors.blue.withOpacity(0.3)
@@ -402,11 +431,12 @@ class _ExpressionOverlay extends ConsumerWidget {
                         },
                       ),
                     )
-                  else if (inspection.value is! Map && inspection.value != null)
+                  else if (insp != null &&
+                      insp.value is! Map &&
+                      insp.value != null)
                     // No suggestions for leaf nodes usually
                     const SizedBox.shrink()
-                  else if (inspection.suggestions.isEmpty &&
-                      inspection.value == null)
+                  else if (suggestions.isEmpty && (insp?.value == null))
                     const Padding(
                       padding: EdgeInsets.all(8.0),
                       child: Text(

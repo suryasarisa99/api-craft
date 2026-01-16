@@ -143,13 +143,52 @@ class HttpService {
       }
 
       // 5. Evaluate Assertions
+      // 5. Evaluate Assertions
       List<TestResult> assertionResults = [];
-      final node = ref.read(fileTreeProvider).nodeMap[requestId];
-      if (node is RequestNode && node.reqConfig.assertions.isNotEmpty) {
-        assertionResults = AssertionService.evaluate(
-          node.reqConfig.assertions,
-          response,
-        );
+      final nodeMap = ref.read(fileTreeProvider).nodeMap;
+      final node = nodeMap[requestId];
+
+      if (node != null) {
+        // Collect all definitions (Parents -> Child)
+        final allAssertions = <AssertionDefinition>[];
+
+        // Helper to collect parent assertions recursively
+        // We traverse UP from the node to the root
+        var current = node;
+        final lineage = <Node>[];
+
+        // 1. Build lineage (Leaf -> Root)
+        while (current.parentId != null) {
+          final parent = nodeMap[current.parentId];
+          if (parent != null) {
+            lineage.add(parent);
+            current = parent;
+          } else {
+            break; // Broken chain
+          }
+        }
+
+        // 2. Add Parent Assertions (Root -> Parent) (Reverse lineage)
+        for (final ancestor in lineage.reversed) {
+          if (ancestor is FolderNode) {
+            allAssertions.addAll(ancestor.config.assertions);
+          }
+        }
+
+        // 3. Add Node Assertions
+        if (node is RequestNode) {
+          allAssertions.addAll(node.reqConfig.assertions);
+        } else if (node is FolderNode) {
+          // Should not run request for folder directly usually, but if so:
+          allAssertions.addAll(node.config.assertions);
+        }
+
+        if (allAssertions.isNotEmpty) {
+          debugPrint(
+            "Evaluating ${allAssertions.length} hierarchical assertions...",
+          );
+          assertionResults = AssertionService.evaluate(allAssertions, response);
+        }
       }
 
       // 6. Update Response with Tests & Assertions

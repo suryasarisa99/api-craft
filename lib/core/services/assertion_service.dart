@@ -31,6 +31,7 @@ class AssertionService {
 
     for (final def in assertions) {
       if (!def.isEnabled) continue;
+      if (def.expression.trim() == "") continue;
 
       try {
         final actual = _getActualValue(def.expression, response, jsonBody);

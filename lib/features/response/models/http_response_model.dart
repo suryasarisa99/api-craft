@@ -181,4 +181,31 @@ class RawHttpResponse {
       'assertionResults': assertionResults.map((e) => e.toMap()).toList(),
     };
   }
+
+  factory RawHttpResponse.dummyRes() {
+    return RawHttpResponse.fromMap({
+      'id': 'dummy',
+      'request_id': 'dummy',
+      'executed_at': DateTime.now().millisecondsSinceEpoch,
+      'status_code': 200,
+      'duration_ms': 100,
+      'protocol_version': 'HTTP/1.1',
+      'status_message': 'OK',
+      'headers': [
+        ['dummy-header', 'dummy-value'],
+      ],
+      'body': 'dummy',
+      'body_type': 'dummy',
+      'body_base64': base64.encode(Uint8List.fromList([])),
+      'error_message': 'dummy',
+      'redirect_urls': [],
+      'final_url': 'dummy',
+      'test_results': [
+        {'description': 'dummy', 'status': 'dummy', 'error': 'dummy'},
+      ],
+      'assertion_results': [
+        {'description': 'dummy', 'status': 'dummy', 'error': 'dummy'},
+      ],
+    });
+  }
 }
