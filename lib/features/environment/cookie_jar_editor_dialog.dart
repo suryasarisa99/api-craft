@@ -1,8 +1,10 @@
 import 'package:api_craft/core/models/cookie_jar_model.dart';
+import 'package:api_craft/core/widgets/ui/surya_theme_icon.dart';
 import 'package:api_craft/features/environment/environment_provider.dart';
 import 'package:api_craft/core/widgets/ui/custom_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:suryaicons/bulk_rounded.dart';
 
 class CookieJarEditorDialog extends ConsumerWidget {
   const CookieJarEditorDialog({super.key});
@@ -15,6 +17,7 @@ class CookieJarEditorDialog extends ConsumerWidget {
     if (jar == null) {
       return const SizedBox.shrink();
     }
+    const smallLabel = TextStyle(fontSize: 11);
 
     return CustomDialog(
       width: 1400,
@@ -28,6 +31,26 @@ class CookieJarEditorDialog extends ConsumerWidget {
             style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
+          if (jar.cookies.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(left: 8, bottom: 8),
+              child: Row(
+                children: [
+                  Expanded(flex: 1, child: Text("Key")),
+                  const SizedBox(width: 8),
+                  Expanded(flex: 3, child: Text("Value")),
+                  const SizedBox(width: 8),
+                  Expanded(flex: 1, child: Text("Domain")),
+                  const SizedBox(width: 8),
+                  Expanded(flex: 1, child: Text("Path")),
+                  const SizedBox(width: 4),
+                  SizedBox(width: 40, child: Text("Secure", style: smallLabel)),
+                  const SizedBox(width: 4),
+                  SizedBox(width: 40, child: Text("Http", style: smallLabel)),
+                  const SizedBox(width: 30),
+                ],
+              ),
+            ),
           Expanded(
             child: jar.cookies.isEmpty
                 ? const Center(child: Text("No cookies in this jar"))
@@ -35,145 +58,129 @@ class CookieJarEditorDialog extends ConsumerWidget {
                     itemCount: jar.cookies.length,
                     itemBuilder: (context, index) {
                       final cookie = jar.cookies[index];
-                      return Card(
+                      return Padding(
                         key: ValueKey(cookie.id),
-                        color: Colors.white10,
-                        margin: const EdgeInsets.only(bottom: 8),
-                        child: Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Column(
-                            children: [
-                              Row(
-                                children: [
-                                  Expanded(
-                                    flex: 2,
-                                    child: TextFormField(
-                                      initialValue: cookie.key,
-                                      decoration: const InputDecoration(
-                                        labelText: "Key",
-                                        isDense: true,
-                                      ),
-                                      onChanged: (val) {
-                                        _updateCookie(
-                                          ref,
-                                          jar,
-                                          index,
-                                          cookie.copyWith(key: val),
-                                        );
-                                      },
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    flex: 3,
-                                    child: TextFormField(
-                                      initialValue: cookie.value,
-                                      decoration: const InputDecoration(
-                                        labelText: "Value",
-                                        isDense: true,
-                                      ),
-                                      onChanged: (val) {
-                                        _updateCookie(
-                                          ref,
-                                          jar,
-                                          index,
-                                          cookie.copyWith(value: val),
-                                        );
-                                      },
-                                    ),
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(
-                                      Icons.delete,
-                                      color: Colors.redAccent,
-                                      size: 20,
-                                    ),
-                                    onPressed: () {
-                                      _removeCookie(ref, jar, index);
-                                    },
-                                  ),
-                                ],
+                        padding: const EdgeInsets.only(left: 8, bottom: 8),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              flex: 1,
+                              child: TextFormField(
+                                initialValue: cookie.key,
+                                onChanged: (val) {
+                                  _updateCookie(
+                                    ref,
+                                    jar,
+                                    index,
+                                    cookie.copyWith(key: val),
+                                  );
+                                },
                               ),
-                              const SizedBox(height: 8),
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: TextFormField(
-                                      initialValue: cookie.domain,
-                                      decoration: const InputDecoration(
-                                        labelText: "Domain",
-                                        isDense: true,
-                                      ),
-                                      onChanged: (val) {
-                                        _updateCookie(
-                                          ref,
-                                          jar,
-                                          index,
-                                          cookie.copyWith(domain: val),
-                                        );
-                                      },
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: TextFormField(
-                                      initialValue: cookie.path,
-                                      decoration: const InputDecoration(
-                                        labelText: "Path",
-                                        isDense: true,
-                                      ),
-                                      onChanged: (val) {
-                                        _updateCookie(
-                                          ref,
-                                          jar,
-                                          index,
-                                          cookie.copyWith(path: val),
-                                        );
-                                      },
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  FilterChip(
-                                    label: const Text("Secure"),
-                                    selected: cookie.isSecure,
-                                    onSelected: (val) {
-                                      _updateCookie(
-                                        ref,
-                                        jar,
-                                        index,
-                                        cookie.copyWith(isSecure: val),
-                                      );
-                                    },
-                                  ),
-                                  const SizedBox(width: 4),
-                                  FilterChip(
-                                    label: const Text("HttpOnly"),
-                                    selected: cookie.isHttpOnly,
-                                    onSelected: (val) {
-                                      _updateCookie(
-                                        ref,
-                                        jar,
-                                        index,
-                                        cookie.copyWith(isHttpOnly: val),
-                                      );
-                                    },
-                                  ),
-                                ],
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              flex: 3,
+                              child: TextFormField(
+                                initialValue: cookie.value,
+                                onChanged: (val) {
+                                  _updateCookie(
+                                    ref,
+                                    jar,
+                                    index,
+                                    cookie.copyWith(value: val),
+                                  );
+                                },
                               ),
-                            ],
-                          ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              flex: 1,
+                              child: TextFormField(
+                                initialValue: cookie.domain,
+                                onChanged: (val) {
+                                  _updateCookie(
+                                    ref,
+                                    jar,
+                                    index,
+                                    cookie.copyWith(domain: val),
+                                  );
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              flex: 1,
+                              child: TextFormField(
+                                initialValue: cookie.path,
+                                onChanged: (val) {
+                                  _updateCookie(
+                                    ref,
+                                    jar,
+                                    index,
+                                    cookie.copyWith(path: val),
+                                  );
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+
+                            SizedBox(
+                              width: 40,
+                              child: Checkbox(
+                                value: cookie.isSecure,
+                                onChanged: (val) {
+                                  _updateCookie(
+                                    ref,
+                                    jar,
+                                    index,
+                                    cookie.copyWith(isSecure: val),
+                                  );
+                                },
+                              ),
+                            ),
+
+                            const SizedBox(width: 4),
+
+                            SizedBox(
+                              width: 40,
+                              child: Checkbox(
+                                value: cookie.isHttpOnly,
+                                onChanged: (val) {
+                                  _updateCookie(
+                                    ref,
+                                    jar,
+                                    index,
+                                    cookie.copyWith(isHttpOnly: val),
+                                  );
+                                },
+                              ),
+                            ),
+                            IconButton(
+                              icon: const SuryaThemeIcon(
+                                BulkRounded.removeCircle,
+                              ),
+                              onPressed: () {
+                                _removeCookie(ref, jar, index);
+                              },
+                            ),
+                          ],
                         ),
                       );
                     },
                   ),
           ),
           const SizedBox(height: 16),
-          ElevatedButton.icon(
-            onPressed: () {
-              _addCookie(ref, jar);
-            },
-            icon: const Icon(Icons.add),
-            label: const Text("Add Cookie"),
+          Row(
+            mainAxisAlignment: .end,
+            children: [
+              ElevatedButton.icon(
+                onPressed: () {
+                  _addCookie(ref, jar);
+                },
+                icon: const Icon(Icons.add),
+                label: const Text("Add Cookie"),
+              ),
+            ],
           ),
         ],
       ),

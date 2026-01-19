@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:api_craft/core/providers/providers.dart';
 import 'package:api_craft/core/widgets/ui/key_value_editor.dart';
 import 'package:flutter/material.dart';
+import 'package:path/path.dart';
 
 class HeadersTab extends StatelessWidget {
   final String id;
@@ -60,12 +61,15 @@ class InheritedHeaders extends ConsumerWidget {
     if (inheritedHeaders.isEmpty) {
       return SizedBox.shrink();
     }
+    final cs = Theme.of(context).colorScheme;
     return Padding(
       padding: const .only(bottom: 10, left: 16, right: 16, top: 4),
       child: DecoratedBox(
         decoration: DottedDecoration(
           shape: Shape.box,
-          color: const Color.fromARGB(255, 109, 109, 109),
+          strokeWidth: 0.5,
+          // color: const Color.fromARGB(255, 109, 109, 109),
+          color: cs.primary.withValues(alpha: 0.5),
           dash: [5, 3],
           borderRadius: BorderRadius.circular(6),
         ),
@@ -75,8 +79,8 @@ class InheritedHeaders extends ConsumerWidget {
           controlAffinity: ListTileControlAffinity.leading,
           dense: true,
 
-          backgroundColor: const Color(0xFF252525),
-          collapsedBackgroundColor: const Color(0xFF252525),
+          backgroundColor: cs.surface.withValues(alpha: 0.6),
+          collapsedBackgroundColor: cs.surfaceContainer.withValues(alpha: 0.6),
           visualDensity: VisualDensity.compact,
           minTileHeight: 28,
           maintainState: true,
@@ -111,9 +115,9 @@ class InheritedHeaders extends ConsumerWidget {
                       color: const Color.fromARGB(255, 102, 102, 102),
                     ),
                     const SizedBox(width: 8),
-                    buildItem(h.key),
+                    buildItem(context, h.key),
                     const SizedBox(width: 8),
-                    buildItem(h.value),
+                    buildItem(context, h.value),
                   ],
                 );
               },
@@ -124,7 +128,8 @@ class InheritedHeaders extends ConsumerWidget {
     );
   }
 
-  Widget buildItem(String v) {
+  Widget buildItem(BuildContext context, String v) {
+    final cs = Theme.of(context).colorScheme;
     return Expanded(
       //selectable text
       child: Container(
@@ -132,7 +137,8 @@ class InheritedHeaders extends ConsumerWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(4),
           border: Border.all(color: const Color.fromARGB(255, 67, 67, 67)),
-          color: const Color.fromARGB(255, 40, 40, 40),
+          // color: const Color.fromARGB(255, 40, 40, 40),
+          color: cs.surfaceContainerHigh,
         ),
         child: SelectableText(
           v,
