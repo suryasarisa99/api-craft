@@ -73,7 +73,7 @@ class ResponseStatusBar extends ConsumerWidget {
 
   Widget _buildBar(BuildContext context, WidgetRef ref, List<Widget> children) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.only(left: 16, right: 4),
       child: Row(children: children),
     );
   }
@@ -157,10 +157,11 @@ class ResponseStatusBar extends ConsumerWidget {
         ),
         ..._getHistoryList(ref),
       ],
-      child: const Padding(
-        padding: EdgeInsets.all(4.0),
-        child: Icon(Icons.more_vert, size: 16),
-      ),
+      // child: const Padding(
+      //   padding: EdgeInsets.all(4.0),
+      //   child: ,
+      // ),
+      child: Icon(Icons.more_vert, size: 16),
     );
   }
 

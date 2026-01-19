@@ -1,3 +1,4 @@
+import 'package:api_craft/features/themes/theme.dart';
 import 'package:api_craft/main.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -29,18 +30,18 @@ class StatusBar extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isVisible = ref.watch(isBottomPanelVisibleProvider);
     final theme = Theme.of(context);
+    final appTheme = theme.extension<AppTheme>()!;
 
     return Container(
       height: 22,
       padding: .symmetric(horizontal: 12),
       width: double.infinity,
       decoration: BoxDecoration(
-        color: kTopBarClr,
-        // color: theme
-        //     .colorScheme
-        //     .surfaceContainer, // Similar to VS Code status bar color
+        color: appTheme.statusBarBackground,
         border: Border(
-          top: BorderSide(color: theme.dividerColor.withValues(alpha: 0.3)),
+          top: BorderSide(
+            color: appTheme.statusBarBorder ?? theme.dividerColor,
+          ),
         ),
       ),
       child: Row(

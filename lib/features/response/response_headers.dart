@@ -15,6 +15,7 @@ class ResponseHeaders extends ConsumerWidget {
     if (headers == null) {
       return const Center(child: Text("No response headers"));
     }
+    final headerClr = Theme.of(context).colorScheme.primary;
 
     return Padding(
       padding: const EdgeInsets.all(8.0),
@@ -37,11 +38,12 @@ class ResponseHeaders extends ConsumerWidget {
                                 flex: 7,
                                 child: Text(
                                   header[0],
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontFamily: 'monospace',
                                     fontSize: 12,
                                     fontWeight: FontWeight.w500,
-                                    color: Color(0xFFD34399),
+                                    // color: Color(0xFFD34399),
+                                    color: headerClr,
                                   ),
                                 ),
                               ),

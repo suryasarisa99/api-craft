@@ -96,6 +96,8 @@ class _FolderConfigDialogState extends ConsumerState<FolderConfigDialog> {
   }
 
   Widget _buildDialog() {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
     final tabs = [
       "General",
       "Headers",
@@ -168,9 +170,7 @@ class _FolderConfigDialogState extends ConsumerState<FolderConfigDialog> {
                               width: 150,
                               decoration: BoxDecoration(
                                 color: tabIndex == index
-                                    ? const Color(
-                                        0xFFEC21F3,
-                                      ).withValues(alpha: 0.1)
+                                    ? cs.surfaceContainer
                                     : Colors.transparent,
                                 borderRadius: BorderRadius.circular(4),
                               ),
@@ -184,7 +184,7 @@ class _FolderConfigDialogState extends ConsumerState<FolderConfigDialog> {
                                       height: 32,
                                       child: AuthTabHeader(
                                         color: tabIndex == index
-                                            ? const Color(0xFFE17FF0)
+                                            ? cs.onSurface
                                             : Colors.grey,
                                         widget.id,
                                         isTabActive: tabIndex == index,
@@ -199,7 +199,7 @@ class _FolderConfigDialogState extends ConsumerState<FolderConfigDialog> {
                                       tab,
                                       style: TextStyle(
                                         color: tabIndex == index
-                                            ? const Color(0xFFE17FF0)
+                                            ? cs.onSurface
                                             : Colors.grey,
                                       ),
                                     ),

@@ -1,3 +1,4 @@
+import 'package:api_craft/features/themes/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_popup/flutter_popup.dart';
 
@@ -84,24 +85,22 @@ class MyCustomMenu extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final popupClr = const Color.fromARGB(255, 38, 38, 38);
+    final popupClr = Theme.of(context).extension<AppTheme>()!.menuTheme;
+    final borderClr = Theme.of(context).dividerColor;
     return CustomPopup(
       key: popupKey,
       barrierColor: Colors.transparent,
       // barrierColor: const Color.fromARGB(103, 0, 0, 0),
       showArrow: true,
       // arrowColor: popupClr,
-      arrowColor: const Color.fromARGB(255, 69, 64, 69),
+      arrowColor: borderClr,
       contentPadding: .zero,
       backgroundColor: popupClr,
       animationDuration: const Duration(milliseconds: 0),
       content: content,
       contentDecoration: BoxDecoration(
         color: popupClr,
-        border: Border.all(
-          color: const Color.fromARGB(255, 60, 60, 61),
-          width: 1,
-        ),
+        border: Border.all(color: borderClr, width: 1),
         borderRadius: BorderRadius.circular(5),
         boxShadow: [
           BoxShadow(

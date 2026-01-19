@@ -7,6 +7,7 @@ import 'package:api_craft/features/response/utils/status_code_clr.dart';
 import 'package:api_craft/features/sidebar/context_menu.dart';
 import 'package:api_craft/features/sidebar/providers/sidebar_search_provider.dart';
 import 'package:api_craft/features/sidebar/sidebar.dart';
+import 'package:api_craft/features/themes/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -253,6 +254,8 @@ class _FileTreeTileState extends ConsumerState<FileNodeTile>
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final sidebarTheme = theme.extension<SidebarTheme>()!;
     // 1. WATCH THE OPTIMIZED PROVIDER
     // If URL/Content changes, 'vNode' is IDENTICAL to previous, so build STOPS here.
     final vNode = ref.watch(visualNodeProvider(widget.nodeId));
@@ -270,7 +273,6 @@ class _FileTreeTileState extends ConsumerState<FileNodeTile>
       }
     }
 
-    final theme = Theme.of(context);
     final cs = theme.colorScheme;
     final double tileHeight = vNode.type == NodeType.folder ? 30.0 : 28.0;
 
@@ -289,9 +291,9 @@ class _FileTreeTileState extends ConsumerState<FileNodeTile>
 
     final Color backgroundColor = isActive
         // ? cs.surfaceBright.withValues(alpha: 1)
-        ? const Color.fromARGB(150, 70, 70, 70)
+        ? sidebarTheme.itemActive
         : isSelected
-        ? cs.secondary.withValues(alpha: 0.10)
+        ? sidebarTheme.itemSelected
         : Colors.transparent;
 
     return FileNodeDragWrapper(
@@ -322,9 +324,7 @@ class _FileTreeTileState extends ConsumerState<FileNodeTile>
                         elevation: 0,
                         color: (isActive || !isFocused)
                             ? backgroundColor
-                            : theme.colorScheme.primaryContainer.withValues(
-                                alpha: 0.6,
-                              ),
+                            : sidebarTheme.itemFocused,
                         child: InkWell(
                           borderRadius: BorderRadius.circular(4),
                           canRequestFocus: false,
@@ -436,7 +436,7 @@ class _FileTreeTileState extends ConsumerState<FileNodeTile>
                         alignment: Alignment.centerLeft,
                         child: Container(
                           width: 1,
-                          color: theme.dividerColor.withValues(alpha: 0.4),
+                          color: sidebarTheme.indentLine,
                           margin: EdgeInsets.only(
                             // Mathematical Center: (Depth * Step) + ArrowCenter - (DividerWidth / 2)
                             left:

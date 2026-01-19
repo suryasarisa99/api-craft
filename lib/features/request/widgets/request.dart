@@ -119,15 +119,10 @@ class _RequestTabState extends ConsumerState<RequestTab>
               tabAlignment: TabAlignment.start,
 
               indicatorWeight: 1,
-              indicator: BoxDecoration(
-                color: Colors.transparent,
-                border: Border(
-                  bottom: BorderSide(
-                    color: Theme.of(context).colorScheme.primary,
-                    width: 2,
-                  ),
-                ),
-              ),
+              // indicator: BoxDecoration(
+              //   color: Colors.transparent,
+              //   border: Border(bottom: BorderSide(width: 2)),
+              // ),
               labelPadding: .symmetric(horizontal: 10),
               // indicatorSize: TabBarIndicatorSize.tab,
               labelStyle: const TextStyle(

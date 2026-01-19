@@ -1,10 +1,12 @@
 import 'package:api_craft/core/providers/providers.dart';
 import 'package:api_craft/core/widgets/ui/custom_input.dart';
+import 'package:api_craft/core/widgets/ui/surya_theme_icon.dart';
 import 'package:api_craft/features/request/models/node_config_model.dart';
 import 'package:api_craft/features/request/models/node_model.dart';
 import 'package:api_craft/features/request/widgets/expression_input.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:suryaicons/bulk_rounded.dart';
 
 class AssertionsTab extends ConsumerWidget {
   final String id;
@@ -83,6 +85,7 @@ class _AssertionsEditorState extends State<AssertionsEditor> {
       fontWeight: FontWeight.w400,
     );
     return Scaffold(
+      backgroundColor: Colors.transparent,
       body: Padding(
         padding: const EdgeInsets.only(left: 8, right: 4, top: 12),
         child: SingleChildScrollView(
@@ -363,11 +366,12 @@ class _AssertionRowState extends State<_AssertionRow> {
             SizedBox(
               width: 24,
               child: IconButton(
-                icon: Icon(
-                  Icons.delete,
-                  size: 16,
-                  color: _isHovered ? Colors.red : Colors.transparent,
-                ),
+                icon: SuryaThemeIcon(BulkRounded.removeCircle),
+                // icon: Icon(
+                //   Icons.delete,
+                //   size: 16,
+                //   color: _isHovered ? Colors.red : Colors.transparent,
+                // ),
                 onPressed: () => widget.onRemove(widget.index),
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),

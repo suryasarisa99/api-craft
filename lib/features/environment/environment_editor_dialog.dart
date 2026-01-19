@@ -91,9 +91,6 @@ class _EnvironmentEditorDialogState
           // Left Pane (List)
           Container(
             width: 250,
-            decoration: BoxDecoration(
-              border: Border(right: BorderSide(color: Colors.grey[800]!)),
-            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -153,6 +150,7 @@ class _EnvironmentEditorDialogState
               ],
             ),
           ),
+          VerticalDivider(),
           // Right Pane (Variables Only)
           if (activeEnv != null)
             Expanded(

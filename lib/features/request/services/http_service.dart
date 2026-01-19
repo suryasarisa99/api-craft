@@ -58,6 +58,7 @@ class HttpService {
         headers: req.headers,
         body: req.body is Map ? jsonEncode(req.body) : req.body,
         useProxy: true,
+        proxyPort: 8000,
         requestId: req.request.id,
         maxRedirects: 50,
       );

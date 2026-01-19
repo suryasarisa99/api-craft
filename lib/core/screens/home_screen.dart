@@ -7,6 +7,7 @@ import 'package:api_craft/features/request/widgets/request.dart';
 import 'package:api_craft/features/response/response_tab.dart';
 import 'package:api_craft/features/sidebar/sidebar.dart';
 import 'package:api_craft/core/widgets/ui/top_bar.dart';
+import 'package:api_craft/features/themes/theme.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
@@ -321,7 +322,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           return const ReqTabWrapper();
         }
         if (rArea.data == 'response-tab') {
-          return const ResponseTAb();
+          return const ResponseTab();
         }
         return const SizedBox.shrink();
       },
@@ -332,6 +333,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   Widget build(BuildContext context) {
     final isBottomPanelVisible = ref.watch(isBottomPanelVisibleProvider);
     final panelState = ref.watch(panelStateProvider);
+    final theme = Theme.of(context);
+    final appTheme = theme.extension<AppTheme>()!;
+    final sidebarTheme = theme.extension<SidebarTheme>();
 
     // Listen for maximize toggle to update layout explicitly without fighting drag
     // Explicit Layout Snap Listener (Triggered by Buttons only)
@@ -373,7 +377,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     return Scaffold(
       key: scaffoldKey,
       drawer: Container(
-        color: const Color.fromARGB(255, 32, 29, 32),
+        color: sidebarTheme?.background,
         padding: const EdgeInsets.only(top: 30),
         child: SizedBox(width: 300, child: sideBarWidget),
       ),
@@ -397,12 +401,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           Expanded(
             child: MultiSplitViewTheme(
               data: MultiSplitViewThemeData(
-                dividerThickness: 1,
+                dividerThickness: 0.8,
                 dividerHandleBuffer:
                     MultiSplitViewThemeData.defaultDividerHandleBuffer + 4,
                 dividerPainter: DividerPainters.background(
-                  color: const Color.fromARGB(255, 57, 57, 57),
-                  highlightedColor: const Color.fromARGB(255, 92, 92, 92),
+                  color: appTheme.divider ?? theme.dividerColor,
+                  highlightedColor: appTheme.hoverDivider ?? Colors.grey,
+                  // highlightedColor: const Color.fromARGB(255, 92, 92, 92),
                 ),
               ),
               child: MultiSplitView(

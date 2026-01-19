@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:api_craft/features/themes/theme.dart';
 import 'package:api_craft/main.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -14,6 +15,8 @@ class TopBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final appTheme = theme.extension<AppTheme>()!;
     return GestureDetector(
       onPanStart: (details) {
         windowManager.startDragging();
@@ -29,8 +32,12 @@ class TopBar extends ConsumerWidget {
       child: Ink(
         height: topBarHeight,
         decoration: BoxDecoration(
-          color: kTopBarClr,
-          border: Border(bottom: BorderSide(color: const Color(0xFF3D3D3D))),
+          color: appTheme.topBarBackground,
+          border: Border(
+            bottom: BorderSide(
+              color: appTheme.topBarBorder ?? theme.dividerColor,
+            ),
+          ),
         ),
         child: Row(
           children: [

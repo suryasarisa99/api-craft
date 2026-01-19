@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:suryaicons/bulk_rounded.dart';
 import 'package:api_craft/features/collection/collection_config_dialog.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:suryaicons/suryaicons.dart';
 
 class CollectionPicker extends ConsumerStatefulWidget {
   const CollectionPicker({super.key});
@@ -82,7 +83,6 @@ class _CollectionPickerState extends ConsumerState<CollectionPicker> {
         if (selectedCollection != null &&
             selectedCollection.id != kDefaultCollection.id)
           CustomMenuIconItem(
-            // icon: const Icon(Icons.delete, size: 18, color: Colors.red),
             icon: const SuryaThemeIcon(BulkRounded.delete01),
             title: const Text(
               "Delete Collection",

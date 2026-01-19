@@ -17,8 +17,8 @@ class CookieJarEditorDialog extends ConsumerWidget {
     }
 
     return CustomDialog(
-      width: 800,
-      height: 600,
+      width: 1400,
+      height: 800,
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

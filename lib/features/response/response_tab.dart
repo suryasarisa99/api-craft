@@ -22,14 +22,14 @@ import 'package:suryaicons/bulk_rounded.dart';
 
 enum BodyViewMode { pretty, raw, hex, json }
 
-class ResponseTAb extends ConsumerStatefulWidget {
-  const ResponseTAb({super.key});
+class ResponseTab extends ConsumerStatefulWidget {
+  const ResponseTab({super.key});
 
   @override
-  ConsumerState<ResponseTAb> createState() => _ResponseTAbState();
+  ConsumerState<ResponseTab> createState() => _ResponseTabState();
 }
 
-class _ResponseTAbState extends ConsumerState<ResponseTAb>
+class _ResponseTabState extends ConsumerState<ResponseTab>
     with SingleTickerProviderStateMixin {
   BodyViewMode _bodyViewMode = BodyViewMode.pretty;
   final GlobalKey<CustomPopupState> _menuKey = GlobalKey();
@@ -152,11 +152,13 @@ class _ResponseTAbState extends ConsumerState<ResponseTAb>
     return Column(
       children: [
         // 1. Status Bar
-        ResponseStatusBar(
-          requestId: id,
-          response: response,
-          isSending: isSending,
-          error: sendError ?? response?.errorMessage,
+        Container(
+          child: ResponseStatusBar(
+            requestId: id,
+            response: response,
+            isSending: isSending,
+            error: sendError ?? response?.errorMessage,
+          ),
         ),
 
         // 2. Content Area

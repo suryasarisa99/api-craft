@@ -82,9 +82,9 @@ class _CFCodeEditorState extends State<CFCodeEditor> {
   Widget build(BuildContext context) {
     final theme = Map<String, TextStyle>.from(atomOneDarkTheme);
     theme['root'] = theme['root']!.copyWith(
-      backgroundColor: const Color.fromARGB(255, 33, 33, 33),
+      // backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: Colors.transparent,
     );
-    final cs = Theme.of(context).colorScheme;
     return CodeForge(
       controller: _controller,
       language: _getLanguage(widget.language),

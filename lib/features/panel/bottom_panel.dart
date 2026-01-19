@@ -2,6 +2,7 @@ import 'package:api_craft/features/console/widgets/console_actions.dart';
 import 'package:api_craft/features/console/widgets/console_tab.dart';
 import 'package:api_craft/features/panel/panel_state_provider.dart';
 import 'package:api_craft/features/panel/status_bar.dart';
+import 'package:api_craft/features/themes/theme.dart';
 import 'package:api_craft/main.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -14,10 +15,11 @@ class BottomPanel extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final panelState = ref.watch(panelStateProvider);
     final theme = Theme.of(context);
+    final bottomPannelTheme = theme.extension<BottomPannelTheme>()!;
 
     // If implementing maximize logic in HomeScreen, BottomPanel just occupies the space given.
     return Container(
-      color: const Color.fromARGB(255, 32, 32, 32),
+      color: bottomPannelTheme.background,
       child: Column(
         children: [
           // Header
@@ -26,10 +28,11 @@ class BottomPanel extends ConsumerWidget {
             decoration: BoxDecoration(
               border: Border(
                 bottom: BorderSide(
-                  color: theme.dividerColor.withValues(alpha: 0.2),
+                  // color: theme.dividerColor.withValues(alpha: 0.2),
+                  color: bottomPannelTheme.divider,
                 ),
               ),
-              color: kTopBarClr,
+              color: bottomPannelTheme.headerBackground,
             ),
             child: Row(
               children: [

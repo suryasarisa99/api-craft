@@ -17,13 +17,14 @@ class CustomDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final container = Container(
       width: width,
       height: height,
       padding: padding,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFF3D3D3D)),
+        border: Border.all(color: theme.dividerColor),
       ),
       child: child,
     );

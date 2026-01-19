@@ -73,7 +73,7 @@ class WsRequestNotifier extends StateNotifier<WsRequestState> {
   RequestResolver get _resolver => ref.read(requestResolverProvider);
 
   /// Connects to a WebSocket starting a new session
-  Future<void> connect(BuildContext context, {bool useProxy = false}) async {
+  Future<void> connect(BuildContext context, {bool useProxy = true}) async {
     if (state.isConnected || state.isConnecting) return;
 
     try {
@@ -100,7 +100,7 @@ class WsRequestNotifier extends StateNotifier<WsRequestState> {
 
       // 3. Connect (Manual Handshake)
       const proxyHost = '127.0.0.1';
-      const proxyPort = 8080;
+      const proxyPort = 8000;
 
       await _wsService.manualConnect(
         requestContext: resolved,

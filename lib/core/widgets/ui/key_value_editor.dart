@@ -134,6 +134,7 @@ class _KeyValueEditorState extends State<KeyValueEditor> {
     const itemHeight = 38.0;
     final cs = Theme.of(context).colorScheme;
     return Scaffold(
+      backgroundColor: Colors.transparent,
       floatingActionButton: widget.mode == KeyValueEditorMode.multipart
           ? null
           : FloatingActionButton.small(
