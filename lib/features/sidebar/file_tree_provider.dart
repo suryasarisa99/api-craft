@@ -41,7 +41,7 @@ class FileTreeNotifier extends Notifier<TreeData> {
 
   @override
   TreeData build() {
-    ref.watch(selectedCollectionProvider.select((c) => c?.id));
+    ref.watch(selectedWorkspaceProvider.select((c) => c?.id));
     debugPrint("building file tree");
     _loadInitialData();
 
@@ -53,8 +53,8 @@ class FileTreeNotifier extends Notifier<TreeData> {
   // --- INITIAL LOAD ---
   Future<void> _loadInitialData() async {
     try {
-      final collection = ref.read(selectedCollectionProvider);
-      if (collection == null) return;
+      final workspace = ref.read(selectedWorkspaceProvider);
+      if (workspace == null) return;
 
       final repo = ref.read(repositoryProvider);
       final nodes = await repo.getNodes(); // List<Node>
@@ -62,8 +62,8 @@ class FileTreeNotifier extends Notifier<TreeData> {
       // 1. Build map
       final map = <String, Node>{};
 
-      // Find persisted Root Node (FolderNode with id == collection.id)
-      final persistedRootIndex = nodes.indexWhere((n) => n.id == collection.id);
+      // Find persisted Root Node (FolderNode with id == workspace.id)
+      final persistedRootIndex = nodes.indexWhere((n) => n.id == workspace.id);
       FolderNodeConfig rootConfig;
       if (persistedRootIndex != -1) {
         final persistedRoot = nodes[persistedRootIndex];
@@ -82,16 +82,16 @@ class FileTreeNotifier extends Notifier<TreeData> {
         rootConfig = FolderNodeConfig(isDetailLoaded: true);
       }
 
-      // Inject Root Collection Node
-      final rootNode = CollectionNode(
-        collection: collection,
+      // Inject Root Workspace Node
+      final rootNode = WorkspaceNode(
+        workspace: workspace,
         config: rootConfig,
         children: [],
       );
-      map[collection.id] = rootNode;
+      map[workspace.id] = rootNode;
 
       for (final n in nodes) {
-        if (n.id == collection.id) {
+        if (n.id == workspace.id) {
           // Already handled as rootNode, but we need its children info?
           // The persisted node has 'children' ids if it was a FolderNode.
           // But our loop "Link children -> parent" (step 2) rebuilds children list dynamically from parentIds.
@@ -108,8 +108,8 @@ class FileTreeNotifier extends Notifier<TreeData> {
         }
 
         if (n.parentId == null) {
-          // Reparent top-level nodes to Collection
-          map[n.id] = n.copyWith(parentId: collection.id);
+          // Reparent top-level nodes to Workspace
+          map[n.id] = n.copyWith(parentId: workspace.id);
         } else {
           map[n.id] = n;
         }
@@ -119,7 +119,7 @@ class FileTreeNotifier extends Notifier<TreeData> {
       // We iterate map.values to see the modified parentIds
       final allNodes = map.values.toList();
       for (final n in allNodes) {
-        if (n.id == collection.id) continue;
+        if (n.id == workspace.id) continue;
 
         final parentId = n.parentId;
         if (parentId == null) continue;
@@ -504,14 +504,14 @@ class FileTreeNotifier extends Notifier<TreeData> {
     final childId = fileName == null ? null : nanoid();
     debugPrint(ids.toString());
     // For creation, we default use parentId as is (local view)
-    // But for DB, if parentId == collectionId, we must use null.
-    final collectionId = ref.read(selectedCollectionProvider)?.id;
+    // But for DB, if parentId == workspaceId, we must use null.
+    final workspaceId = ref.read(selectedWorkspaceProvider)?.id;
 
     for (int i = 0; i < folderNames.length; i++) {
       nodes.add(
         FolderNode(
           id: ids[i],
-          parentId: i == 0 ? (parentId ?? collectionId) : ids[i - 1],
+          parentId: i == 0 ? (parentId ?? workspaceId) : ids[i - 1],
           children: i < folderNames.length - 1
               ? [ids[i + 1]]
               : childId == null
@@ -527,7 +527,7 @@ class FileTreeNotifier extends Notifier<TreeData> {
       nodes.add(
         RequestNode(
           id: childId!,
-          parentId: ids.lastOrNull ?? (parentId ?? collectionId),
+          parentId: ids.lastOrNull ?? (parentId ?? workspaceId),
           name: fileName,
           requestType: requestType,
 
@@ -549,9 +549,9 @@ class FileTreeNotifier extends Notifier<TreeData> {
       );
     }
 
-    // Prepare nodes for DB (translate parentId: collectionId -> null)
+    // Prepare nodes for DB (translate parentId: workspaceId -> null)
     final dbNodes = nodes.map((n) {
-      if (n.parentId == collectionId) {
+      if (n.parentId == workspaceId) {
         return n.copyWith(parentId: null, forceNullParent: true);
       }
       return n;
@@ -559,7 +559,7 @@ class FileTreeNotifier extends Notifier<TreeData> {
 
     await _repo.createMany(dbNodes);
 
-    // direct mutation (Local View keeps collectionId as parent)
+    // direct mutation (Local View keeps workspaceId as parent)
     for (final node in nodes) {
       state.nodeMap[node.id] = node;
     }
@@ -641,9 +641,9 @@ class FileTreeNotifier extends Notifier<TreeData> {
     }
 
     // DB Translation
-    final collectionId = ref.read(selectedCollectionProvider)?.id;
+    final workspaceId = ref.read(selectedWorkspaceProvider)?.id;
     final dbNodes = duplicated.map((n) {
-      if (n.parentId == collectionId) {
+      if (n.parentId == workspaceId) {
         return n.copyWith(parentId: null, forceNullParent: true);
       }
       return n;
@@ -800,8 +800,8 @@ class FileTreeNotifier extends Notifier<TreeData> {
     }
 
     // 2. Repo Update (Move)
-    final collectionId = ref.read(selectedCollectionProvider)?.id;
-    final dbParentId = (newParentId == collectionId) ? null : newParentId;
+    final workspaceId = ref.read(selectedWorkspaceProvider)?.id;
+    final dbParentId = (newParentId == workspaceId) ? null : newParentId;
 
     await _repo.moveItem(movedNode.id, dbParentId);
 
@@ -970,8 +970,8 @@ class FileTreeNotifier extends Notifier<TreeData> {
   }
 
   Future<void> _duplicateNodeToParent(Node node, String? parentId) async {
-    final collectionId = ref.read(selectedCollectionProvider)?.id;
-    final effectiveParentId = parentId ?? collectionId;
+    final workspaceId = ref.read(selectedWorkspaceProvider)?.id;
+    final effectiveParentId = parentId ?? workspaceId;
 
     if (node is FolderNode) {
       await _duplicateFolderToParent(node, effectiveParentId);
@@ -984,7 +984,7 @@ class FileTreeNotifier extends Notifier<TreeData> {
             .name, // Keep same name or add copy? VS Code keeps same name on copy-paste to other folder
         config: node.config.clone(),
       );
-      final dbNode = (effectiveParentId == collectionId)
+      final dbNode = (effectiveParentId == workspaceId)
           ? newNode.copyWith(parentId: null, forceNullParent: true)
           : newNode;
 
@@ -997,8 +997,8 @@ class FileTreeNotifier extends Notifier<TreeData> {
     FolderNode node,
     String? targetParentId,
   ) async {
-    final collectionId = ref.read(selectedCollectionProvider)?.id;
-    final effectiveParentId = targetParentId ?? collectionId;
+    final workspaceId = ref.read(selectedWorkspaceProvider)?.id;
+    final effectiveParentId = targetParentId ?? workspaceId;
 
     final allNodes = [node, ...getChildrenNodes(node)];
     final idMap = <String, String>{};
@@ -1043,7 +1043,7 @@ class FileTreeNotifier extends Notifier<TreeData> {
     // DB Translation for Folder Tree
     // We need to ensure root folder uses null parent for DB if it's top level
     final dbNodes = duplicated.map((n) {
-      if (n.parentId == collectionId) {
+      if (n.parentId == workspaceId) {
         return n.copyWith(parentId: null, forceNullParent: true);
       }
       return n;

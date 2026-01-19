@@ -1,5 +1,5 @@
 import 'package:api_craft/core/services/security/encryption_service.dart';
-import 'package:api_craft/features/collection/services/collection_security_service.dart';
+import 'package:api_craft/features/workspace/services/workspace_security_service.dart';
 import 'package:api_craft/features/dynamic-form/form_input.dart';
 import 'package:api_craft/features/template-functions/models/template_functions.dart';
 import 'package:api_craft/features/template-functions/models/template_placeholder_model.dart';
@@ -11,7 +11,7 @@ import 'package:flutter/material.dart';
 final secureFn = TemplateFunction(
   name: 'secure',
   previewType: 'disabled',
-  description: 'Decrypts a secure value using the collection context',
+  description: 'Decrypts a secure value using the workspace context',
   args: [
     FormInputText(
       name: "value",
@@ -35,7 +35,7 @@ Future<String?> decryptValue(Ref ref, String? encryptedValue) async {
       debugPrint("Value is null or empty or not encrypted");
       return null;
     }
-    final securityService = ref.read(collectionSecurityServiceProvider);
+    final securityService = ref.read(workspaceSecurityServiceProvider);
     return securityService.decryptData(encryptedValue);
   } catch (e) {
     debugPrint("Error decrypting value: $e");

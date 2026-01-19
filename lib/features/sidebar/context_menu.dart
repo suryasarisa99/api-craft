@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'package:api_craft/features/collection/collection_config_dialog.dart';
+import 'package:api_craft/features/workspace/workspace_config_dialog.dart';
 import 'package:api_craft/features/request/widgets/tabs/tab_titles.dart';
 import 'package:api_craft/features/sidebar/providers/clipboard_provider.dart';
 
@@ -119,22 +119,22 @@ List<MenuElement> _getFolderSpecificMenuActions({
   bool isRoot = false,
 }) {
   // final String? parentId = isRoot
-  //     ? (await ref.read(selectedCollectionProvider.future))?.id
+  //     ? (await ref.read(selectedWorkspaceProvider.future))?.id
   //     : node?.id;
   final String? parentId = isRoot ? null : node?.id;
   debugPrint('Parent ID for context menu: $parentId, isRoot: $isRoot');
-  final collectionId = (ref.read(selectedCollectionProvider))?.id;
-  debugPrint('Collection ID for context menu: $collectionId');
+  final workspaceId = (ref.read(selectedWorkspaceProvider))?.id;
+  debugPrint('Workspace ID for context menu: $workspaceId');
   return [
     if (isRoot) ...[
       MenuAction(
-        title: 'Collection Configuration',
+        title: 'Workspace Configuration',
         callback: () {
-          final targetId = node?.id ?? collectionId;
+          final targetId = node?.id ?? workspaceId;
           if (targetId != null) {
             showDialog(
               context: context,
-              builder: (_) => CollectionConfigDialog(collectionId: targetId),
+              builder: (_) => WorkspaceConfigDialog(workspaceId: targetId),
             );
           }
         },

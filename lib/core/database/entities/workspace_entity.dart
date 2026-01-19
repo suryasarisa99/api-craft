@@ -2,7 +2,7 @@ import 'package:objectbox/objectbox.dart';
 import 'package:api_craft/core/models/models.dart';
 
 @Entity()
-class CollectionEntity {
+class WorkspaceEntity {
   @Id()
   int id = 0;
 
@@ -16,7 +16,7 @@ class CollectionEntity {
   String? selectedEnvId;
   String? selectedJarId;
 
-  CollectionEntity({
+  WorkspaceEntity({
     this.id = 0,
     required this.uid,
     required this.name,
@@ -26,8 +26,8 @@ class CollectionEntity {
     this.selectedJarId,
   });
 
-  factory CollectionEntity.fromModel(CollectionModel model) {
-    return CollectionEntity(
+  factory WorkspaceEntity.fromModel(WorkspaceModel model) {
+    return WorkspaceEntity(
       uid: model.id,
       name: model.name,
       type: model.type.name, // enum to string
@@ -37,11 +37,11 @@ class CollectionEntity {
     );
   }
 
-  CollectionModel toModel() {
-    return CollectionModel(
+  WorkspaceModel toModel() {
+    return WorkspaceModel(
       id: uid,
       name: name,
-      type: CollectionType.values.byName(type),
+      type: WorkspaceType.values.byName(type),
       path: path,
       selectedEnvId: selectedEnvId,
       selectedJarId: selectedJarId,

@@ -11,7 +11,7 @@ class WebSocketSessionEntity {
   String uid;
 
   @Index()
-  String collectionId;
+  String workspaceId;
 
   @Index()
   String requestId;
@@ -27,7 +27,7 @@ class WebSocketSessionEntity {
   WebSocketSessionEntity({
     this.id = 0,
     required this.uid,
-    required this.collectionId,
+    required this.workspaceId,
     required this.requestId,
     this.url,
     required this.startTime,
@@ -36,11 +36,11 @@ class WebSocketSessionEntity {
 
   factory WebSocketSessionEntity.fromModel(
     WebSocketSession model,
-    String collectionId,
+    String workspaceId,
   ) {
     return WebSocketSessionEntity(
       uid: model.id,
-      collectionId: collectionId,
+      workspaceId: workspaceId,
       requestId: model.requestId,
       url: model.url,
       startTime: model.startTime,

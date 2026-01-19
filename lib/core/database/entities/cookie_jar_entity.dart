@@ -11,7 +11,7 @@ class CookieJarEntity {
   String uid;
 
   @Index()
-  String collectionId;
+  String workspaceId;
 
   String name;
 
@@ -21,7 +21,7 @@ class CookieJarEntity {
   CookieJarEntity({
     this.id = 0,
     required this.uid,
-    required this.collectionId,
+    required this.workspaceId,
     required this.name,
     this.cookies,
   });
@@ -29,7 +29,7 @@ class CookieJarEntity {
   factory CookieJarEntity.fromModel(CookieJarModel model) {
     return CookieJarEntity(
       uid: model.id,
-      collectionId: model.collectionId,
+      workspaceId: model.workspaceId,
       name: model.name,
       cookies: model.cookies.map((e) => e.toMap()).toList(),
     );
@@ -38,7 +38,7 @@ class CookieJarEntity {
   CookieJarModel toModel() {
     return CookieJarModel(
       id: uid,
-      collectionId: collectionId,
+      workspaceId: workspaceId,
       name: name,
       cookies: cookies?.map((e) => CookieDef.fromMap(e)).toList() ?? [],
     );

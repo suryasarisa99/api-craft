@@ -1,4 +1,4 @@
-import 'package:api_craft/core/database/entities/collection_entity.dart';
+import 'package:api_craft/core/database/entities/workspace_entity.dart';
 import 'package:api_craft/core/database/entities/cookie_jar_entity.dart';
 import 'package:api_craft/core/database/entities/environment_entity.dart';
 import 'package:api_craft/core/database/entities/history_entity.dart';
@@ -12,15 +12,15 @@ import 'package:api_craft/features/request/models/websocket_session.dart';
 
 class DataRepository {
   final Future<ObjectBox> _obxFuture;
-  final String collectionId;
+  final String workspaceId;
 
-  DataRepository(this._obxFuture, this.collectionId);
+  DataRepository(this._obxFuture, this.workspaceId);
 
   // --- Helpers for Async Box Access ---
   Future<Box<HistoryEntity>> get _historyBox async =>
       (await _obxFuture).store.box<HistoryEntity>();
-  Future<Box<CollectionEntity>> get _colBox async =>
-      (await _obxFuture).store.box<CollectionEntity>();
+  Future<Box<WorkspaceEntity>> get _colBox async =>
+      (await _obxFuture).store.box<WorkspaceEntity>();
   Future<Box<CookieJarEntity>> get _jarBox async =>
       (await _obxFuture).store.box<CookieJarEntity>();
   Future<Box<EnvironmentEntity>> get _envBox async =>
@@ -34,7 +34,7 @@ class DataRepository {
 
   Future<void> addHistoryEntry(RawHttpResponse entry, {int limit = 10}) async {
     final box = await _historyBox;
-    final entity = HistoryEntity.fromModel(entry, collectionId);
+    final entity = HistoryEntity.fromModel(entry, workspaceId);
 
     final qExist = box.query(HistoryEntity_.uid.equals(entity.uid)).build();
     final existing = qExist.findFirst();
@@ -48,7 +48,7 @@ class DataRepository {
     final q = box
         .query(
           HistoryEntity_.requestId.equals(entry.requestId) &
-              HistoryEntity_.collectionId.equals(collectionId),
+              HistoryEntity_.workspaceId.equals(workspaceId),
         )
         .order(HistoryEntity_.executeAt, flags: Order.descending)
         .build();
@@ -70,7 +70,7 @@ class DataRepository {
     final q = box
         .query(
           HistoryEntity_.requestId.equals(requestId) &
-              HistoryEntity_.collectionId.equals(collectionId),
+              HistoryEntity_.workspaceId.equals(workspaceId),
         )
         .order(HistoryEntity_.executeAt, flags: Order.descending)
         .build();
@@ -95,20 +95,18 @@ class DataRepository {
     q.close();
   }
 
-  Future<void> clearHistoryForCollection() async {
+  Future<void> clearHistoryForWorkspace() async {
     final box = await _historyBox;
-    final q = box
-        .query(HistoryEntity_.collectionId.equals(collectionId))
-        .build();
+    final q = box.query(HistoryEntity_.workspaceId.equals(workspaceId)).build();
     q.remove();
     q.close();
   }
 
-  // --- Collection Selection ---
+  // --- Workspace Selection ---
 
-  Future<void> updateCollectionSelection(String? envId, String? jarId) async {
+  Future<void> updateWorkspaceSelection(String? envId, String? jarId) async {
     final box = await _colBox;
-    final q = box.query(CollectionEntity_.uid.equals(collectionId)).build();
+    final q = box.query(WorkspaceEntity_.uid.equals(workspaceId)).build();
     final col = q.findFirst();
     q.close();
 
@@ -124,7 +122,7 @@ class DataRepository {
   Future<List<CookieJarModel>> getCookieJars() async {
     final box = await _jarBox;
     final q = box
-        .query(CookieJarEntity_.collectionId.equals(collectionId))
+        .query(CookieJarEntity_.workspaceId.equals(workspaceId))
         .build();
     final res = q.find();
     q.close();
@@ -169,7 +167,7 @@ class DataRepository {
   Future<List<Environment>> getEnvironments() async {
     final box = await _envBox;
     final q = box
-        .query(EnvironmentEntity_.collectionId.equals(collectionId))
+        .query(EnvironmentEntity_.workspaceId.equals(workspaceId))
         .build();
     final res = q.find();
     q.close();
@@ -191,7 +189,7 @@ class DataRepository {
     final existing = q.findFirst();
     q.close();
 
-    final entity = WebSocketSessionEntity.fromModel(session, collectionId);
+    final entity = WebSocketSessionEntity.fromModel(session, workspaceId);
     if (existing != null) entity.id = existing.id;
     box.put(entity);
   }
@@ -205,7 +203,7 @@ class DataRepository {
     final q = box
         .query(
           WebSocketSessionEntity_.requestId.equals(requestId) &
-              WebSocketSessionEntity_.collectionId.equals(collectionId),
+              WebSocketSessionEntity_.workspaceId.equals(workspaceId),
         )
         .order(WebSocketSessionEntity_.startTime, flags: Order.descending)
         .build();

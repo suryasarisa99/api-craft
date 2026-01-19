@@ -523,30 +523,30 @@ class JsEngineService {
     }
 
     // 2. Resolve Paths
-    final collectionId = ref.read(selectedCollectionProvider)?.id;
-    if (collectionId == null) return null;
+    final workspaceId = ref.read(selectedWorkspaceProvider)?.id;
+    if (workspaceId == null) return null;
 
     String? currentParentId;
     List<String> segments;
 
     if (target.startsWith('/')) {
-      // Absolute Path from Collection Root
-      currentParentId = collectionId;
+      // Absolute Path from Workspace Root
+      currentParentId = workspaceId;
       segments = target.split('/').where((s) => s.isNotEmpty).toList();
     } else if (target.startsWith('./') || target.startsWith('../')) {
       // Relative Path
       if (contextId == null) {
-        currentParentId = collectionId;
+        currentParentId = workspaceId;
         segments = target.split('/').where((s) => s.isNotEmpty).toList();
       } else {
         final contextNode = nodeMap[contextId];
         if (contextNode == null) return null;
-        currentParentId = contextNode.parentId ?? collectionId;
+        currentParentId = contextNode.parentId ?? workspaceId;
         segments = target.split('/').where((s) => s.isNotEmpty).toList();
       }
     } else {
       // Default: Absolute like Bruno
-      currentParentId = collectionId;
+      currentParentId = workspaceId;
       segments = target.split('/').where((s) => s.isNotEmpty).toList();
     }
 
@@ -557,9 +557,9 @@ class JsEngineService {
 
       if (name == '.') continue;
       if (name == '..') {
-        if (currentParentId == collectionId) continue;
+        if (currentParentId == workspaceId) continue;
         final parentNode = nodeMap[currentParentId];
-        currentParentId = parentNode?.parentId ?? collectionId;
+        currentParentId = parentNode?.parentId ?? workspaceId;
         continue;
       }
 
@@ -567,8 +567,8 @@ class JsEngineService {
       for (final node in nodeMap.values) {
         final pId = node.parentId;
         bool parentMatches = false;
-        if (currentParentId == collectionId) {
-          parentMatches = (pId == collectionId || pId == null);
+        if (currentParentId == workspaceId) {
+          parentMatches = (pId == workspaceId || pId == null);
         } else {
           parentMatches = (pId == currentParentId);
         }

@@ -503,7 +503,7 @@ class RequestResolver {
       ptr = _parentOf(ptr);
     }
 
-    // Collection Inheritance
+    // Workspace Inheritance
     return result;
   }
 

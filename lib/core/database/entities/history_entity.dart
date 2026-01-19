@@ -17,7 +17,7 @@ class HistoryEntity {
   String requestId;
 
   @Index()
-  String collectionId; // Need this for filtering history by collection
+  String workspaceId; // Need this for filtering history by workspace
 
   int statusCode;
   String statusMessage;
@@ -53,7 +53,7 @@ class HistoryEntity {
     this.id = 0,
     required this.uid,
     required this.requestId,
-    required this.collectionId,
+    required this.workspaceId,
     required this.statusCode,
     required this.statusMessage,
     required this.executeAt,
@@ -70,12 +70,12 @@ class HistoryEntity {
     this.assertionResultsJson,
   });
 
-  factory HistoryEntity.fromModel(RawHttpResponse model, String collectionId) {
-    // Model doesn't have collectionId, inherited from context
+  factory HistoryEntity.fromModel(RawHttpResponse model, String workspaceId) {
+    // Model doesn't have workspaceId, inherited from context
     return HistoryEntity(
       uid: model.id,
       requestId: model.requestId,
-      collectionId: collectionId,
+      workspaceId: workspaceId,
       statusCode: model.statusCode,
       statusMessage: model.statusMessage,
       executeAt: model.executeAt,

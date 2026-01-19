@@ -5,7 +5,6 @@ import 'package:api_craft/core/widgets/ui/custom_dialog.dart';
 import 'package:api_craft/core/widgets/ui/variable_text_field_custom.dart';
 import 'package:api_craft/features/auth/widgets/auth_tab.dart';
 import 'package:api_craft/features/auth/widgets/auth_tab_header.dart';
-import 'package:api_craft/features/collection/collection_model.dart';
 import 'package:api_craft/features/request/widgets/tabs/assertions_tab.dart';
 import 'package:api_craft/features/request/widgets/tabs/headers_tab.dart';
 import 'package:api_craft/features/request/widgets/tabs/script_tab.dart';
@@ -13,17 +12,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lazy_load_indexed_stack/lazy_load_indexed_stack.dart';
 
-class CollectionConfigDialog extends ConsumerStatefulWidget {
-  final String collectionId;
-  const CollectionConfigDialog({super.key, required this.collectionId});
+class WorkspaceConfigDialog extends ConsumerStatefulWidget {
+  final String workspaceId;
+  const WorkspaceConfigDialog({super.key, required this.workspaceId});
 
   @override
-  ConsumerState<CollectionConfigDialog> createState() =>
-      _CollectionConfigDialogState();
+  ConsumerState<WorkspaceConfigDialog> createState() =>
+      _WorkspaceConfigDialogState();
 }
 
-class _CollectionConfigDialogState
-    extends ConsumerState<CollectionConfigDialog> {
+class _WorkspaceConfigDialogState extends ConsumerState<WorkspaceConfigDialog> {
   int tabIndex = 0;
   bool hasChanges = false;
   static const useLazyMode = true;
@@ -36,7 +34,7 @@ class _CollectionConfigDialogState
     // Listen for changes in the node
     subscription = ref.listenManual(
       fileTreeProvider.select(
-        (s) => s.nodeMap[widget.collectionId] as CollectionNode,
+        (s) => s.nodeMap[widget.workspaceId] as WorkspaceNode,
       ),
       (previous, next) {
         if (useLazyMode) {
@@ -66,13 +64,13 @@ class _CollectionConfigDialogState
         // Trigger inheritance update
         ref
             .read(nodeUpdateTriggerProvider.notifier)
-            .setLastUpdatedFolder(widget.collectionId);
+            .setLastUpdatedFolder(widget.workspaceId);
 
         // Lazy Persistence
         if (hasChanges) {
           final node =
-              ref.read(fileTreeProvider).nodeMap[widget.collectionId]
-                  as CollectionNode;
+              ref.read(fileTreeProvider).nodeMap[widget.workspaceId]
+                  as WorkspaceNode;
           await ref.read(repositoryProvider).updateNode(node);
         }
       },
@@ -110,10 +108,10 @@ class _CollectionConfigDialogState
           Consumer(
             builder: (context, ref, child) {
               final title = ref.watch(
-                collectionsProvider.select(
+                workspacesProvider.select(
                   (value) =>
                       value.value
-                          ?.firstWhere((e) => e.id == widget.collectionId)
+                          ?.firstWhere((e) => e.id == widget.workspaceId)
                           .name ??
                       "",
                 ),
@@ -176,7 +174,7 @@ class _CollectionConfigDialogState
                                         color: tabIndex == index
                                             ? const Color(0xFFE17FF0)
                                             : Colors.grey,
-                                        widget.collectionId,
+                                        widget.workspaceId,
                                         isTabActive: tabIndex == index,
                                         handleSetTab: () {
                                           setState(() {
@@ -205,15 +203,15 @@ class _CollectionConfigDialogState
                     index: tabIndex,
                     children: [
                       // 1. General Tab
-                      _GeneralTab(id: widget.collectionId),
+                      _GeneralTab(id: widget.workspaceId),
                       // 2. Storage Tab
-                      _StorageTab(id: widget.collectionId),
+                      _StorageTab(id: widget.workspaceId),
                       // 3. Headers Tab
-                      HeadersTab(id: widget.collectionId),
+                      HeadersTab(id: widget.workspaceId),
                       // 4. Auth Tab
-                      AuthTab(id: widget.collectionId),
-                      ScriptTab(id: widget.collectionId),
-                      AssertionsTab(id: widget.collectionId),
+                      AuthTab(id: widget.workspaceId),
+                      ScriptTab(id: widget.workspaceId),
+                      AssertionsTab(id: widget.workspaceId),
                     ],
                   ),
                 ),
@@ -241,14 +239,14 @@ class _GeneralTabState extends ConsumerState<_GeneralTab> {
   @override
   void initState() {
     super.initState();
-    final collection = ref
-        .read(collectionsProvider)
+    final workspace = ref
+        .read(workspacesProvider)
         .value!
         .firstWhere((e) => e.id == widget.id);
-    nameController = TextEditingController(text: collection.name);
-    // Assuming root node ID is same as collection ID for description/config updates?
-    // If not, we need a way to get root node from collection ID.
-    // Usually collection ID == Root Node ID in fileTree structure if it's the root.
+    nameController = TextEditingController(text: workspace.name);
+    // Assuming root node ID is same as workspace ID for description/config updates?
+    // If not, we need a way to get root node from workspace ID.
+    // Usually workspace ID == Root Node ID in fileTree structure if it's the root.
     // Let's assume widget.id is valid for ReqComposeNotifier (which works on Nodes).
     notifier = ref.read(reqComposeProvider(widget.id).notifier);
   }
@@ -261,9 +259,9 @@ class _GeneralTabState extends ConsumerState<_GeneralTab> {
 
   @override
   Widget build(BuildContext context) {
-    // Listen to collection name changes
+    // Listen to workspace name changes
     ref.listen(
-      collectionsProvider.select(
+      workspacesProvider.select(
         (v) => v.value?.firstWhere((e) => e.id == widget.id).name,
       ),
       (_, n) {
@@ -280,7 +278,7 @@ class _GeneralTabState extends ConsumerState<_GeneralTab> {
           TextField(
             controller: nameController,
             decoration: const InputDecoration(
-              hintText: "Collection Name",
+              hintText: "Workspace Name",
               border: OutlineInputBorder(),
               labelText: "Name",
             ),
@@ -288,10 +286,10 @@ class _GeneralTabState extends ConsumerState<_GeneralTab> {
               if (val.trim().isEmpty) return;
 
               ref
-                  .read(collectionsProvider.notifier)
-                  .updateCollection(
+                  .read(workspacesProvider.notifier)
+                  .updateWorkspace(
                     ref
-                        .read(collectionsProvider)
+                        .read(workspacesProvider)
                         .value!
                         .firstWhere((e) => e.id == widget.id)
                         .copyWith(name: val),
@@ -326,13 +324,13 @@ class _StorageTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final collection = ref.watch(
-      collectionsProvider.select(
+    final workspace = ref.watch(
+      workspacesProvider.select(
         (value) => value.value!.firstWhere((e) => e.id == id),
       ),
     );
 
-    if (collection.type == CollectionType.database) {
+    if (workspace.type == WorkspaceType.database) {
       return const Center(child: Text("Database Storage (Managed internally)"));
     }
 
@@ -343,10 +341,10 @@ class _StorageTab extends ConsumerWidget {
         children: [
           Text("Storage Path", style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 8),
-          Text(collection.path ?? "Unknown path"),
+          Text(workspace.path ?? "Unknown path"),
           const SizedBox(height: 16),
           const Text(
-            "To change path, please re-import the collection from the new location (Implementation of move pending).",
+            "To change path, please re-import the workspace from the new location (Implementation of move pending).",
             style: TextStyle(color: Colors.grey),
           ),
         ],

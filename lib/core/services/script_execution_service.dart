@@ -56,7 +56,7 @@ class ScriptExecutionService {
 
     // Default Strategies (Sandwich / Sequential)
 
-    // Lineage is [Request, Folder, Collection] (Leaf -> Root)
+    // Lineage is [Request, Folder, Workspace] (Leaf -> Root)
 
     if (strategy == ScriptFlowStrategy.sequential) {
       // Top -> Down (Root -> Leaf)
@@ -94,9 +94,7 @@ class ScriptExecutionService {
   }
 
   String? _getScriptFromNode(Node node, ScriptType type) {
-    if (node is! RequestNode &&
-        node is! FolderNode &&
-        node is! CollectionNode) {
+    if (node is! RequestNode && node is! FolderNode && node is! WorkspaceNode) {
       return null;
     }
 

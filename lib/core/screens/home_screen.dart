@@ -1,7 +1,7 @@
 import 'package:api_craft/core/constants/globals.dart';
 import 'package:api_craft/core/utils/debouncer.dart';
 import 'package:api_craft/core/widgets/ui/surya_theme_icon.dart';
-import 'package:api_craft/features/collection/collection_picker.dart';
+import 'package:api_craft/features/workspace/workspace_picker.dart';
 import 'package:api_craft/features/environment/environment_picker.dart';
 import 'package:api_craft/features/request/widgets/request.dart';
 import 'package:api_craft/features/response/response_tab.dart';
@@ -393,7 +393,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                     : const SuryaThemeIcon(BulkRounded.sidebarLeft),
               ),
               CookiesJarPicker(),
-              CollectionPicker(),
+              WorkspacePicker(),
               Icon(Icons.keyboard_arrow_right, size: 16),
               const EnvironmentButton(),
             ],

@@ -1,6 +1,6 @@
 export '../../features/request/models/node_model.dart';
 export '../../features/request/models/node_config_model.dart';
-export '../../features/collection/collection_model.dart';
+export '../../features/workspace/workspace_model.dart';
 export 'resolve_config_model.dart';
 export '../../features/sidebar/models/visual_model.dart';
 export '../../features/sidebar/models/clipboard_models.dart';

@@ -2,24 +2,24 @@ import 'package:api_craft/core/services/security/encryption_service.dart';
 import 'package:api_craft/core/services/security/master_key_service.dart';
 import 'package:api_craft/core/repository/data_repository.dart';
 import 'package:api_craft/core/providers/providers.dart';
-import 'package:api_craft/features/collection/collection_model.dart';
+import 'package:api_craft/features/workspace/workspace_model.dart';
 import 'package:api_craft/features/sidebar/file_tree_provider.dart';
-import 'package:api_craft/core/database/entities/collection_entity.dart';
+import 'package:api_craft/core/database/entities/workspace_entity.dart';
 import 'package:api_craft/objectbox.g.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:convert';
-import 'package:api_craft/features/collection/collections_provider.dart';
+import 'package:api_craft/features/workspace/workspaces_provider.dart';
 
-final collectionSecurityServiceProvider = Provider(
-  (ref) => CollectionSecurityService(ref),
+final workspaceSecurityServiceProvider = Provider(
+  (ref) => WorkspaceSecurityService(ref),
 );
 
-class CollectionSecurityService {
+class WorkspaceSecurityService {
   final Ref ref;
   late final _encryptionService = ref.read(encryptionServiceProvider);
 
-  CollectionSecurityService(this.ref);
+  WorkspaceSecurityService(this.ref);
 
   List<int> getMasterKey() {
     final masterKey = ref.read(masterKeyProvider);
@@ -31,15 +31,15 @@ class CollectionSecurityService {
     return masterKey!;
   }
 
-  /// Enables encryption for a collection.
+  /// Enables encryption for a workspace.
   /// 1. Generates a new random Workspace Key
   /// 2. Wraps it with the Master Key
-  /// 3. Saves the encrypted key to the collection metadata in DB
-  Future<void> enableEncryption(String collectionId) async {
+  /// 3. Saves the encrypted key to the workspace metadata in DB
+  Future<void> enableEncryption(String workspaceId) async {
     final repo = ref.read(repositoryProvider); // Use store repo abstraction
 
     // Check if checks already encrypted
-    // (Optimization: can check collection model in memory first)
+    // (Optimization: can check workspace model in memory first)
 
     List<int> masterKey;
     try {
@@ -55,42 +55,42 @@ class CollectionSecurityService {
       masterKey,
     );
 
-    // Update Collection in DB
+    // Update Workspace in DB
     // We need to update directly via repository to ensure persistence
-    await repo.setCollectionEncryption(collectionId, encryptedWorkspaceKey);
+    await repo.setWorkspaceEncryption(workspaceId, encryptedWorkspaceKey);
 
     // Refresh FileTree to reflect changes instantly without reload
     ref
         .read(fileTreeProvider.notifier)
-        .updateEncryptionKey(collectionId, encryptedWorkspaceKey);
+        .updateEncryptionKey(workspaceId, encryptedWorkspaceKey);
   }
 
-  /// Gets the unwrapped Workspace Key for a collection
-  Future<List<int>> getCollectionKey() async {
-    final collectionNode = ref.read(collectionNodeProvider);
-    if (collectionNode == null) {
-      throw Exception("No collection selected");
+  /// Gets the unwrapped Workspace Key for a workspace
+  Future<List<int>> getWorkspaceKey() async {
+    final workspaceNode = ref.read(workspaceNodeProvider);
+    if (workspaceNode == null) {
+      throw Exception("No workspace selected");
     }
 
-    final encryptedKey = collectionNode.folderConfig.encryptedKey;
+    final encryptedKey = workspaceNode.folderConfig.encryptedKey;
     if (encryptedKey == null) {
-      throw Exception("Encryption not enabled for this collection");
+      throw Exception("Encryption not enabled for this workspace");
     }
 
     final masterKey = await getMasterKeyAsync();
     return await _encryptionService.unwrapKey(encryptedKey, masterKey);
   }
 
-  /// Encrypts data for a specific collection
+  /// Encrypts data for a specific workspace
   Future<String> encryptData(String plaintext) async {
-    final key = await getCollectionKey();
+    final key = await getWorkspaceKey();
     return await _encryptionService.encrypt(plaintext, key);
   }
 
-  /// Decrypts data for a specific collection
+  /// Decrypts data for a specific workspace
   Future<String> decryptData(String ciphertext) async {
     try {
-      final key = await getCollectionKey();
+      final key = await getWorkspaceKey();
       return await _encryptionService.decrypt(ciphertext, key);
     } catch (err) {
       debugPrint("error: ${err.toString()}");

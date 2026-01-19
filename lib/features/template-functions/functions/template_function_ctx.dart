@@ -6,7 +6,7 @@ final ctxWorkspaceIdFn = TemplateFunction(
   description: 'Get the workspace Id',
   args: [],
   onRender: (ref, ctx, args) async {
-    return ref.read(selectedCollectionProvider)?.id;
+    return ref.read(selectedWorkspaceProvider)?.id;
   },
 );
 final ctxWorkspaceNameFn = TemplateFunction(
@@ -14,6 +14,6 @@ final ctxWorkspaceNameFn = TemplateFunction(
   description: 'Get the workspace name',
   args: [],
   onRender: (ref, ctx, args) async {
-    return ref.read(selectedCollectionProvider)?.name;
+    return ref.read(selectedWorkspaceProvider)?.name;
   },
 );

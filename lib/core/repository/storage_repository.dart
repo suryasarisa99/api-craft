@@ -41,9 +41,9 @@ abstract class StorageRepository {
   Future<void> setHistoryIndex(String requestId, String? historyId);
 
   // --- Environments ---
-  Future<List<Environment>> getEnvironments(String collectionId);
+  Future<List<Environment>> getEnvironments(String workspaceId);
   Future<void> createEnvironment(Environment env);
   Future<void> updateEnvironment(Environment env);
   Future<void> deleteEnvironment(String id);
-  Future<void> setCollectionEncryption(String id, String encryptedKey);
+  Future<void> setWorkspaceEncryption(String id, String encryptedKey);
 }

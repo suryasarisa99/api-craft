@@ -44,10 +44,10 @@ final rootIdsProvider = Provider.autoDispose<RootList>((ref) {
       .where((n) => n.parentId == null)
       .toList();
 
-  // Hide CollectionNode: If the root is the Collection, show its children instead
-  if (roots.isNotEmpty && roots.first is CollectionNode) {
-    final collectionNode = roots.first as CollectionNode;
-    roots = collectionNode.children
+  // Hide WorkspaceNode: If the root is the Workspace, show its children instead
+  if (roots.isNotEmpty && roots.first is WorkspaceNode) {
+    final workspaceNode = roots.first as WorkspaceNode;
+    roots = workspaceNode.children
         .map((id) => treeState.nodeMap[id])
         .whereType<Node>()
         .toList();

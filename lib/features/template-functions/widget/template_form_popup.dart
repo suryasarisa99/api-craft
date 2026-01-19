@@ -10,7 +10,7 @@ import 'package:api_craft/features/dynamic-form/dynamic_form.dart';
 import 'package:api_craft/core/utils/debouncer.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
-import 'package:api_craft/features/collection/services/collection_security_service.dart'; // collectionSecurityServiceProvider
+import 'package:api_craft/features/workspace/services/workspace_security_service.dart'; // workspaceSecurityServiceProvider
 
 class TemplateFormPopup extends ConsumerStatefulWidget {
   final TemplateFnPlaceholder fnPlaceholder;
@@ -76,7 +76,7 @@ class _TemplateFormPopupState extends ConsumerState<TemplateFormPopup> {
     if (widget.templateFn.name == 'secure') {
       final value = finalState['value'];
       if (value != null && value.isNotEmpty && !value.startsWith('ENC_')) {
-        final securityService = ref.read(collectionSecurityServiceProvider);
+        final securityService = ref.read(workspaceSecurityServiceProvider);
         final encrypted = await securityService.encryptData(value);
         finalState['value'] = encrypted;
       }

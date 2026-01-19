@@ -8,21 +8,21 @@ import 'package:api_craft/core/repository/data_repository.dart';
 import 'package:api_craft/core/repository/objectbox_storage_repository.dart';
 
 final repositoryProvider = Provider<StorageRepository>((ref) {
-  // 1. Await the Selected Collection (Handles loading state automatically)
-  final (collectionId, type, path) = ref.watch(
-    selectedCollectionProvider.select((c) => (c?.id, c?.type, c?.path)),
+  // 1. Await the Selected Workspace (Handles loading state automatically)
+  final (workspaceId, type, path) = ref.watch(
+    selectedWorkspaceProvider.select((c) => (c?.id, c?.type, c?.path)),
   );
 
-  if (collectionId == null) {
+  if (workspaceId == null) {
     Future.delayed(const Duration(milliseconds: 100), () {
-      ref.read(selectedCollectionProvider.notifier).select(kDefaultCollection);
+      ref.read(selectedWorkspaceProvider.notifier).select(kDefaultWorkspace);
     });
   }
 
   // 2. Return the correct Repository based on type
-  if (collectionId == null || type == CollectionType.database) {
+  if (workspaceId == null || type == WorkspaceType.database) {
     final obxFuture = ref.watch(databaseProvider);
-    return ObjectBoxStorageRepository(obxFuture, collectionId!);
+    return ObjectBoxStorageRepository(obxFuture, workspaceId!);
   } else {
     // Flat File
     return FlatFileStorageRepository(rootPath: path!);
@@ -30,26 +30,26 @@ final repositoryProvider = Provider<StorageRepository>((ref) {
 });
 
 final dataRepositoryProvider = Provider<DataRepository>((ref) {
-  // Data is ALWAYS local (DB), regardless of collection type
+  // Data is ALWAYS local (DB), regardless of workspace type
   final obxFuture = ref.watch(databaseProvider);
-  final collectionId = ref.watch(
-    selectedCollectionProvider.select((c) => c?.id ?? kDefaultCollection.id),
+  final workspaceId = ref.watch(
+    selectedWorkspaceProvider.select((c) => c?.id ?? kDefaultWorkspace.id),
   );
-  return DataRepository(obxFuture, collectionId);
+  return DataRepository(obxFuture, workspaceId);
 });
 
 /* Old Way
-- collections provider: get collections (async)
-- saved collections provider: get saved collection from prefs (async due to depends on collections)
-- repository provider: get storage repository (async due to waiting for db connection and depends on selected collection)
+- workspaces provider: get workspaces (async)
+- saved workspaces provider: get saved workspace from prefs (async due to depends on workspaces)
+- repository provider: get storage repository (async due to waiting for db connection and depends on selected workspace)
 */
 
 /* New Way
-- get saved collection from prefs
+- get saved workspace from prefs
   - it is empty return null
 - check first time app launched
   - if yes, 
-    - db automatically creates default collection. and sets as selected by repository provider after a delay
+    - db automatically creates default workspace. and sets as selected by repository provider after a delay
 - repository provider does not waits for db connection,just passes future of db to DbStorageRepository
 - DbStorageRepository handles loading state internally when db is needed
 - so in ui we can directly use repository provider without waiting

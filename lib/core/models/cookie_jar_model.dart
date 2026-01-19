@@ -84,26 +84,26 @@ class CookieDef {
 
 class CookieJarModel {
   final String id;
-  final String collectionId;
+  final String workspaceId;
   final String name;
   final List<CookieDef> cookies;
 
   const CookieJarModel({
     required this.id,
-    required this.collectionId,
+    required this.workspaceId,
     required this.name,
     this.cookies = const [],
   });
 
   CookieJarModel copyWith({
     String? id,
-    String? collectionId,
+    String? workspaceId,
     String? name,
     List<CookieDef>? cookies,
   }) {
     return CookieJarModel(
       id: id ?? this.id,
-      collectionId: collectionId ?? this.collectionId,
+      workspaceId: workspaceId ?? this.workspaceId,
       name: name ?? this.name,
       cookies: cookies ?? this.cookies,
     );
@@ -112,7 +112,7 @@ class CookieJarModel {
   Map<String, dynamic> toMap() {
     return {
       'id': id,
-      'collection_id': collectionId,
+      'workspace_id': workspaceId,
       'name': name,
       'cookies': cookies.map((e) => e.toMap()).toList(),
     };
@@ -130,7 +130,7 @@ class CookieJarModel {
     }
     return CookieJarModel(
       id: map['id'],
-      collectionId: map['collection_id'],
+      workspaceId: map['workspace_id'],
       name: map['name'],
       cookies: cookiesList,
     );

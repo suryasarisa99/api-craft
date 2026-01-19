@@ -71,17 +71,17 @@ class EnvironmentState {
 class EnvironmentNotifier extends Notifier<EnvironmentState> {
   @override
   EnvironmentState build() {
-    final collectionId = ref.watch(
-      selectedCollectionProvider.select((c) => c?.id),
+    final workspaceId = ref.watch(
+      selectedWorkspaceProvider.select((c) => c?.id),
     );
-    if (collectionId != null) {
-      Future.microtask(() => loadData(collectionId));
+    if (workspaceId != null) {
+      Future.microtask(() => loadData(workspaceId));
       return EnvironmentState(isLoading: true);
     }
     return EnvironmentState(isLoading: false);
   }
 
-  Future<void> loadData(String collectionId) async {
+  Future<void> loadData(String workspaceId) async {
     state = state.copyWith(isLoading: true);
     final repo = ref.read(repositoryProvider);
 
@@ -90,14 +90,14 @@ class EnvironmentNotifier extends Notifier<EnvironmentState> {
 
       // Fetch from Repo (Files/Shared or DB/All)
       // Fetch from Repo (Files/Shared or DB/All)
-      final repoEnvs = await repo.getEnvironments(collectionId);
+      final repoEnvs = await repo.getEnvironments(workspaceId);
       final jars = await dataRepo.getCookieJars();
 
       // Get persisted selection ...
-      final collection = ref.read(selectedCollectionProvider);
+      final workspace = ref.read(selectedWorkspaceProvider);
 
       List<Environment> envs;
-      if (collection?.type != CollectionType.database) {
+      if (workspace?.type != WorkspaceType.database) {
         // Fetch from DataRepo (Private envs from db)
         final privateEnvs = await dataRepo.getEnvironments();
 
@@ -114,8 +114,8 @@ class EnvironmentNotifier extends Notifier<EnvironmentState> {
         envs = repoEnvs;
       }
 
-      String? selEnv = collection?.selectedEnvId;
-      String? selJar = collection?.selectedJarId;
+      String? selEnv = workspace?.selectedEnvId;
+      String? selJar = workspace?.selectedJarId;
 
       // Validate Env persistence
       if (selEnv != null && !envs.any((e) => e.id == selEnv)) {
@@ -160,18 +160,18 @@ class EnvironmentNotifier extends Notifier<EnvironmentState> {
   }
 
   Future<void> _persistSelection() async {
-    final collection = ref.read(selectedCollectionProvider);
-    if (collection != null) {
+    final workspace = ref.read(selectedWorkspaceProvider);
+    if (workspace != null) {
       // 1. Update Provider State
-      final updatedCol = collection.copyWith(
+      final updatedCol = workspace.copyWith(
         selectedEnvId: state.selectedEnvironmentId,
         selectedJarId: state.selectedCookieJarId,
       );
-      ref.read(selectedCollectionProvider.notifier).select(updatedCol);
+      ref.read(selectedWorkspaceProvider.notifier).select(updatedCol);
 
       // 2. Update DB
       final dataRepo = ref.read(dataRepositoryProvider);
-      dataRepo.updateCollectionSelection(
+      dataRepo.updateWorkspaceSelection(
         state.selectedEnvironmentId,
         state.selectedCookieJarId,
       );
@@ -180,7 +180,7 @@ class EnvironmentNotifier extends Notifier<EnvironmentState> {
 
   Future<void> createEnvironment(
     String name,
-    String collectionId, {
+    String workspaceId, {
     Color? color,
     bool isShared = false,
     bool isGlobal = false,
@@ -188,7 +188,7 @@ class EnvironmentNotifier extends Notifier<EnvironmentState> {
     final repo = ref.read(repositoryProvider);
     final newEnv = Environment(
       id: nanoid(),
-      collectionId: collectionId,
+      workspaceId: workspaceId,
       name: name,
       color: color,
       isShared: isShared,
@@ -228,8 +228,8 @@ class EnvironmentNotifier extends Notifier<EnvironmentState> {
     // Storage Logic
     // Only perform "move" (delete from old) if we are in Hybrid/Filesystem mode.
     // In Database mode, repo & dataRepo are the same ObjectBox instance.
-    final collection = ref.read(selectedCollectionProvider);
-    final isHybrid = collection?.type != CollectionType.database;
+    final workspace = ref.read(selectedWorkspaceProvider);
+    final isHybrid = workspace?.type != WorkspaceType.database;
 
     if (env.isShared) {
       await repo.updateEnvironment(env);
@@ -309,11 +309,11 @@ class EnvironmentNotifier extends Notifier<EnvironmentState> {
     await repo.updateCookieJar(jar);
   }
 
-  Future<void> createCookieJar(String name, String collectionId) async {
+  Future<void> createCookieJar(String name, String workspaceId) async {
     final repo = ref.read(dataRepositoryProvider);
     final newJar = CookieJarModel(
       id: nanoid(),
-      collectionId: collectionId,
+      workspaceId: workspaceId,
       name: name,
     );
 

@@ -194,23 +194,23 @@ class FolderNode extends Node<FolderNodeConfig> {
   }
 }
 
-// --- COLLECTION NODE ---
-class CollectionNode extends FolderNode {
-  final CollectionModel collection;
+// --- WORKSPACE NODE ---
+class WorkspaceNode extends FolderNode {
+  final WorkspaceModel workspace;
 
-  CollectionNode({
-    required this.collection,
+  WorkspaceNode({
+    required this.workspace,
     required super.config,
     super.children = const [],
   }) : super(
-         id: collection.id,
+         id: workspace.id,
          parentId: null,
-         name: collection.name,
+         name: workspace.name,
          sortOrder: -1,
        );
 
   @override
-  CollectionNode copyWith({
+  WorkspaceNode copyWith({
     String? name,
     String? parentId,
     bool forceNullParent = false,
@@ -218,13 +218,13 @@ class CollectionNode extends FolderNode {
     List<String>? children,
     int? sortOrder,
     String? id,
-    CollectionModel? collection,
+    WorkspaceModel? workspace,
   }) {
-    // If name changes, update collection model too
-    final newCollection = (collection ?? this.collection).copyWith(name: name);
+    // If name changes, update workspace model too
+    final newWorkspace = (workspace ?? this.workspace).copyWith(name: name);
 
-    return CollectionNode(
-      collection: newCollection,
+    return WorkspaceNode(
+      workspace: newWorkspace,
       config: config ?? this.config,
       children: children ?? this.children,
     );

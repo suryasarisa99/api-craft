@@ -1,7 +1,7 @@
 export '../../features/request/providers/active_req_provider.dart';
-export '../../features/collection/collections_provider.dart';
-export '../../features/collection/selected_collection_provider.dart';
-export '../../features/collection/collection_node_provider.dart';
+export '../../features/workspace/workspaces_provider.dart';
+export '../../features/workspace/selected_workspace_provider.dart';
+export '../../features/workspace/workspace_node_provider.dart';
 export '../../features/sidebar/file_tree_provider.dart';
 export 'root_path_provider.dart';
 export 'selected_provider.dart';

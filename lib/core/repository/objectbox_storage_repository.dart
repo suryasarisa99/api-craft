@@ -7,14 +7,14 @@ import 'package:api_craft/core/constants/globals.dart'; // Added import
 import 'package:flutter/cupertino.dart';
 import 'package:nanoid/nanoid.dart';
 import 'package:api_craft/core/database/entities/environment_entity.dart';
-import 'package:api_craft/core/database/entities/collection_entity.dart';
+import 'package:api_craft/core/database/entities/workspace_entity.dart';
 
 class ObjectBoxStorageRepository implements StorageRepository {
   final Future<ObjectBox> _obxFuture;
-  final String collectionId;
+  final String workspaceId;
 
-  ObjectBoxStorageRepository(this._obxFuture, String? _collectionId)
-    : collectionId = _collectionId ?? kDefaultCollection.id;
+  ObjectBoxStorageRepository(this._obxFuture, String? _workspaceId)
+    : workspaceId = _workspaceId ?? kDefaultWorkspace.id;
 
   // Async getters for boxes
   Future<Box<NodeEntity>> get _nodeBox async =>
@@ -34,7 +34,7 @@ class ObjectBoxStorageRepository implements StorageRepository {
     // Determine sort_order
     final q = box
         .query(
-          NodeEntity_.collectionId.equals(collectionId) &
+          NodeEntity_.workspaceId.equals(workspaceId) &
               (parentId == null
                   ? NodeEntity_.parentId.isNull()
                   : NodeEntity_.parentId.equals(parentId)),
@@ -50,7 +50,7 @@ class ObjectBoxStorageRepository implements StorageRepository {
 
     final entity = NodeEntity(
       uid: newId,
-      collectionId: collectionId,
+      workspaceId: workspaceId,
       parentId: parentId,
       name: name,
       type: type.name, // Enum Name
@@ -71,7 +71,7 @@ class ObjectBoxStorageRepository implements StorageRepository {
   Future<void> createMany(List<Node> nodes) async {
     final box = await _nodeBox;
     final entities = nodes
-        .map((n) => NodeEntity.fromModel(n, collectionId))
+        .map((n) => NodeEntity.fromModel(n, workspaceId))
         .toList();
     box.putMany(entities);
   }
@@ -79,7 +79,7 @@ class ObjectBoxStorageRepository implements StorageRepository {
   @override
   Future<void> createOne(Node node) async {
     final box = await _nodeBox;
-    box.put(NodeEntity.fromModel(node, collectionId));
+    box.put(NodeEntity.fromModel(node, workspaceId));
   }
 
   @override
@@ -116,7 +116,7 @@ class ObjectBoxStorageRepository implements StorageRepository {
   Future<List<Node>> getNodes() async {
     final box = await _nodeBox;
     final q = box
-        .query(NodeEntity_.collectionId.equals(collectionId))
+        .query(NodeEntity_.workspaceId.equals(workspaceId))
         .order(NodeEntity_.sortOrder)
         .build();
     final entities = q.find();
@@ -197,7 +197,7 @@ class ObjectBoxStorageRepository implements StorageRepository {
     final box = await _nodeBox;
     final existing = await _findNode(node.id);
     if (existing != null) {
-      final updated = NodeEntity.fromModel(node, collectionId);
+      final updated = NodeEntity.fromModel(node, workspaceId);
       updated.id = existing.id; // Preserve internal ID
       updated.body = existing.body; // Preserve Body content
       box.put(updated);
@@ -247,11 +247,11 @@ class ObjectBoxStorageRepository implements StorageRepository {
   }
 
   @override
-  Future<void> setCollectionEncryption(String id, String encryptedKey) async {
+  Future<void> setWorkspaceEncryption(String id, String encryptedKey) async {
     // Determine the root node UID.
-    // In our architecture, the collection ID is often used as the root folder ID,
-    // OR there is a node with ID=collectionId.
-    // Let's assume the root node has uid == id (collection id).
+    // In our architecture, the workspace ID is often used as the root folder ID,
+    // OR there is a node with ID=workspaceId.
+    // Let's assume the root node has uid == id (workspace id).
 
     final box = await _nodeBox;
     final q = box.query(NodeEntity_.uid.equals(id)).build();
@@ -264,17 +264,17 @@ class ObjectBoxStorageRepository implements StorageRepository {
       node.encryptedKey = encryptedKey;
       box.put(node);
     } else {
-      // If root node doesn't exist (rare for synced collection?), create it?
+      // If root node doesn't exist (rare for synced workspace?), create it?
       // Usually it should exist if `getNodes` fetches it.
       debugPrint("Warning: Root node not found for encryption update: $id");
     }
   }
 
   @override
-  Future<List<Environment>> getEnvironments(String collectionId) async {
+  Future<List<Environment>> getEnvironments(String workspaceId) async {
     final box = await _envBox;
     final q = box
-        .query(EnvironmentEntity_.collectionId.equals(collectionId))
+        .query(EnvironmentEntity_.workspaceId.equals(workspaceId))
         .build();
     final res = q.find();
     q.close();

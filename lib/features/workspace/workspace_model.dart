@@ -1,14 +1,14 @@
-enum CollectionType { database, filesystem }
+enum WorkspaceType { database, filesystem }
 
-class CollectionModel {
+class WorkspaceModel {
   final String id;
   final String name;
-  final CollectionType type;
+  final WorkspaceType type;
   final String? path;
   final String? selectedEnvId;
   final String? selectedJarId;
 
-  const CollectionModel({
+  const WorkspaceModel({
     required this.id,
     required this.name,
     required this.type,
@@ -17,11 +17,11 @@ class CollectionModel {
     this.selectedJarId,
   });
 
-  factory CollectionModel.fromMap(Map<String, dynamic> map) {
-    return CollectionModel(
+  factory WorkspaceModel.fromMap(Map<String, dynamic> map) {
+    return WorkspaceModel(
       id: map['id'],
       name: map['name'],
-      type: CollectionType.values.byName(map['type'] ?? 'local'),
+      type: WorkspaceType.values.byName(map['type'] ?? 'local'),
       path: map['path'],
       selectedEnvId: map['selected_env_id'],
       selectedJarId: map['selected_jar_id'],
@@ -39,15 +39,15 @@ class CollectionModel {
     };
   }
 
-  CollectionModel copyWith({
+  WorkspaceModel copyWith({
     String? id,
     String? name,
-    CollectionType? type,
+    WorkspaceType? type,
     String? path,
     String? selectedEnvId,
     String? selectedJarId,
   }) {
-    return CollectionModel(
+    return WorkspaceModel(
       id: id ?? this.id,
       name: name ?? this.name,
       type: type ?? this.type,

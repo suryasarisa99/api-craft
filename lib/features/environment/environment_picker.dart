@@ -111,16 +111,16 @@ class CookiesJarPicker extends ConsumerWidget {
       builder: (ctx) => InputDialog(
         onConfirmed: (text) {
           if (text.isNotEmpty) {
-            // Use selectedCollectionProvider instead to be safe?
-            // But environmentProvider loads based on selected collection.
-            // We can just query environments.first.collectionId as a fallback or inject selectedCollectionProvider.
-            // Actually `createCookieJar` needs collectionId.
+            // Use selectedWorkspaceProvider instead to be safe?
+            // But environmentProvider loads based on selected workspace.
+            // We can just query environments.first.workspaceId as a fallback or inject selectedWorkspaceProvider.
+            // Actually `createCookieJar` needs workspaceId.
             // Let's get it from any jar.
             final anyJar = ref.read(environmentProvider).cookieJars.firstOrNull;
             if (anyJar != null) {
               ref
                   .read(environmentProvider.notifier)
-                  .createCookieJar(text, anyJar.collectionId);
+                  .createCookieJar(text, anyJar.workspaceId);
             }
           }
         },

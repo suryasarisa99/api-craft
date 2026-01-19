@@ -68,7 +68,7 @@ class ReqComposeNotifier extends Notifier<UiRequestContext> {
   }
 
   void updateDescription(String description) {
-    // Root Node (Collection) updates are handled same as FolderNode updates
+    // Root Node (Workspace) updates are handled same as FolderNode updates
     _treeNotifier.updateDescription(id, description);
   }
 

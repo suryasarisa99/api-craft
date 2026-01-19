@@ -12,7 +12,7 @@ class EnvironmentEntity {
   String uid;
 
   @Index()
-  String collectionId;
+  String workspaceId;
 
   String name;
   int? colorValue; // Store Color as int
@@ -25,7 +25,7 @@ class EnvironmentEntity {
   EnvironmentEntity({
     this.id = 0,
     required this.uid,
-    required this.collectionId,
+    required this.workspaceId,
     required this.name,
     this.colorValue,
     this.isShared = false,
@@ -36,7 +36,7 @@ class EnvironmentEntity {
   factory EnvironmentEntity.fromModel(Environment model) {
     return EnvironmentEntity(
       uid: model.id,
-      collectionId: model.collectionId,
+      workspaceId: model.workspaceId,
       name: model.name,
       colorValue: model.color?.value,
       isShared: model.isShared,
@@ -48,7 +48,7 @@ class EnvironmentEntity {
   Environment toModel() {
     return Environment(
       id: uid,
-      collectionId: collectionId,
+      workspaceId: workspaceId,
       name: name,
       color: colorValue != null ? Color(colorValue!) : null,
       isShared: isShared,

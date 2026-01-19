@@ -5,7 +5,7 @@ import 'package:api_craft/core/providers/filter_provider.dart';
 import 'package:api_craft/core/providers/providers.dart';
 import 'package:api_craft/core/services/toast_service.dart';
 import 'package:api_craft/core/widgets/ui/key_valu_text_builder.dart';
-import 'package:api_craft/features/collection/services/collection_security_service.dart';
+import 'package:api_craft/features/workspace/services/workspace_security_service.dart';
 import 'package:api_craft/features/environment/environment_editor_dialog.dart';
 import 'package:api_craft/features/sidebar/context_menu.dart';
 import 'package:api_craft/features/template-functions/models/template_placeholder_model.dart';
@@ -189,16 +189,16 @@ class _VariableTextFieldCustomState
 
       // Encryption Check for 'secure' function
       if (name == 'secure') {
-        final collection = ref.read(collectionNodeProvider)!;
+        final workspace = ref.read(workspaceNodeProvider)!;
 
-        if (collection.config.encryptedKey == null) {
+        if (workspace.config.encryptedKey == null) {
           // Show dialog to enable encryption
           showDialog(
             context: context,
             builder: (context) => AlertDialog(
               title: const Text('Enable Encryption'),
               content: const Text(
-                'This collection needs to be encrypted before you can use secure values. '
+                'This workspace needs to be encrypted before you can use secure values. '
                 'Enabled encryption will generate a secure key stored in your Keychain.',
               ),
               actions: [
@@ -211,8 +211,8 @@ class _VariableTextFieldCustomState
                     Navigator.pop(context); // Close dialog
                     try {
                       await ref
-                          .read(collectionSecurityServiceProvider)
-                          .enableEncryption(collection.id);
+                          .read(workspaceSecurityServiceProvider)
+                          .enableEncryption(workspace.id);
                       if (context.mounted) {
                         handleVariableTap(
                           isVariable: isVariable,

@@ -9,37 +9,37 @@ import 'package:flutter_popup/flutter_popup.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
 import 'package:suryaicons/bulk_rounded.dart';
-import 'package:api_craft/features/collection/collection_config_dialog.dart';
+import 'package:api_craft/features/workspace/workspace_config_dialog.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:suryaicons/suryaicons.dart';
 
-class CollectionPicker extends ConsumerStatefulWidget {
-  const CollectionPicker({super.key});
+class WorkspacePicker extends ConsumerStatefulWidget {
+  const WorkspacePicker({super.key});
 
   @override
-  ConsumerState<CollectionPicker> createState() => _CollectionPickerState();
+  ConsumerState<WorkspacePicker> createState() => _WorkspacePickerState();
 }
 
-class _CollectionPickerState extends ConsumerState<CollectionPicker> {
+class _WorkspacePickerState extends ConsumerState<WorkspacePicker> {
   final GlobalKey<CustomPopupState> _popupKey = GlobalKey<CustomPopupState>();
 
   @override
   Widget build(BuildContext context) {
-    final selectedCollection = ref.watch(selectedCollectionProvider);
-    final collections = ref.watch(collectionsProvider).asData?.value ?? [];
+    final selectedWorkspace = ref.watch(selectedWorkspaceProvider);
+    final workspaces = ref.watch(workspacesProvider).asData?.value ?? [];
 
     return MyCustomMenu.contentColumn(
       popupKey: _popupKey,
       width: 200,
       items: [
-        ...collections.map((c) {
-          final isSelected = c.id == selectedCollection?.id;
+        ...workspaces.map((c) {
+          final isSelected = c.id == selectedWorkspace?.id;
           return CustomMenuIconItem.tick(
             title: Text(c.name),
             value: c.id,
             checked: isSelected,
             onTap: (_) {
-              ref.read(selectedCollectionProvider.notifier).select(c);
+              ref.read(selectedWorkspaceProvider.notifier).select(c);
               // change active request
               // ref.read(activeReqIdProvider.notifier).setActiveId(null);
             },
@@ -53,17 +53,17 @@ class _CollectionPickerState extends ConsumerState<CollectionPicker> {
           onTap: (_) => _showCreateDialog(context),
         ),
 
-        if (selectedCollection != null) ...[
+        if (selectedWorkspace != null) ...[
           menuDivider,
           CustomMenuIconItem(
             icon: const SuryaThemeIcon(BulkRounded.settings01),
-            title: const Text("Configure Collection"),
+            title: const Text("Configure Workspace"),
             value: 'configure',
             onTap: (_) {
               showDialog(
                 context: context,
                 builder: (_) =>
-                    CollectionConfigDialog(collectionId: selectedCollection.id),
+                    WorkspaceConfigDialog(workspaceId: selectedWorkspace.id),
               );
             },
           ),
@@ -73,29 +73,27 @@ class _CollectionPickerState extends ConsumerState<CollectionPicker> {
             title: const Text("Clear History"),
             value: 'clear_history',
             onTap: (_) {
-              ref.read(dataRepositoryProvider).clearHistoryForCollection();
+              ref.read(dataRepositoryProvider).clearHistoryForWorkspace();
               ScaffoldMessenger.of(
                 context,
               ).showSnackBar(const SnackBar(content: Text("History cleared")));
             },
           ),
         ],
-        if (selectedCollection != null &&
-            selectedCollection.id != kDefaultCollection.id)
+        if (selectedWorkspace != null &&
+            selectedWorkspace.id != kDefaultWorkspace.id)
           CustomMenuIconItem(
             icon: const SuryaThemeIcon(BulkRounded.delete01),
             title: const Text(
-              "Delete Collection",
+              "Delete Workspace",
               style: TextStyle(color: Colors.red),
             ),
             value: 'delete',
-            onTap: (_) => _showDeleteDialog(context, selectedCollection),
+            onTap: (_) => _showDeleteDialog(context, selectedWorkspace),
           ),
       ],
       child: Text(
-        selectedCollection != null
-            ? selectedCollection.name
-            : 'Select Collection',
+        selectedWorkspace != null ? selectedWorkspace.name : 'Select Workspace',
         style: Theme.of(context).textTheme.bodyMedium,
       ),
     );
@@ -104,17 +102,17 @@ class _CollectionPickerState extends ConsumerState<CollectionPicker> {
   void _showCreateDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (context) => const _CreateCollectionDialog(),
+      builder: (context) => const _CreateWorkspaceDialog(),
     );
   }
 
-  void _showDeleteDialog(BuildContext context, CollectionModel collection) {
+  void _showDeleteDialog(BuildContext context, WorkspaceModel workspace) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text("Delete '${collection.name}'?"),
+        title: Text("Delete '${workspace.name}'?"),
         content: const Text(
-          "This will permanently delete this collection and all its requests, history, and environments.",
+          "This will permanently delete this workspace and all its requests, history, and environments.",
         ),
         actions: [
           TextButton(
@@ -125,8 +123,8 @@ class _CollectionPickerState extends ConsumerState<CollectionPicker> {
             style: TextButton.styleFrom(foregroundColor: Colors.red),
             onPressed: () {
               ref
-                  .read(collectionsProvider.notifier)
-                  .deleteCollection(collection.id);
+                  .read(workspacesProvider.notifier)
+                  .deleteWorkspace(workspace.id);
               Navigator.pop(context);
             },
             child: const Text("Delete"),
@@ -137,16 +135,16 @@ class _CollectionPickerState extends ConsumerState<CollectionPicker> {
   }
 }
 
-class _CreateCollectionDialog extends ConsumerStatefulWidget {
-  const _CreateCollectionDialog();
+class _CreateWorkspaceDialog extends ConsumerStatefulWidget {
+  const _CreateWorkspaceDialog();
 
   @override
-  ConsumerState<_CreateCollectionDialog> createState() =>
-      _CreateCollectionDialogState();
+  ConsumerState<_CreateWorkspaceDialog> createState() =>
+      _CreateWorkspaceDialogState();
 }
 
-class _CreateCollectionDialogState
-    extends ConsumerState<_CreateCollectionDialog> {
+class _CreateWorkspaceDialogState
+    extends ConsumerState<_CreateWorkspaceDialog> {
   final TextEditingController _nameController = TextEditingController();
   String? _selectedPath;
 
@@ -171,20 +169,20 @@ class _CreateCollectionDialogState
       if (name.isEmpty) return;
 
       final type = _selectedPath != null
-          ? CollectionType.filesystem
-          : CollectionType.database;
+          ? WorkspaceType.filesystem
+          : WorkspaceType.database;
 
-      final newCollection = await ref
-          .read(collectionsProvider.notifier)
-          .createCollection(name, type: type, path: _selectedPath);
+      final newWorkspace = await ref
+          .read(workspacesProvider.notifier)
+          .createWorkspace(name, type: type, path: _selectedPath);
 
       if (mounted) {
-        ref.read(selectedCollectionProvider.notifier).select(newCollection);
+        ref.read(selectedWorkspaceProvider.notifier).select(newWorkspace);
         Navigator.pop(context);
       }
     } catch (e) {
       ToastService.error(
-        "Collection creation failed",
+        "Workspace creation failed",
         description: e.toString(),
       );
     }
@@ -194,7 +192,7 @@ class _CreateCollectionDialogState
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return AlertDialog(
-      title: const Text("New Collection"),
+      title: const Text("New Workspace"),
       content: SizedBox(
         width: 400,
         child: Column(
@@ -205,7 +203,7 @@ class _CreateCollectionDialogState
               controller: _nameController,
               autofocus: true,
               decoration: const InputDecoration(
-                hintText: "Collection Name",
+                hintText: "Workspace Name",
                 border: OutlineInputBorder(),
               ),
               onSubmitted: (_) => _create(),

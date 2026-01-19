@@ -6,20 +6,20 @@ import 'package:path_provider/path_provider.dart';
 final rootPathProvider = FutureProvider<String>((ref) async {
   final docsDir = await getApplicationDocumentsDirectory();
 
-  final collectionsPath = p.join(docsDir.path, 'MyNetworkApp', 'collections');
-  final collectionsDir = Directory(collectionsPath);
+  final workspacesPath = p.join(docsDir.path, 'MyNetworkApp', 'workspaces');
+  final workspacesDir = Directory(workspacesPath);
 
-  if (!await collectionsDir.exists()) {
-    await collectionsDir.create(recursive: true);
-    final defaultCollectionPath = p.join(collectionsPath, 'api-craft');
-    await Directory(defaultCollectionPath).create();
-    await File(p.join(defaultCollectionPath, 'collection.json')).writeAsString(
-      '{"name": "API Craft", "type": "collection", "version": "1"}',
+  if (!await workspacesDir.exists()) {
+    await workspacesDir.create(recursive: true);
+    final defaultWorkspacePath = p.join(workspacesPath, 'api-craft');
+    await Directory(defaultWorkspacePath).create();
+    await File(p.join(defaultWorkspacePath, 'workspace.json')).writeAsString(
+      '{"name": "API Craft", "type": "workspace", "version": "1"}',
     );
-    await File(p.join(defaultCollectionPath, 'hello.json')).writeAsString(
+    await File(p.join(defaultWorkspacePath, 'hello.json')).writeAsString(
       '{"method": "GET", "url": "https://api.example.com", "name": "Hello World"}',
     );
   }
 
-  return collectionsPath;
+  return workspacesPath;
 });

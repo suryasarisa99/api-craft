@@ -11,7 +11,7 @@ class NodeEntity {
   String uid;
 
   @Index()
-  String collectionId;
+  String workspaceId;
 
   @Index()
   String? parentId;
@@ -44,12 +44,12 @@ class NodeEntity {
   // Folder specific - List<Map>
   List<Map<String, dynamic>>? variables;
   List<Map<String, dynamic>>? assertions; // New field for assertions
-  String? encryptedKey; // Added field for collection security
+  String? encryptedKey; // Added field for workspace security
 
   NodeEntity({
     this.id = 0,
     required this.uid,
-    required this.collectionId,
+    required this.workspaceId,
     this.parentId,
     required this.name,
     required this.type,
@@ -74,11 +74,11 @@ class NodeEntity {
   });
 
   // Mapping from Domain Model
-  factory NodeEntity.fromModel(Node node, String collectionId) {
+  factory NodeEntity.fromModel(Node node, String workspaceId) {
     if (node is RequestNode) {
       return NodeEntity(
         uid: node.id,
-        collectionId: collectionId,
+        workspaceId: workspaceId,
         parentId: node.parentId,
         name: node.name,
         type: node.type.name,
@@ -106,7 +106,7 @@ class NodeEntity {
     } else if (node is FolderNode) {
       return NodeEntity(
         uid: node.id,
-        collectionId: collectionId,
+        workspaceId: workspaceId,
         parentId: node.parentId,
         name: node.name,
         type: node.type.name,

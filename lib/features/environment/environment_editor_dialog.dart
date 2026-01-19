@@ -1,7 +1,7 @@
 import 'package:api_craft/core/models/models.dart';
 import 'package:api_craft/core/widgets/dialog/input_dialog.dart';
 import 'package:api_craft/features/environment/environment_provider.dart';
-import 'package:api_craft/features/collection/selected_collection_provider.dart';
+import 'package:api_craft/features/workspace/selected_workspace_provider.dart';
 import 'package:api_craft/features/environment/environment_creation_dialog.dart';
 import 'package:api_craft/core/widgets/ui/custom_dialog.dart';
 import 'package:api_craft/core/widgets/ui/key_value_editor.dart';
@@ -45,8 +45,8 @@ class _EnvironmentEditorDialogState
   }
 
   void _createNewEnv() {
-    final collection = ref.read(selectedCollectionProvider);
-    if (collection != null) {
+    final workspace = ref.read(selectedWorkspaceProvider);
+    if (workspace != null) {
       showDialog(
         context: context,
         builder: (ctx) => EnvironmentCreationDialog(
@@ -55,7 +55,7 @@ class _EnvironmentEditorDialogState
                 .read(environmentProvider.notifier)
                 .createEnvironment(
                   name,
-                  collection.id,
+                  workspace.id,
                   color: color,
                   isShared: isShared,
                 );

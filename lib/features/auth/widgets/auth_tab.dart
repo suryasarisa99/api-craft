@@ -1,7 +1,7 @@
 import 'package:api_craft/core/models/models.dart';
 import 'package:api_craft/core/providers/providers.dart';
 import 'package:api_craft/features/auth/auth_registry.dart';
-import 'package:api_craft/features/collection/collection_config_dialog.dart';
+import 'package:api_craft/features/workspace/workspace_config_dialog.dart';
 import 'package:api_craft/features/dynamic-form/form_state.dart';
 import 'package:api_craft/features/request/providers/request_details_provider.dart';
 import 'package:api_craft/features/sidebar/context_menu.dart';
@@ -45,8 +45,8 @@ class AuthTab extends ConsumerWidget {
                         if (authSource.parentId == null) {
                           showDialog(
                             context: context,
-                            builder: (_) => CollectionConfigDialog(
-                              collectionId: authSource.id,
+                            builder: (_) => WorkspaceConfigDialog(
+                              workspaceId: authSource.id,
                             ),
                           );
                         } else {

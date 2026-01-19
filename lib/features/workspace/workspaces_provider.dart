@@ -1,4 +1,4 @@
-import 'package:api_craft/core/database/entities/collection_entity.dart';
+import 'package:api_craft/core/database/entities/workspace_entity.dart';
 import 'package:api_craft/core/repository/objectbox_storage_repository.dart';
 import 'package:api_craft/core/repository/storage_repository.dart';
 import 'package:api_craft/objectbox.g.dart';
@@ -12,22 +12,22 @@ import 'dart:io';
 import 'dart:convert';
 import 'package:path/path.dart' as p;
 
-final collectionsProvider =
-    AsyncNotifierProvider<CollectionsNotifier, List<CollectionModel>>(
-      CollectionsNotifier.new,
+final workspacesProvider =
+    AsyncNotifierProvider<WorkspacesNotifier, List<WorkspaceModel>>(
+      WorkspacesNotifier.new,
     );
 
-class CollectionsNotifier extends AsyncNotifier<List<CollectionModel>> {
-  Future<Box<CollectionEntity>> get _box async =>
-      (await ref.watch(databaseProvider)).store.box<CollectionEntity>();
+class WorkspacesNotifier extends AsyncNotifier<List<WorkspaceModel>> {
+  Future<Box<WorkspaceEntity>> get _box async =>
+      (await ref.watch(databaseProvider)).store.box<WorkspaceEntity>();
 
   @override
-  Future<List<CollectionModel>> build() async {
+  Future<List<WorkspaceModel>> build() async {
     final box = await _box;
 
     // Fetch existing (Index only from DB)
     final entities = box.getAll();
-    debugPrint('Collections found: ${entities.length}');
+    debugPrint('Workspaces found: ${entities.length}');
 
     if (entities.isNotEmpty) {
       return entities.map((e) => e.toModel()).toList();
@@ -36,35 +36,35 @@ class CollectionsNotifier extends AsyncNotifier<List<CollectionModel>> {
     }
   }
 
-  Future<CollectionModel> createCollection(
+  Future<WorkspaceModel> createWorkspace(
     String name, {
-    CollectionType type = CollectionType.database,
+    WorkspaceType type = WorkspaceType.database,
     String? path,
   }) async {
     final obx = await ref.read(databaseProvider);
-    final box = obx.store.box<CollectionEntity>();
+    final box = obx.store.box<WorkspaceEntity>();
 
     final newId = nanoid();
 
-    final newCollection = CollectionModel(
+    final newWorkspace = WorkspaceModel(
       id: newId,
       name: name,
       type: type,
       path: path,
     );
 
-    box.put(CollectionEntity.fromModel(newCollection));
+    box.put(WorkspaceEntity.fromModel(newWorkspace));
 
-    // Create Root Node (FolderNode) for this collection
+    // Create Root Node (FolderNode) for this workspace
     StorageRepository repo;
-    if (type == CollectionType.database) {
+    if (type == WorkspaceType.database) {
       repo = ObjectBoxStorageRepository(Future.value(obx), newId);
     } else {
       repo = FlatFileStorageRepository(rootPath: path!);
     }
 
     final rootNode = FolderNode(
-      id: newId, // Root ID same as Collection ID
+      id: newId, // Root ID same as Workspace ID
       parentId: null,
       name: name,
       config: FolderNodeConfig(isDetailLoaded: true),
@@ -79,25 +79,25 @@ class CollectionsNotifier extends AsyncNotifier<List<CollectionModel>> {
     await dataRepo.createEnvironment(
       Environment(
         id: nanoid(),
-        collectionId: newId,
+        workspaceId: newId,
         name: 'Global',
         isGlobal: true,
       ),
     );
 
     await dataRepo.createCookieJar(
-      CookieJarModel(id: nanoid(), collectionId: newId, name: 'Default'),
+      CookieJarModel(id: nanoid(), workspaceId: newId, name: 'Default'),
     );
 
     // Refresh list
     ref.invalidateSelf();
 
-    return newCollection;
+    return newWorkspace;
   }
 
-  Future<void> deleteCollection(String id) async {
+  Future<void> deleteWorkspace(String id) async {
     final box = await _box;
-    final q = box.query(CollectionEntity_.uid.equals(id)).build();
+    final q = box.query(WorkspaceEntity_.uid.equals(id)).build();
     q.remove();
     q.close();
 
@@ -105,58 +105,58 @@ class CollectionsNotifier extends AsyncNotifier<List<CollectionModel>> {
     ref.invalidateSelf();
   }
 
-  Future<void> updateCollection(CollectionModel collection) async {
+  Future<void> updateWorkspace(WorkspaceModel workspace) async {
     final box = await _box;
 
     // Check internal ID
-    final q = box.query(CollectionEntity_.uid.equals(collection.id)).build();
+    final q = box.query(WorkspaceEntity_.uid.equals(workspace.id)).build();
     final existing = q.findFirst();
     q.close();
 
     if (existing != null) {
       // 1. Check for Name Change & Sync Root Node
-      if (existing.name != collection.name) {
+      if (existing.name != workspace.name) {
         try {
           // Instantiate scoped repo to update Root Node
           StorageRepository repo;
-          if (collection.type == CollectionType.database) {
+          if (workspace.type == WorkspaceType.database) {
             final obx = await ref.read(databaseProvider);
-            repo = ObjectBoxStorageRepository(Future.value(obx), collection.id);
+            repo = ObjectBoxStorageRepository(Future.value(obx), workspace.id);
           } else {
-            if (collection.path != null) {
-              repo = FlatFileStorageRepository(rootPath: collection.path!);
+            if (workspace.path != null) {
+              repo = FlatFileStorageRepository(rootPath: workspace.path!);
             } else {
-              throw Exception("Filesystem collection missing path");
+              throw Exception("Filesystem workspace missing path");
             }
           }
-          await repo.renameItem(collection.id, collection.name);
+          await repo.renameItem(workspace.id, workspace.name);
 
-          // Invalidate Tree if this is the selected collection
+          // Invalidate Tree if this is the selected workspace
           // to reflect the name change immediately in the UI tree
-          final selectedId = ref.read(selectedCollectionProvider)?.id;
-          if (selectedId == collection.id) {
+          final selectedId = ref.read(selectedWorkspaceProvider)?.id;
+          if (selectedId == workspace.id) {
             // Update the tree node name directly without rebuilding the whole tree
             ref
                 .read(fileTreeProvider.notifier)
-                .updateNodeName(collection.id, collection.name);
+                .updateNodeName(workspace.id, workspace.name);
           }
         } catch (e) {
-          debugPrint("Error syncing collection name to root node: $e");
+          debugPrint("Error syncing workspace name to root node: $e");
         }
       }
 
       // 2. Just update DB Index
-      final updated = CollectionEntity.fromModel(collection);
+      final updated = WorkspaceEntity.fromModel(workspace);
       updated.id = existing.id; // Preserve ID
       box.put(updated);
     }
 
     // Update state locally
     state.whenData((list) {
-      final index = list.indexWhere((c) => c.id == collection.id);
+      final index = list.indexWhere((c) => c.id == workspace.id);
       if (index != -1) {
-        final newList = List<CollectionModel>.from(list);
-        newList[index] = collection;
+        final newList = List<WorkspaceModel>.from(list);
+        newList[index] = workspace;
         state = AsyncData(newList);
       }
     });

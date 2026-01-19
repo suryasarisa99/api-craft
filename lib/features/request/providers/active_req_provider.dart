@@ -19,20 +19,20 @@ final activeReqProvider = Provider<RequestNode?>((ref) {
 });
 
 class ActiveReqIdNotifier extends Notifier<String?> {
-  String _getPrefKey(String? collectionId) => collectionId == null
+  String _getPrefKey(String? workspaceId) => workspaceId == null
       ? 'active_request_id'
-      : 'active_request_id_$collectionId';
+      : 'active_request_id_$workspaceId';
 
   @override
   String? build() {
-    final collection = ref.watch(selectedCollectionProvider);
-    return getFromPrefs(collection?.id);
+    final workspace = ref.watch(selectedWorkspaceProvider);
+    return getFromPrefs(workspace?.id);
   }
 
   void setActiveId(String? nodeId) {
     state = nodeId;
-    final collectionId = ref.read(selectedCollectionProvider)?.id;
-    final key = _getPrefKey(collectionId);
+    final workspaceId = ref.read(selectedWorkspaceProvider)?.id;
+    final key = _getPrefKey(workspaceId);
 
     if (nodeId != null) {
       prefs.setString(key, nodeId);
@@ -41,8 +41,8 @@ class ActiveReqIdNotifier extends Notifier<String?> {
     }
   }
 
-  String? getFromPrefs(String? collectionId) {
-    final key = _getPrefKey(collectionId);
+  String? getFromPrefs(String? workspaceId) {
+    final key = _getPrefKey(workspaceId);
     final id = prefs.getString(key);
     if (id == null) return null;
     return id;

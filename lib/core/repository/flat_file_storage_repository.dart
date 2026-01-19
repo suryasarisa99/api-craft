@@ -271,7 +271,7 @@ class FlatFileStorageRepository implements StorageRepository {
   }
 
   @override
-  Future<List<Environment>> getEnvironments(String collectionId) async {
+  Future<List<Environment>> getEnvironments(String workspaceId) async {
     final sharedEnvs = <Environment>[];
     final envDir = Directory(p.join(rootDir.path, 'env'));
 
@@ -319,7 +319,7 @@ class FlatFileStorageRepository implements StorageRepository {
   }
 
   @override
-  Future<void> setCollectionEncryption(String id, String encryptedKey) async {
+  Future<void> setWorkspaceEncryption(String id, String encryptedKey) async {
     // Target the root node file (Folder type)
     final file = _getNodeFile(id, NodeType.folder);
 
@@ -330,7 +330,7 @@ class FlatFileStorageRepository implements StorageRepository {
         data['encrypted_key'] = encryptedKey;
         await file.writeAsString(_jsonEncoder.convert(data));
       } catch (e) {
-        debugPrint('Error updating collection root for encryption: $e');
+        debugPrint('Error updating workspace root for encryption: $e');
       }
     } else {
       debugPrint("Root node file not found for encryption: ${file.path}");
