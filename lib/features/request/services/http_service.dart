@@ -57,10 +57,19 @@ class HttpService {
         url: req.uri,
         headers: req.headers,
         body: req.body is Map ? jsonEncode(req.body) : req.body,
-        useProxy: false,
-        proxyPort: 8000,
+        // Proxy Settings
+        useProxy: req.proxy.isEnabled,
+        proxyHost: req.proxy.host ?? '127.0.0.1',
+        proxyPort: int.tryParse(req.proxy.port ?? '') ?? 8080,
+        proxyUsername: req.proxy.username,
+        proxyPassword: req.proxy.password,
+        proxyProtocol: req.proxy.protocol,
+        // Request Settings
+        maxRedirects: req.settings.maxRedirects ?? 5,
+        followRedirects:
+            req.settings.followRedirects ??
+            true, // This param might not exist in sendRawHttp yet
         requestId: req.request.id,
-        maxRedirects: 50,
       );
       debugPrint(
         'Response status: ${response.statusCode}: ${response.durationMs} ms',

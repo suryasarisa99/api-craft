@@ -7,6 +7,8 @@ class ResolvedRequestContext {
   final List<List<String>> headers;
   final AuthData auth;
   final Map<String, VariableValue> variables;
+  final RequestSettings settings;
+  final ProxySettings proxy;
 
   ResolvedRequestContext({
     required this.request,
@@ -15,6 +17,8 @@ class ResolvedRequestContext {
     required this.headers,
     required this.auth,
     required this.variables,
+    this.settings = const RequestSettings(),
+    this.proxy = const ProxySettings(),
   });
   Map<String, dynamic> toMap() {
     return {

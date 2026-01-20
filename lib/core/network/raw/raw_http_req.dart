@@ -14,14 +14,24 @@ Future<RawHttpResponse> sendRawHttp({
   bool useProxy = false,
   String proxyHost = '127.0.0.1',
   int proxyPort = 8080,
+  String? proxyUsername,
+  String? proxyPassword,
+  String proxyProtocol = 'http',
   required String requestId,
   Duration connectTimeout = const Duration(seconds: 10),
   int maxRedirects = 5,
+  bool followRedirects = true,
 }) async {
   Uri currentUrl = url;
   int redirectCount = 0;
   List<String> redirectUrls = [];
   final requestSentTime = DateTime.now(); // Start time of FIRST request
+
+  // If followRedirects is false, we technically shouldn't loop for redirects.
+  // We can treat maxRedirects as 0 effectively.
+  if (!followRedirects) {
+    maxRedirects = 0;
+  }
 
   while (redirectCount <= maxRedirects) {
     final isHttps = currentUrl.scheme == 'https';
@@ -49,9 +59,16 @@ Future<RawHttpResponse> sendRawHttp({
 
       // 2. HTTPS Proxy Tunnel (CONNECT method)
       if (useProxy && isHttps) {
-        final connectReq =
+        var connectReq =
             'CONNECT ${currentUrl.host}:$port HTTP/1.1\r\n'
-            'Host: ${currentUrl.host}:$port\r\n\r\n';
+            'Host: ${currentUrl.host}:$port\r\n';
+
+        if (proxyUsername != null && proxyPassword != null) {
+          final auth =
+              'Basic ${base64Encode(utf8.encode('$proxyUsername:$proxyPassword'))}';
+          connectReq += 'Proxy-Authorization: $auth\r\n';
+        }
+        connectReq += '\r\n';
         socket.write(connectReq);
         await socket.flush();
 
@@ -110,6 +127,16 @@ Future<RawHttpResponse> sendRawHttp({
       }
       if (!hasConnectionHeader) {
         buffer.write('Connection: close\r\n');
+      }
+
+      // Proxy Auth for Non-Tunnel (HTTP Proxy)
+      if (useProxy &&
+          !isHttps &&
+          proxyUsername != null &&
+          proxyPassword != null) {
+        final auth =
+            'Basic ${base64Encode(utf8.encode('$proxyUsername:$proxyPassword'))}';
+        buffer.write('Proxy-Authorization: $auth\r\n');
       }
       // Asking for Gzip is standard, but you can remove this if you want pure raw
       if (!hasAcceptEncoding) {

@@ -45,6 +45,8 @@ class NodeEntity {
   List<Map<String, dynamic>>? variables;
   List<Map<String, dynamic>>? assertions; // New field for assertions
   String? encryptedKey; // Added field for workspace security
+  Map<String, dynamic>? settings;
+  Map<String, dynamic>? proxy;
 
   NodeEntity({
     this.id = 0,
@@ -71,6 +73,8 @@ class NodeEntity {
     this.assertions,
     this.statusCode,
     this.encryptedKey,
+    this.settings,
+    this.proxy,
   });
 
   // Mapping from Domain Model
@@ -102,6 +106,7 @@ class NodeEntity {
 
         historyId: node.reqConfig.historyId,
         assertions: node.reqConfig.assertions.map((e) => e.toMap()).toList(),
+        settings: node.config.settings?.toMap(),
       );
     } else if (node is FolderNode) {
       return NodeEntity(
@@ -122,6 +127,8 @@ class NodeEntity {
         scripts: node.folderConfig.testScript,
         assertions: node.folderConfig.assertions.map((e) => e.toMap()).toList(),
         encryptedKey: node.folderConfig.encryptedKey,
+        settings: node.folderConfig.settings?.toMap(),
+        proxy: node.folderConfig.proxy?.toMap(),
       );
     }
     throw UnimplementedError("Unknown node type");
@@ -150,6 +157,10 @@ class NodeEntity {
               assertions?.map((e) => AssertionDefinition.fromMap(e)).toList() ??
               [],
           encryptedKey: encryptedKey,
+          settings: settings != null
+              ? RequestSettings.fromMap(settings!)
+              : null,
+          proxy: proxy != null ? ProxySettings.fromMap(proxy!) : null,
         ),
       );
     } else {
@@ -182,6 +193,9 @@ class NodeEntity {
           assertions:
               assertions?.map((e) => AssertionDefinition.fromMap(e)).toList() ??
               [],
+          settings: settings != null
+              ? RequestSettings.fromMap(settings!)
+              : null,
         ),
       );
     }

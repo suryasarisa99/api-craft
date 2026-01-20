@@ -7,14 +7,21 @@ import 'package:api_craft/features/auth/widgets/auth_tab.dart';
 import 'package:api_craft/features/auth/widgets/auth_tab_header.dart';
 import 'package:api_craft/features/request/widgets/tabs/assertions_tab.dart';
 import 'package:api_craft/features/request/widgets/tabs/headers_tab.dart';
+import 'package:api_craft/features/request/widgets/tabs/proxy_tab.dart';
 import 'package:api_craft/features/request/widgets/tabs/script_tab.dart';
+import 'package:api_craft/features/request/widgets/tabs/settings_tab.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lazy_load_indexed_stack/lazy_load_indexed_stack.dart';
 
 class WorkspaceConfigDialog extends ConsumerStatefulWidget {
   final String workspaceId;
-  const WorkspaceConfigDialog({super.key, required this.workspaceId});
+  final int initialIndex;
+  const WorkspaceConfigDialog({
+    super.key,
+    required this.workspaceId,
+    this.initialIndex = 0,
+  });
 
   @override
   ConsumerState<WorkspaceConfigDialog> createState() =>
@@ -22,7 +29,7 @@ class WorkspaceConfigDialog extends ConsumerStatefulWidget {
 }
 
 class _WorkspaceConfigDialogState extends ConsumerState<WorkspaceConfigDialog> {
-  int tabIndex = 0;
+  late int tabIndex = widget.initialIndex;
   bool hasChanges = false;
   static const useLazyMode = true;
   late final ProviderSubscription<FolderNode> subscription;
@@ -98,6 +105,8 @@ class _WorkspaceConfigDialogState extends ConsumerState<WorkspaceConfigDialog> {
       "Auth",
       "Scripts",
       "Assertions",
+      "Proxy",
+      "Settings",
     ];
     return Padding(
       padding: const EdgeInsets.all(0),
@@ -212,6 +221,8 @@ class _WorkspaceConfigDialogState extends ConsumerState<WorkspaceConfigDialog> {
                       AuthTab(id: widget.workspaceId),
                       ScriptTab(id: widget.workspaceId),
                       AssertionsTab(id: widget.workspaceId),
+                      ProxyTab(id: widget.workspaceId),
+                      SettingsTab(id: widget.workspaceId),
                     ],
                   ),
                 ),

@@ -44,12 +44,15 @@ class RequestResolver {
     final inheritedHeaders = collectInheritedHeaders(node);
     final authResult = colllectInheritAuth(node);
     final vars = mergeVariables(node);
+    final settingsResult = resolveRequestSettingsWithSource(node);
 
     return InheritedRequest(
       headers: inheritedHeaders,
       auth: authResult.$1,
       authSource: authResult.$2,
       variables: vars,
+      settings: settingsResult.$1,
+      settingsSource: settingsResult.$2,
     );
   }
 
@@ -98,6 +101,9 @@ class RequestResolver {
     final mergedVars = mergeVariables(node);
     final resolver = LazyVariableResolver(mergedVars, this);
 
+    final requestSettings = resolveRequestSettings(node);
+    final proxySettings = resolveProxySettings(node);
+
     // Resolve Body & Content-Type Headers
     (dynamic, List<List<String>>?) bodyResult;
     if (node.config.bodyType == BodyType.graphql) {
@@ -132,7 +138,11 @@ class RequestResolver {
         ];
       }).toList(),
     );
-    var fullUri = _handleUri(uri, queryParams);
+    var fullUri = _handleUri(
+      uri,
+      queryParams,
+      encode: requestSettings.encodeUrl ?? true,
+    );
 
     // Headers Handling
     final rawHeaders = await _handleHeaders(
@@ -246,7 +256,82 @@ class RequestResolver {
       headers: headers,
       auth: resolvedAuth,
       variables: finalResolvedVars,
+      settings: requestSettings,
+      proxy: proxySettings,
     );
+  }
+
+  RequestSettings resolveRequestSettings(Node node) {
+    int? maxRedirects;
+    bool? followRedirects;
+    bool? encodeUrl;
+
+    var ptr = node;
+    // Check current node first (RequestNode)
+    if (ptr.config.settings != null) {
+      final s = ptr.config.settings!;
+      if (maxRedirects == null && s.maxRedirects != null)
+        maxRedirects = s.maxRedirects;
+      if (followRedirects == null && s.followRedirects != null)
+        followRedirects = s.followRedirects;
+      if (encodeUrl == null && s.encodeUrl != null) encodeUrl = s.encodeUrl;
+    }
+
+    // Traverse ancestors
+    Node? parent = _parentOf(ptr);
+    while (parent != null) {
+      if (parent.config.settings != null) {
+        final s = parent.config.settings!;
+        if (maxRedirects == null && s.maxRedirects != null)
+          maxRedirects = s.maxRedirects;
+        if (followRedirects == null && s.followRedirects != null)
+          followRedirects = s.followRedirects;
+        if (encodeUrl == null && s.encodeUrl != null) encodeUrl = s.encodeUrl;
+      }
+      parent = _parentOf(parent);
+    }
+
+    return RequestSettings(
+      maxRedirects: maxRedirects ?? 5,
+      followRedirects: followRedirects ?? true,
+      encodeUrl: encodeUrl ?? true,
+    );
+  }
+
+  (RequestSettings, Node?) resolveRequestSettingsWithSource(Node node) {
+    // 1. Resolve effective settings
+    final settings = resolveRequestSettings(node);
+
+    // 2. Find "Source" (Nearest ancestor with non-null settings)
+    // If current node has settings, it is its own source (UI will handle "Custom" state checking config directly)
+    // But for "Inherited From", we usually look at parents.
+
+    Node? source;
+    Node? ptr = _parentOf(node);
+    while (ptr != null) {
+      if (ptr.config.settings != null) {
+        source = ptr;
+        break;
+      }
+      // If we are at the root (Workspace) and haven't found a source yet, use it as default source
+      if (_parentOf(ptr) == null) {
+        source = ptr;
+      }
+      ptr = _parentOf(ptr);
+    }
+
+    return (settings, source);
+  }
+
+  ProxySettings resolveProxySettings(Node node) {
+    Node? ptr = node;
+    while (ptr != null) {
+      if (ptr is FolderNode && ptr.config.proxy != null) {
+        return ptr.config.proxy!;
+      }
+      ptr = _parentOf(ptr);
+    }
+    return const ProxySettings();
   }
 
   Future<(dynamic, List<List<String>>?)> _resolveBody(
@@ -686,9 +771,13 @@ class RequestResolver {
     return resolvedHeaders;
   }
 
-  Uri _handleUri(Uri url, List<List<String>> params) {
+  Uri _handleUri(Uri url, List<List<String>> params, {bool encode = true}) {
     final paramsStr = params
-        .map((p) => '${Uri.encodeComponent(p[0])}=${Uri.encodeComponent(p[1])}')
+        .map((p) {
+          final key = encode ? Uri.encodeComponent(p[0]) : p[0];
+          final val = encode ? Uri.encodeComponent(p[1]) : p[1];
+          return '$key=$val';
+        })
         .join('&');
     return paramsStr.isNotEmpty
         ? url.replace(

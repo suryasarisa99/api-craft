@@ -115,6 +115,18 @@ class FolderNode extends Node<FolderNodeConfig> {
     // Encrypted Key
     folderConfig.encryptedKey = details['encrypted_key'];
 
+    // Proxy Settings
+    if (details['proxy'] is Map) {
+      folderConfig.proxy = ProxySettings.fromMap(details['proxy']);
+    }
+
+    // Request Settings
+    if (details['settings'] is Map) {
+      folderConfig.settings = RequestSettings.fromMap(details['settings']);
+    } else {
+      folderConfig.settings = null;
+    }
+
     // 2. Mark as loaded
     folderConfig.isDetailLoaded = true;
 
@@ -143,6 +155,12 @@ class FolderNode extends Node<FolderNodeConfig> {
         testScript: map['test_script'] ?? map['scripts'],
         assertions: hasDetails ? Node.parseAssertions(map['assertions']) : [],
         encryptedKey: map['encrypted_key'],
+        proxy: (hasDetails && map['proxy'] != null)
+            ? ProxySettings.fromMap(map['proxy'])
+            : null,
+        settings: (hasDetails && map['settings'] != null)
+            ? RequestSettings.fromMap(map['settings'])
+            : null,
       ),
     );
   }
@@ -185,6 +203,8 @@ class FolderNode extends Node<FolderNodeConfig> {
       'test_script': folderConfig.testScript,
       'assertions': folderConfig.assertions.map((e) => e.toMap()).toList(),
       'encrypted_key': folderConfig.encryptedKey,
+      'settings': folderConfig.settings?.toMap(),
+      'proxy': folderConfig.proxy?.toMap(),
     };
   }
 
@@ -247,6 +267,8 @@ class WorkspaceNode extends FolderNode {
       'test_script': folderConfig.testScript,
       'assertions': folderConfig.assertions.map((e) => e.toMap()).toList(),
       'encrypted_key': folderConfig.encryptedKey,
+      'settings': folderConfig.settings?.toMap(),
+      'proxy': folderConfig.proxy?.toMap(),
     };
   }
 }
@@ -293,6 +315,9 @@ class RequestNode extends Node<RequestNodeConfig> {
     config.postRequestScript = details['post_request_script'];
     config.testScript = details['test_script'] ?? details['scripts'];
     config.assertions = Node.parseAssertions(details['assertions']);
+    if (details['settings'] is Map) {
+      config.settings = RequestSettings.fromMap(details['settings']);
+    }
     config.historyId = details['history_id'];
     config.isDetailLoaded = true;
   }
@@ -331,6 +356,9 @@ class RequestNode extends Node<RequestNodeConfig> {
         postRequestScript: map['post_request_script'],
         testScript: map['test_script'] ?? map['scripts'],
         assertions: hasDetails ? Node.parseAssertions(map['assertions']) : [],
+        settings: (hasDetails && map['settings'] != null)
+            ? RequestSettings.fromMap(map['settings'])
+            : null,
         historyId: map['history_id'],
       ),
     );
@@ -387,6 +415,7 @@ class RequestNode extends Node<RequestNodeConfig> {
       'test_script': reqConfig.testScript,
       'scripts': reqConfig.testScript, // Legacy alias
       'assertions': reqConfig.assertions.map((e) => e.toMap()).toList(),
+      'settings': reqConfig.settings?.toMap(),
     };
   }
 

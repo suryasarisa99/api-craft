@@ -251,7 +251,7 @@ final _entities = <obx_int.ModelEntity>[
   obx_int.ModelEntity(
     id: const obx_int.IdUid(5, 7045792345788763009),
     name: 'NodeEntity',
-    lastPropertyId: const obx_int.IdUid(25, 7777514563210037385),
+    lastPropertyId: const obx_int.IdUid(27, 558722602858973134),
     flags: 0,
     properties: <obx_int.ModelProperty>[
       obx_int.ModelProperty(
@@ -400,6 +400,18 @@ final _entities = <obx_int.ModelEntity>[
         type: 9,
         flags: 2048,
         indexId: const obx_int.IdUid(21, 7009668666306541198),
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(26, 7171167986905961201),
+        name: 'settings',
+        type: 13,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(27, 558722602858973134),
+        name: 'proxy',
+        type: 13,
+        flags: 0,
       ),
     ],
     relations: <obx_int.ModelRelation>[],
@@ -1007,7 +1019,13 @@ obx_int.ModelDefinition getObjectBoxModel() {
             ? null
             : fbb.writeString(object.encryptedKey!);
         final workspaceIdOffset = fbb.writeString(object.workspaceId);
-        fbb.startTable(26);
+        final settingsOffset = object.settings == null
+            ? null
+            : fbb.writeListInt8(obx_int.toFlexBuffer(object.settings!));
+        final proxyOffset = object.proxy == null
+            ? null
+            : fbb.writeListInt8(obx_int.toFlexBuffer(object.proxy!));
+        fbb.startTable(28);
         fbb.addInt64(0, object.id);
         fbb.addOffset(1, uidOffset);
         fbb.addOffset(3, parentIdOffset);
@@ -1032,6 +1050,8 @@ obx_int.ModelDefinition getObjectBoxModel() {
         fbb.addOffset(22, assertionsOffset);
         fbb.addOffset(23, encryptedKeyOffset);
         fbb.addOffset(24, workspaceIdOffset);
+        fbb.addOffset(25, settingsOffset);
+        fbb.addOffset(26, proxyOffset);
         fbb.finish(fbb.endTable());
         return object.id;
       },
@@ -1124,6 +1144,8 @@ obx_int.ModelDefinition getObjectBoxModel() {
         final encryptedKeyParam = const fb.StringReader(
           asciiOptimization: true,
         ).vTableGetNullable(buffer, rootOffset, 50);
+        final settingsParam = obx_int.flexBufferToMap(buffer, rootOffset, 54);
+        final proxyParam = obx_int.flexBufferToMap(buffer, rootOffset, 56);
         final object = NodeEntity(
           id: idParam,
           uid: uidParam,
@@ -1149,6 +1171,8 @@ obx_int.ModelDefinition getObjectBoxModel() {
           assertions: assertionsParam,
           statusCode: statusCodeParam,
           encryptedKey: encryptedKeyParam,
+          settings: settingsParam,
+          proxy: proxyParam,
         );
 
         return object;

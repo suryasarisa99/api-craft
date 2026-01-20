@@ -10,6 +10,7 @@ import 'package:api_craft/features/request/widgets/tabs/body_tab.dart';
 import 'package:api_craft/features/request/widgets/tabs/script_tab.dart';
 import 'package:api_craft/features/request/widgets/tabs/assertions_tab.dart';
 import 'package:api_craft/features/request/widgets/tabs/tab_titles.dart';
+import 'package:api_craft/features/request/widgets/tabs/settings_tab.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -59,10 +60,11 @@ class _RequestTabState extends ConsumerState<RequestTab>
     ),
     ScriptTab(id: widget.node.id),
     AssertionsTab(id: widget.node.id),
+    SettingsTab(id: widget.node.id),
   ];
 
   late final TabController _tabController = TabController(
-    length: 6,
+    length: 7,
     vsync: this,
   );
 
@@ -192,6 +194,7 @@ class _RequestTabState extends ConsumerState<RequestTab>
                     );
                   },
                 ),
+                const Tab(text: "Settings"),
               ],
             ),
           ),

@@ -124,6 +124,14 @@ class ReqComposeNotifier extends Notifier<UiRequestContext> {
     _treeNotifier.updateAssertions(id, assertions, persist: true);
   }
 
+  void updateProxySettings(ProxySettings proxy) {
+    _treeNotifier.updateProxySettings(id, proxy, persist: true);
+  }
+
+  void updateRequestSettings(RequestSettings? settings) {
+    _treeNotifier.updateRequestSettings(id, settings, persist: true);
+  }
+
   void addHistoryEntry(RawHttpResponse entry, {int limit = 10}) {
     // History State is managed by RequestDetailsProvider
     _detailsNotifier.addHistoryEntry(entry, limit: limit);

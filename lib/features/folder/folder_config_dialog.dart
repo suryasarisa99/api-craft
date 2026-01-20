@@ -13,6 +13,8 @@ import 'package:flutter_popup/flutter_popup.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lazy_load_indexed_stack/lazy_load_indexed_stack.dart';
 import 'package:api_craft/features/request/widgets/tabs/script_tab.dart';
+import 'package:api_craft/features/request/widgets/tabs/settings_tab.dart';
+import 'package:api_craft/features/request/widgets/tabs/settings_tab.dart';
 
 class FolderConfigDialog extends ConsumerStatefulWidget {
   final String id;
@@ -105,6 +107,7 @@ class _FolderConfigDialogState extends ConsumerState<FolderConfigDialog> {
       "Assertions",
       "Environment",
       "Scripts",
+      "Settings",
     ];
     return Padding(
       padding: const EdgeInsets.all(00),
@@ -231,6 +234,7 @@ class _FolderConfigDialogState extends ConsumerState<FolderConfigDialog> {
                       // 4. Variables Tab
                       // _VariablesTab(controller: _controller),
                       ScriptTab(id: widget.id),
+                      SettingsTab(id: widget.id),
                     ],
                   ),
                 ),

@@ -436,6 +436,40 @@ class FileTreeNotifier extends Notifier<TreeData> {
     }
   }
 
+  void updateProxySettings(
+    String id,
+    ProxySettings proxy, {
+    bool persist = false,
+  }) {
+    final node = map[id];
+    if (node is FolderNode) {
+      updateNode(
+        node.copyWith(config: node.config.copyWith(proxy: proxy)),
+        persist: persist,
+      );
+    }
+  }
+
+  void updateRequestSettings(
+    String id,
+    RequestSettings? settings, {
+    bool persist = false,
+  }) {
+    final node = map[id];
+    if (node != null) {
+      // Both FolderNode and RequestNode wrap settings in their config.copyWith
+      updateNode(
+        node.copyWith(
+          config: node.config.copyWith(
+            settings: settings,
+            forceNullSettings: settings == null,
+          ),
+        ),
+        persist: persist,
+      );
+    }
+  }
+
   void updateEncryptionKey(String id, String key) {
     final node = map[id];
     if (node is FolderNode) {

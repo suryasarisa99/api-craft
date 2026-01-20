@@ -50,6 +50,107 @@ class AssertionDefinition {
   }
 }
 
+class ProxySettings {
+  final String? host;
+  final String? port;
+  final String? username;
+  final String? password;
+  final String protocol; // 'http' or 'https'
+  final bool isEnabled;
+
+  const ProxySettings({
+    this.host,
+    this.port,
+    this.username,
+    this.password,
+    this.protocol = 'http',
+    this.isEnabled = false,
+  });
+
+  factory ProxySettings.fromMap(Map<String, dynamic> map) {
+    return ProxySettings(
+      host: map['host'],
+      port: map['port'],
+      username: map['username'],
+      password: map['password'],
+      protocol: map['protocol'] ?? 'http',
+      isEnabled: map['isEnabled'] ?? false,
+    );
+  }
+
+  Map<String, dynamic> toMap() => {
+    'host': host,
+    'port': port,
+    'username': username,
+    'password': password,
+    'protocol': protocol,
+    'isEnabled': isEnabled,
+  };
+
+  ProxySettings copyWith({
+    String? host,
+    String? port,
+    String? username,
+    String? password,
+    String? protocol,
+    bool? isEnabled,
+  }) {
+    return ProxySettings(
+      host: host ?? this.host,
+      port: port ?? this.port,
+      username: username ?? this.username,
+      password: password ?? this.password,
+      protocol: protocol ?? this.protocol,
+      isEnabled: isEnabled ?? this.isEnabled,
+    );
+  }
+}
+
+class RequestSettings {
+  final int? maxRedirects;
+  final bool? followRedirects;
+  final bool? encodeUrl;
+
+  const RequestSettings({
+    this.maxRedirects,
+    this.followRedirects,
+    this.encodeUrl,
+  });
+
+  factory RequestSettings.fromMap(Map<String, dynamic> map) {
+    return RequestSettings(
+      maxRedirects: map['maxRedirects'],
+      followRedirects: map['followRedirects'],
+      encodeUrl: map['encodeUrl'],
+    );
+  }
+
+  Map<String, dynamic> toMap() => {
+    'maxRedirects': maxRedirects,
+    'followRedirects': followRedirects,
+    'encodeUrl': encodeUrl,
+  };
+
+  RequestSettings copyWith({
+    int? maxRedirects,
+    bool? followRedirects,
+    bool? encodeUrl,
+    bool forceNullMaxRedirects = false,
+    bool forceNullFollowRedirects = false,
+    bool forceNullEncodeUrl = false,
+  }) {
+    return RequestSettings(
+      maxRedirects: forceNullMaxRedirects
+          ? null
+          : (maxRedirects ?? this.maxRedirects),
+      followRedirects: forceNullFollowRedirects
+          ? null
+          : (followRedirects ?? this.followRedirects),
+      encodeUrl: forceNullEncodeUrl ? null : (encodeUrl ?? this.encodeUrl),
+    );
+  }
+}
+
 abstract class NodeConfig {
   List<KeyValueItem> headers;
   AuthData auth;
@@ -58,6 +159,7 @@ abstract class NodeConfig {
   String? preRequestScript;
   String? postRequestScript;
   String? testScript;
+  RequestSettings? settings;
 
   List<AssertionDefinition> assertions;
 
@@ -70,6 +172,7 @@ abstract class NodeConfig {
     this.postRequestScript,
     this.testScript,
 
+    this.settings,
     List<AssertionDefinition>? assertions,
   }) : headers = headers ?? [],
        assertions = assertions ?? [];
@@ -84,6 +187,8 @@ abstract class NodeConfig {
 
     String? testScript,
     List<AssertionDefinition>? assertions,
+    RequestSettings? settings,
+    bool forceNullSettings = false,
   });
   @override
   String toString() {
@@ -96,6 +201,7 @@ abstract class NodeConfig {
 class FolderNodeConfig extends NodeConfig {
   List<KeyValueItem> variables;
   String? encryptedKey;
+  ProxySettings? proxy; // For Workspace type only (enforced by UI/Logic)
 
   FolderNodeConfig({
     super.headers,
@@ -106,8 +212,10 @@ class FolderNodeConfig extends NodeConfig {
     super.postRequestScript,
     super.testScript,
     super.assertions,
+    super.settings,
     List<KeyValueItem>? variables,
     this.encryptedKey,
+    this.proxy,
   }) : variables = variables ?? [];
 
   FolderNodeConfig.empty() : variables = [], encryptedKey = null, super();
@@ -124,6 +232,10 @@ class FolderNodeConfig extends NodeConfig {
     List<AssertionDefinition>? assertions,
     List<KeyValueItem>? variables,
     String? encryptedKey,
+    RequestSettings? settings,
+    ProxySettings? proxy,
+    bool forceNullSettings = false,
+    bool forceNullProxy = false,
   }) {
     return FolderNodeConfig(
       headers: headers ?? this.headers,
@@ -136,6 +248,8 @@ class FolderNodeConfig extends NodeConfig {
       assertions: assertions ?? this.assertions,
       variables: variables ?? this.variables,
       encryptedKey: encryptedKey ?? this.encryptedKey,
+      settings: forceNullSettings ? null : (settings ?? this.settings),
+      proxy: forceNullProxy ? null : (proxy ?? this.proxy),
     );
   }
 
@@ -155,6 +269,8 @@ class FolderNodeConfig extends NodeConfig {
       ),
       variables: List<KeyValueItem>.from(variables),
       encryptedKey: encryptedKey,
+      settings: settings?.copyWith(),
+      proxy: proxy?.copyWith(),
     );
   }
 }
@@ -173,6 +289,7 @@ class RequestNodeConfig extends NodeConfig {
     super.postRequestScript,
     super.testScript, // Add this
     super.assertions,
+    super.settings,
     required this.queryParameters,
     this.bodyType,
     this.historyId,
@@ -195,9 +312,11 @@ class RequestNodeConfig extends NodeConfig {
     String? testScript,
     String? historyId,
     List<AssertionDefinition>? assertions,
+    RequestSettings? settings,
 
     // force historyId to null
     bool forceNullHistoryId = false,
+    bool forceNullSettings = false,
   }) {
     return RequestNodeConfig(
       headers: headers ?? this.headers,
@@ -211,6 +330,7 @@ class RequestNodeConfig extends NodeConfig {
       isDetailLoaded: isDetailLoaded ?? this.isDetailLoaded,
       historyId: forceNullHistoryId ? null : historyId ?? this.historyId,
       assertions: assertions ?? this.assertions,
+      settings: forceNullSettings ? null : (settings ?? this.settings),
     );
   }
 
@@ -231,6 +351,7 @@ class RequestNodeConfig extends NodeConfig {
         assertions.map((e) => e.copyWith()),
       ),
       historyId: historyId,
+      settings: settings?.copyWith(),
     );
   }
 }
