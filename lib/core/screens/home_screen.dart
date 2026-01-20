@@ -15,6 +15,7 @@ import 'package:multi_split_view/multi_split_view.dart';
 import 'package:api_craft/features/panel/bottom_panel.dart';
 import 'package:api_craft/features/panel/status_bar.dart';
 import 'package:api_craft/features/panel/panel_state_provider.dart';
+import 'package:api_craft/features/settings/settings_dialog.dart';
 import 'package:suryaicons/bulk_rounded.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -71,6 +72,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       }
       if (ctrl && event.logicalKey == LogicalKeyboardKey.keyJ) {
         _toggleBottomPanel();
+        return true;
+      }
+      if (ctrl && event.logicalKey == LogicalKeyboardKey.period) {
+        showDialog(
+          context: context,
+          builder: (context) => const SettingsDialog(),
+        );
         return true;
       }
       return false;

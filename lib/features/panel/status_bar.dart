@@ -1,4 +1,5 @@
 import 'package:api_craft/features/themes/theme.dart';
+import 'package:api_craft/features/settings/settings_dialog.dart';
 import 'package:api_craft/main.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -46,7 +47,23 @@ class StatusBar extends ConsumerWidget {
       ),
       child: Row(
         children: [
-          // We can add left aligned items here (git branch, errors, etc)
+          // Left aligned items
+          InkWell(
+            onTap: () {
+              showDialog(
+                context: context,
+                builder: (context) => const SettingsDialog(),
+              );
+            },
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 2.0),
+              child: Icon(
+                Icons.settings,
+                size: 14,
+                color: appTheme.statusBarText,
+              ),
+            ),
+          ),
           const Spacer(),
           // Right aligned items
           InkWell(

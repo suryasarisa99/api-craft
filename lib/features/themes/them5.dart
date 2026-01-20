@@ -1,13 +1,16 @@
+import 'dart:ui';
+
 import 'package:api_craft/features/themes/theme.dart';
 import 'package:flutter/material.dart';
 
 final _cs = ColorScheme.fromSeed(
   // seedColor: const Color.fromARGB(255, 251, 13, 255),
-  seedColor: const Color.fromARGB(255, 13, 255, 29),
+  seedColor: const Color.fromARGB(255, 110, 88, 255),
   brightness: Brightness.dark,
 );
-final _backgroundClr = const Color.fromARGB(255, 33, 33, 33);
-final theme1 = ThemeData(
+final _backgroundClr = const Color.fromARGB(255, 28, 32, 47);
+final _topBar = const Color.fromARGB(255, 21, 23, 33);
+final catppuccinMacchiato = ThemeData(
   visualDensity: VisualDensity.compact,
   materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
   colorScheme: _cs,
@@ -15,32 +18,35 @@ final theme1 = ThemeData(
   scaffoldBackgroundColor: _backgroundClr,
   extensions: [
     AppTheme(
-      statusBarBackground: Color(0xFF1B1B1B),
+      statusBarBackground: _topBar,
       statusBarText: _cs.onPrimaryContainer,
-      topBarBackground: Color(0xFF1B1B1B),
+      // topBarBorder: Colors.transparent,
+      topBarBackground: _topBar,
       topBarText: _cs.onPrimaryContainer,
-      menuTheme: const Color.fromARGB(255, 38, 38, 38),
+      menuTheme: const Color.fromARGB(255, 40, 47, 66),
     ),
     SidebarTheme(
-      background: _backgroundClr,
-      itemActive: const Color.fromARGB(150, 70, 70, 70),
+      background: const Color.fromARGB(244, 35, 38, 55),
+      // background: const Color.fromARGB(244, 31, 35, 48),
+      itemActive: const Color.fromARGB(149, 77, 85, 126),
       itemSelected: _cs.secondary.withValues(alpha: 0.1),
       itemHover: _cs.primaryContainer.withValues(alpha: 0.6),
       itemFocused: _cs.primaryContainer.withValues(alpha: 0.6),
-      indentLine: const Color.fromARGB(255, 133, 133, 133),
+      indentLine: const Color.fromARGB(255, 65, 70, 87),
       text: _cs.onPrimaryContainer,
     ),
     BottomPannelTheme(
       background: _backgroundClr,
-      headerBackground: Color.fromARGB(255, 32, 32, 32),
+      headerBackground: Color.fromARGB(255, 40, 47, 66),
       text: _cs.onPrimaryContainer,
       divider: _cs.primaryContainer.withValues(alpha: 0.6),
     ),
   ],
-  dividerColor: const Color.fromARGB(255, 66, 66, 66),
+  dividerColor: const Color.fromARGB(255, 39, 42, 66),
   dialogTheme: DialogThemeData(
     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
-    backgroundColor: const Color.fromARGB(255, 33, 33, 33),
+    // backgroundColor: const Color.fromARGB(255, 35, 40, 58),
+    backgroundColor: const Color.fromARGB(255, 30, 34, 50),
   ),
   elevatedButtonTheme: ElevatedButtonThemeData(
     style: ElevatedButton.styleFrom(

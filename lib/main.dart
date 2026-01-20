@@ -1,4 +1,5 @@
 import 'package:api_craft/core/constants/globals.dart';
+import 'package:api_craft/core/services/theme_service.dart';
 import 'package:api_craft/core/screens/home_screen.dart';
 import 'package:api_craft/features/themes/theme.dart';
 import 'package:api_craft/features/themes/theme1.dart';
@@ -42,11 +43,13 @@ final colorSchema = ColorScheme.fromSeed(
   brightness: Brightness.dark,
 );
 
-class MainApp extends StatelessWidget {
+class MainApp extends ConsumerWidget {
   const MainApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final themeState = ref.watch(themeServiceProvider);
+
     return MaterialApp(
       builder: (context, child) => Stack(
         children: [
@@ -62,7 +65,8 @@ class MainApp extends StatelessWidget {
         ],
       ),
 
-      darkTheme: theme2,
+      theme: themeState
+          .themeData, // Use theme based on selection (supports both light and dark effectively via the provider)
       debugShowCheckedModeBanner: false,
       home: Scaffold(body: HomeScreen()),
     );
