@@ -10,10 +10,6 @@ class UiRequestContext {
   final Map<String, VariableValue> inheritVariables;
   final List<RawHttpResponse>? history;
   final bool isLoading;
-  final bool isSending;
-
-  final DateTime? sendStartTime;
-  final String? sendError;
 
   UiRequestContext({
     required this.node,
@@ -25,9 +21,6 @@ class UiRequestContext {
     required this.inheritVariables,
     this.history,
     this.isLoading = false,
-    this.isSending = false,
-    this.sendStartTime,
-    this.sendError,
   });
 
   factory UiRequestContext.empty(Node node) {
@@ -53,9 +46,6 @@ class UiRequestContext {
     Map<String, VariableValue>? allVariables,
     List<RawHttpResponse>? history,
     bool? isLoading,
-    bool? isSending,
-    DateTime? sendStartTime,
-    String? sendError,
   }) {
     return UiRequestContext(
       node: node ?? this.node,
@@ -67,9 +57,6 @@ class UiRequestContext {
       inheritVariables: allVariables ?? this.inheritVariables,
       history: history ?? this.history,
       isLoading: isLoading ?? this.isLoading,
-      isSending: isSending ?? this.isSending,
-      sendStartTime: sendStartTime ?? this.sendStartTime,
-      sendError: sendError ?? this.sendError,
     );
   }
 }

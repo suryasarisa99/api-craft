@@ -10,6 +10,7 @@ import 'package:api_craft/core/services/js_engine.dart';
 import 'package:api_craft/core/services/script_execution_service.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:api_craft/features/request/providers/request_loading_provider.dart';
 
 import 'package:api_craft/core/services/assertion_service.dart';
 
@@ -50,7 +51,7 @@ class HttpService {
       );
       debugPrint('Executing request to URL: ${req.uri}');
 
-      composer?.startSending();
+      ref.read(requestLoadingProvider(requestId).notifier).startSending();
 
       RawHttpResponse response = await sendRawHttp(
         method: req.request.method,
@@ -153,7 +154,6 @@ class HttpService {
       }
 
       // 5. Evaluate Assertions
-      // 5. Evaluate Assertions
       List<TestResult> assertionResults = [];
       final nodeMap = ref.read(fileTreeProvider).nodeMap;
       final node = nodeMap[requestId];
@@ -214,10 +214,10 @@ class HttpService {
         ref.read(dataRepositoryProvider).addHistoryEntry(response);
       }
 
-      composer?.finishSending();
+      ref.read(requestLoadingProvider(requestId).notifier).finishSending();
       return response;
     } catch (e, stack) {
-      debugPrint("Error sending request: $e\n$stack");
+      debugPrint("catch: Error sending request: $e\n$stack");
 
       final errorResponse = RawHttpResponse(
         id: nanoid(),
@@ -239,7 +239,9 @@ class HttpService {
         ref.read(dataRepositoryProvider).addHistoryEntry(errorResponse);
       }
 
-      composer?.setSendError(e.toString());
+      ref
+          .read(requestLoadingProvider(requestId).notifier)
+          .setError(e.toString());
       rethrow;
     }
   }

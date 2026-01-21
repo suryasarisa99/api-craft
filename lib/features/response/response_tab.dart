@@ -18,6 +18,7 @@ import 'package:lazy_load_indexed_stack/lazy_load_indexed_stack.dart';
 import 'package:api_craft/core/models/models.dart';
 import 'package:api_craft/features/request/providers/ws_provider.dart';
 import 'package:api_craft/features/response/widgets/ws_response_tab.dart';
+import 'package:api_craft/features/request/providers/request_loading_provider.dart';
 import 'package:suryaicons/bulk_rounded.dart';
 
 enum BodyViewMode { pretty, raw, hex, json }
@@ -63,10 +64,10 @@ class _ResponseTabState extends ConsumerState<ResponseTab>
     }
     final response = ref.watch(responseProvider(id));
     final isSending = ref.watch(
-      reqComposeProvider(id).select((d) => d.isSending),
+      requestLoadingProvider(id).select((d) => d.isSending),
     );
     final sendError = ref.watch(
-      reqComposeProvider(id).select((d) => d.sendError),
+      requestLoadingProvider(id).select((d) => d.sendError),
     );
 
     if (requestType == RequestType.ws) {

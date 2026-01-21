@@ -41,9 +41,6 @@ class ReqComposeNotifier extends Notifier<UiRequestContext> {
       inheritVariables: detailsState.inherit.variables,
       isLoading: detailsState.isLoading,
       history: detailsState.history,
-      isSending: stateOrNull?.isSending ?? false,
-      sendStartTime: stateOrNull?.sendStartTime,
-      sendError: stateOrNull?.sendError,
     );
   }
 
@@ -137,21 +134,5 @@ class ReqComposeNotifier extends Notifier<UiRequestContext> {
     _detailsNotifier.addHistoryEntry(entry, limit: limit);
     // Ephemeral state for compose provider if any?
     // UiRequestContext has history field, it will update when detailsState updates.
-  }
-
-  void startSending() {
-    state = state.copyWith(
-      isSending: true,
-      sendStartTime: DateTime.now(),
-      sendError: null,
-    );
-  }
-
-  void finishSending() {
-    state = state.copyWith(isSending: false);
-  }
-
-  void setSendError(String error) {
-    state = state.copyWith(isSending: false, sendError: error);
   }
 }
