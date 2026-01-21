@@ -41,11 +41,7 @@ class RequestLoadingNotifier extends Notifier<RequestLoadingState> {
   }
 
   void startSending() {
-    state = state.copyWith(
-      isSending: true,
-      sendStartTime: DateTime.now(),
-      sendError: null,
-    );
+    state = RequestLoadingState(isSending: true, sendStartTime: DateTime.now());
   }
 
   void finishSending() {
