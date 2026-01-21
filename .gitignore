@@ -18,7 +18,7 @@ api_craft.dmg
 *.ipr
 *.iws
 .idea/
-
+*.pem
 *.g.dart linguist-generated=true
 *.freezed.dart linguist-generated=true
 

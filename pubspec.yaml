@@ -62,6 +62,9 @@ dependencies:
   aws_common: ^0.7.12
   flutter_secure_storage: ^10.0.0
   cryptography: ^2.9.0
+  two_dimensional_scrollables: ^0.3.7
+  mockhttp: 
+    path: ../mockhttp
 
 dev_dependencies:
   flutter_test:

@@ -1,3 +1,4 @@
+import 'package:api_craft/core/screens/home_screen.dart';
 import 'package:api_craft/features/themes/theme.dart';
 import 'package:api_craft/features/settings/settings_dialog.dart';
 import 'package:api_craft/main.dart';
@@ -64,6 +65,17 @@ class StatusBar extends ConsumerWidget {
               ),
             ),
           ),
+          SizedBox(width: 8),
+          InkWell(
+            onTap: () {
+              ref.read(screenProvider.notifier).toggle();
+            },
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 2.0),
+              child: Icon(Icons.api, size: 14, color: appTheme.statusBarText),
+            ),
+          ),
+
           const Spacer(),
           // Right aligned items
           InkWell(

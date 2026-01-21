@@ -1,0 +1,94 @@
+import 'dart:async';
+import 'dart:io';
+
+import 'package:api_craft/flows/flows_provider.dart';
+import 'package:api_craft/flows/models/flow.dart';
+import 'package:flutter/material.dart' hide Flow;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mockhttp/mockttp.dart';
+
+final serverProvider = NotifierProvider<ServerNotifier, RawMockttpServer>(
+  () => ServerNotifier(),
+);
+
+class ServerNotifier extends Notifier<RawMockttpServer> {
+  final String caCertPath = '${Directory.current.path}/mockttp-ca-cert.pem';
+  final String caKeyPath = '${Directory.current.path}/mockttp-ca-key.pem';
+  late final FlowNotifier flowNotifier;
+  @override
+  RawMockttpServer build() {
+    flowNotifier = ref.read(flowsProvider.notifier);
+    debugPrint("Server build");
+    //temporarily start after 5secs
+    Future.delayed(const Duration(seconds: 2), () {
+      startServer(null);
+    });
+    return _createServer();
+  }
+
+  Future<void> startServer(int? port) async {
+    debugPrint("Server started");
+    runZonedGuarded(
+      () async {
+        state.start(port: port);
+        debugPrint("Certificate: ${state.certificateAuthority}");
+        if (state.certificateAuthority != null) {
+          if (!await File(caCertPath).exists() ||
+              !await File(caKeyPath).exists()) {
+            await state.certificateAuthority!.saveCaCertToFile(caCertPath);
+            await state.certificateAuthority!.saveCaKeyToFile(caKeyPath);
+            debugPrint('Certificate: Generated and saved OK.');
+          } else {
+            debugPrint('Certificate: Loaded from disk OK.');
+          }
+        }
+        // rule:
+        state.matching(.domain('example.com')).thenEditReq((req) {
+          req.url = "https://www.google.com";
+          return req;
+        });
+        state.forAnyRequest().thenPassThrough();
+
+        // listeners:
+        state.on.req((req) {
+          debugPrint("@req: ${req.id}");
+          flowNotifier.updateReq(FlowRequest.fromOngoingReq(req));
+        });
+        state.on.res((res) {
+          debugPrint("@res: ${res.id}");
+          flowNotifier.updateRes(FlowResponse.fromCompletedRes(res));
+        });
+        state.on.pause((info) {});
+        state.on.resume((info) {});
+      },
+      (error, stackTrace) {
+        debugPrint("Server error: $error");
+      },
+    );
+  }
+}
+
+RawMockttpServer _createServer() {
+  debugPrint("Server created");
+  debugPrint("expected path: ${Directory.current.path}");
+  final caCertPath = '${Directory.current.path}/mockttp-ca-cert.pem';
+  final caKeyPath = '${Directory.current.path}/mockttp-ca-key.pem';
+
+  MockttpHttpsOptions httpsOptions;
+
+  if (File(caCertPath).existsSync() && File(caKeyPath).existsSync()) {
+    httpsOptions = MockttpHttpsOptions(
+      keyPath: caKeyPath,
+      certPath: caCertPath,
+    );
+  } else {
+    httpsOptions = MockttpHttpsOptions();
+  }
+
+  final options = MockttpOptions(
+    https: httpsOptions,
+    debug: false, // Enable debug
+    http2: false, // Disable HTTP/2, use HTTP/1.1 only )
+  );
+  return RawMockttpServer(options);
+}
