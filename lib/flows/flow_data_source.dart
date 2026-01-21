@@ -1,26 +1,38 @@
 import 'package:api_craft/flows/models/flow.dart';
+import 'package:api_craft/flows/providers/paused_providers.dart';
+import 'package:api_craft/flows/providers/server_provider.dart';
 import 'package:api_craft/packages/dt_table/dt_models.dart';
 import 'package:api_craft/packages/dt_table/dt_source.dart';
 import 'package:api_craft/packages/dt_table/dt_table.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class FlowDataSource extends DtSource {
   List<DtRow> _flowRows = [];
   final DtController dtController;
+  late final PausedFlowsNotifier pausedFlowsNotifier;
+  final WidgetRef ref;
   // void Function(String flowId, String oldState) resumeIntercept;
 
   FlowDataSource({
     required List<HttpFlow> initialFlows,
     required this.dtController,
+    required this.ref,
     // required this.resumeIntercept,
   }) {
+    pausedFlowsNotifier = ref.read(pausedFlowsProvider.notifier);
     handleFlows(initialFlows);
   }
 
   void handleFlows(List<HttpFlow> flows) {
     buildFlowRows(flows);
     updateData();
+  }
+
+  void replaceData(List<HttpFlow> flows) {
+    handleFlows(flows);
+    dtController.clearSelection();
   }
 
   void buildFlowRows(List<HttpFlow> flows) {
@@ -30,7 +42,7 @@ class FlowDataSource extends DtSource {
       return DtRow(
         id: flow.id,
         m: null,
-        state: "none",
+        state: pausedFlowsNotifier.get(flow.id) ?? "none",
         cells: [
           // 0: ID Cell
           DtCell(value: i, textAlign: TextAlign.right),
@@ -90,11 +102,6 @@ class FlowDataSource extends DtSource {
   @override
   DtController get controller => dtController;
 
-  void replaceData(List<HttpFlow> flows) {
-    handleFlows(flows);
-    dtController.clearSelection();
-  }
-
   @override
   DtRowAdapter buildRow(DtRow row, int index, bool isSelected, bool hasFocus) {
     // // int? rowId = int.tryParse(row.getCells().first.value);
@@ -140,12 +147,14 @@ class FlowDataSource extends DtSource {
           children: [
             IconButton(
               icon: const Icon(Icons.play_arrow),
-              color: row.state == "server_block"
+              color: row.state == "req"
                   ? const .new(0xFF9399FF)
                   : const .new(0xFF8BEF8E),
               // onPressed: () => resumeIntercept(row.id, row.state),
-              onPressed: () {},
-              tooltip: row.state == "server_block"
+              onPressed: () {
+                ref.read(serverProvider.notifier).resume(row.id, row.state);
+              },
+              tooltip: row.state == "req"
                   ? 'Resume to server'
                   : 'Resume to client',
             ),
@@ -174,12 +183,6 @@ class FlowDataSource extends DtSource {
       }
     }).toList();
     return DtRowAdapter(color: rowColor, cells: cells);
-    // return DtRowAdapter(
-    //   color: Colors.red,
-    //   cells: [
-    //     Text(row.cells.first.value.toString(), textAlign: TextAlign.right),
-    //   ],
-    // );
   }
 
   /// Get the color for a HTTP method (GET, POST, etc.)

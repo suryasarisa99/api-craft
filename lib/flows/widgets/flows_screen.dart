@@ -1,8 +1,8 @@
 import 'package:api_craft/core/widgets/ui/top_bar.dart';
 import 'package:api_craft/features/panel/status_bar.dart';
-import 'package:api_craft/flows/flows_provider.dart';
+import 'package:api_craft/flows/providers/flows_provider.dart';
 import 'package:api_craft/flows/widgets/flows_list.dart';
-import 'package:api_craft/flows/server_provider.dart';
+import 'package:api_craft/flows/providers/server_provider.dart';
 import 'package:api_craft/packages/dt_table/dt_table.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';

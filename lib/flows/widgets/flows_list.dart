@@ -1,5 +1,6 @@
-import 'package:api_craft/flows/flows_provider.dart';
+import 'package:api_craft/flows/providers/flows_provider.dart';
 import 'package:api_craft/flows/flow_data_source.dart';
+import 'package:api_craft/flows/providers/paused_providers.dart';
 import 'package:api_craft/packages/dt_table/dt_models.dart';
 import 'package:api_craft/packages/dt_table/dt_table.dart';
 import 'package:flutter/material.dart';
@@ -16,10 +17,11 @@ class FlowList extends ConsumerStatefulWidget {
 
 class _FlowList extends ConsumerState<FlowList> {
   final tableFocusNode = FocusNode();
+
   late final FlowDataSource _flowDataSource = FlowDataSource(
     initialFlows: ref.read(flowsProvider).values.toList(),
     dtController: widget.controller,
-    // resumeIntercept: resumeIntercept,
+    ref: ref,
   );
 
   @override
@@ -29,6 +31,10 @@ class _FlowList extends ConsumerState<FlowList> {
       final flows = newFlows.values.toList();
       debugPrint("@flowsProvider: ${flows.length}");
       _flowDataSource.handleFlows(flows);
+    });
+    ref.listenManual(pausedFlowsProvider, (_, paused) {
+      debugPrint("@pausedFlowsProvider: ${paused.length}");
+      _flowDataSource.handleFlows(ref.read(flowsProvider).values.toList());
     });
   }
 

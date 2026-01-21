@@ -1,8 +1,9 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:api_craft/flows/flows_provider.dart';
+import 'package:api_craft/flows/providers/flows_provider.dart';
 import 'package:api_craft/flows/models/flow.dart';
+import 'package:api_craft/flows/providers/paused_providers.dart';
 import 'package:flutter/material.dart' hide Flow;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mockhttp/mockttp.dart';
@@ -43,10 +44,11 @@ class ServerNotifier extends Notifier<RawMockttpServer> {
           }
         }
         // rule:
-        state.matching(.domain('example.com')).thenEditReq((req) {
-          req.url = "https://www.google.com";
-          return req;
-        });
+        // state.matching(.domain('example.com')).thenEditReq((req) {
+        //   req.url = "https://www.google.com";
+        //   return req;
+        // });
+        state.matching(.domain('example.com')).thenPauseReqRes();
         state.forAnyRequest().thenPassThrough();
 
         // listeners:
@@ -58,13 +60,28 @@ class ServerNotifier extends Notifier<RawMockttpServer> {
           debugPrint("@res: ${res.id}");
           flowNotifier.updateRes(FlowResponse.fromCompletedRes(res));
         });
-        state.on.pause((info) {});
+        state.on.pause((info) {
+          final flowId = (info.pausedRequest?.id ?? info.pausedResponse?.id)!;
+          final flowType = info.pausedRequest != null ? "req" : "res";
+          debugPrint("@pause: $flowId $flowType");
+          ref.read(pausedFlowsProvider.notifier).add(flowId, flowType);
+        });
         state.on.resume((info) {});
       },
       (error, stackTrace) {
         debugPrint("Server error: $error");
       },
     );
+  }
+
+  void resume(String id, String type) {
+    final pausedFlow = ref.read(pausedFlowsProvider.notifier);
+    pausedFlow.remove(id);
+    if (type == "req") {
+      state.resumePausedRequest(id);
+    } else {
+      state.resumePausedResponse(id);
+    }
   }
 }
 
