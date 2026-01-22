@@ -17,7 +17,13 @@ abstract class DtSource extends ChangeNotifier {
 
   DtController get controller;
 
-  DtRowAdapter buildRow(DtRow row, int index, bool isSelected, bool hasFocus);
+  DtRowAdapter buildRow(
+    BuildContext ctx,
+    DtRow row,
+    int index,
+    bool isSelected,
+    bool hasFocus,
+  );
 
   void updateData() {
     _effectiveRows = List.from(rows);

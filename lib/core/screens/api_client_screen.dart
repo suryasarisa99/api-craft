@@ -324,6 +324,7 @@ class _ApiClientScreenState extends ConsumerState<ApiClientScreen>
 
   Widget _buildReqResView() {
     return MultiSplitView(
+      antiAliasingWorkaround: true,
       controller: _reqResController,
       builder: (context, rArea) {
         if (rArea.data == 'request-tab') {
@@ -419,6 +420,7 @@ class _ApiClientScreenState extends ConsumerState<ApiClientScreen>
                 ),
               ),
               child: MultiSplitView(
+                antiAliasingWorkaround: true,
                 controller: _useFullWidthLayout
                     ? _verticalController // Outer is Vertical
                     : _rootController, // Outer is Horizontal
@@ -435,6 +437,7 @@ class _ApiClientScreenState extends ConsumerState<ApiClientScreen>
                       case 'main-content':
                         // Top part: Sidebar + Request/Response
                         return MultiSplitView(
+                          antiAliasingWorkaround: true,
                           controller: _rootController,
                           builder: (c, a) {
                             if (a.data == 'side-bar') return sidebar;

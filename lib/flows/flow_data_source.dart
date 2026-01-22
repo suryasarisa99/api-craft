@@ -103,12 +103,16 @@ class FlowDataSource extends DtSource {
   DtController get controller => dtController;
 
   @override
-  DtRowAdapter buildRow(DtRow row, int index, bool isSelected, bool hasFocus) {
+  DtRowAdapter buildRow(ctx, row, index, isSelected, hasFocus) {
+    final theme = Theme.of(ctx);
     // // int? rowId = int.tryParse(row.getCells().first.value);
     late Color rowColor;
+    Color cellColor = Colors.white;
+
     FontWeight? fontWeight;
     if (isSelected) {
-      rowColor = const .new(0xffD13639); // Selected row color
+      rowColor = theme.colorScheme.primaryContainer;
+      cellColor = theme.colorScheme.onPrimaryContainer;
     } else {
       rowColor = index.isEven
           ? const .new(0xff1E1E1E) // Even rows - darker (same as background)
@@ -137,7 +141,6 @@ class FlowDataSource extends DtSource {
       //   3 => getStatusCodeColor(cell.value as int?),
       //   _ => Colors.white,
       // };
-      late Color cellColor = Colors.white;
       if (cIndex == 1 && row.m != null && row.m!.isNotEmpty) {
         fontWeight = FontWeight.bold;
       }

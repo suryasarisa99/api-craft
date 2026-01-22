@@ -561,6 +561,7 @@ class _DtTableState extends State<DtTable> {
       final isSelected = _controller._selectedRowIds.contains(row.id);
 
       final dataRowAdapter = widget.source.buildRow(
+        context,
         row,
         rowIndex,
         isSelected,
@@ -661,6 +662,7 @@ class _DtTableState extends State<DtTable> {
     final hasFocus = _controller._focusedRowId == row.id;
 
     final dataRowAdapter = widget.source.buildRow(
+      context,
       row,
       rowIndex,
       isSelected,

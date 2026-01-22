@@ -4,20 +4,33 @@ import 'package:mockhttp/types/ongoing.dart';
 class HttpFlow {
   final String id;
   final String state;
+  final bool reqEdited;
+  final bool resEdited;
   final FlowRequest? request;
   final FlowResponse? response;
 
-  HttpFlow({required this.id, this.state = "", this.request, this.response});
+  HttpFlow({
+    required this.id,
+    this.state = "",
+    this.reqEdited = false,
+    this.resEdited = false,
+    this.request,
+    this.response,
+  });
 
   // copy with
   HttpFlow copyWith({
     String? id,
     String? state,
     FlowRequest? request,
+    bool? reqEdited,
+    bool? resEdited,
     FlowResponse? response,
   }) {
     return HttpFlow(
       id: id ?? this.id,
+      reqEdited: reqEdited ?? this.reqEdited,
+      resEdited: resEdited ?? this.resEdited,
       state: state ?? this.state,
       request: request ?? this.request,
       response: response ?? this.response,
