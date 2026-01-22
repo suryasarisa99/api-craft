@@ -1,26 +1,26 @@
-import 'package:api_craft/features/themes/theme.dart';
+import 'package:api_craft/features/themes/models/theme_model.dart';
 import 'package:flutter/material.dart';
 
 ThemeData buildBlackTheme({
   required Brightness brightness,
   required Color color,
 }) {
-  final _cs = ColorScheme.fromSeed(seedColor: color, brightness: brightness);
+  final cs = ColorScheme.fromSeed(seedColor: color, brightness: brightness);
   final backgroundClr = const Color.fromARGB(255, 0, 0, 0);
   final dividerClr = const Color.fromARGB(255, 32, 32, 32);
   return ThemeData(
     visualDensity: VisualDensity.compact,
     materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-    colorScheme: _cs,
+    colorScheme: cs,
     useMaterial3: true,
     scaffoldBackgroundColor: backgroundClr,
     extensions: [
       AppTheme(
         menuTheme: const Color.fromARGB(255, 12, 12, 12),
         topBarBackground: Color.fromARGB(255, 13, 13, 13),
-        topBarText: _cs.onPrimaryContainer,
+        topBarText: cs.onPrimaryContainer,
         statusBarBackground: Color.fromARGB(255, 0, 0, 0),
-        statusBarText: _cs.onPrimaryContainer,
+        statusBarText: cs.onPrimaryContainer,
         statusBarBorder: const Color.fromARGB(255, 18, 18, 18),
         divider: const Color.fromARGB(255, 52, 52, 52),
         hoverDivider: const Color.fromARGB(255, 92, 92, 92),
@@ -28,17 +28,30 @@ ThemeData buildBlackTheme({
       SidebarTheme(
         background: backgroundClr,
         itemActive: const Color.fromARGB(150, 45, 45, 45),
-        itemSelected: _cs.secondary.withValues(alpha: 0.1),
-        itemHover: _cs.primaryContainer.withValues(alpha: 0.6),
-        itemFocused: _cs.primaryContainer.withValues(alpha: 0.6),
+        itemSelected: cs.secondary.withValues(alpha: 0.1),
+        itemHover: cs.primaryContainer.withValues(alpha: 0.6),
+        itemFocused: cs.primaryContainer.withValues(alpha: 0.6),
         indentLine: const Color.fromARGB(255, 50, 50, 50),
-        text: _cs.onPrimaryContainer,
+        text: cs.onPrimaryContainer,
       ),
       BottomPannelTheme(
         background: backgroundClr,
         headerBackground: Color.fromARGB(255, 8, 8, 8),
-        text: _cs.onPrimaryContainer,
-        divider: _cs.primaryContainer.withValues(alpha: 0.6),
+        text: cs.onPrimaryContainer,
+        divider: cs.primaryContainer.withValues(alpha: 0.6),
+      ),
+      FlowTableTheme(
+        selectedRow: cs.primary,
+        focusedRow: cs.primaryContainer,
+        evenRow: const Color.fromARGB(255, 10, 10, 10),
+        oddRow: const Color.fromARGB(255, 14, 14, 14),
+        rowSeperator: const Color.fromARGB(255, 20, 20, 20),
+        header: const Color.fromARGB(255, 20, 20, 20),
+        headerBorder: const Color.fromARGB(255, 42, 42, 42),
+      ),
+      FlowPanelTheme(
+        urlBg: Color.fromARGB(255, 8, 8, 8),
+        headerBg: Color.fromARGB(255, 8, 8, 8),
       ),
     ],
     dividerColor: dividerClr,
@@ -50,8 +63,8 @@ ThemeData buildBlackTheme({
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6.0)),
-        backgroundColor: _cs.secondaryContainer.withValues(alpha: 0.6),
-        foregroundColor: _cs.onPrimaryContainer,
+        backgroundColor: cs.secondaryContainer.withValues(alpha: 0.6),
+        foregroundColor: cs.onPrimaryContainer,
       ),
     ),
     textButtonTheme: TextButtonThemeData(
@@ -95,7 +108,7 @@ ThemeData buildBlackTheme({
         borderSide: BorderSide(color: Color.fromARGB(255, 66, 66, 66)),
       ),
       focusedBorder: OutlineInputBorder(
-        borderSide: BorderSide(color: _cs.primary, width: 1.5),
+        borderSide: BorderSide(color: cs.primary, width: 1.5),
       ),
       prefixIconConstraints: BoxConstraints.tight(Size(32, 28)),
       suffixIconConstraints: BoxConstraints.tight(Size(32, 28)),
@@ -108,7 +121,7 @@ ThemeData buildBlackTheme({
         shape: WidgetStatePropertyAll<RoundedRectangleBorder>(
           RoundedRectangleBorder(borderRadius: BorderRadius.circular(6.0)),
         ),
-        foregroundColor: WidgetStatePropertyAll<Color>(_cs.primaryContainer),
+        foregroundColor: WidgetStatePropertyAll<Color>(cs.primaryContainer),
       ),
     ),
     tabBarTheme: TabBarThemeData(
@@ -116,7 +129,7 @@ ThemeData buildBlackTheme({
       dividerColor: Colors.transparent,
       indicator: BoxDecoration(
         color: Colors.transparent,
-        border: Border(bottom: BorderSide(color: _cs.primary, width: 2)),
+        border: Border(bottom: BorderSide(color: cs.primary, width: 2)),
       ),
       labelPadding: .symmetric(horizontal: 10),
       // indicatorSize: TabBarIndicatorSize.tab,

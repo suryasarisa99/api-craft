@@ -96,13 +96,21 @@ class DtCell<T> {
 }
 
 class DtRowAdapter {
-  const DtRowAdapter({required this.cells, this.id, this.color});
+  const DtRowAdapter({
+    required this.cells,
+    this.id,
+    this.color,
+    this.borderColor,
+  });
 
   /// The key for the row.
   final Key? id;
 
   /// The color for the row.
   final Color? color;
+
+  /// Bottom border color
+  final Color? borderColor;
 
   /// The widget of each cell for this row.
   ///

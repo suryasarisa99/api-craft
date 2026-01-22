@@ -1,3 +1,4 @@
+import 'package:api_craft/features/themes/models/theme_model.dart';
 import 'package:api_craft/flows/providers/flows_provider.dart';
 import 'package:api_craft/flows/flow_data_source.dart';
 import 'package:api_craft/flows/providers/paused_providers.dart';
@@ -62,6 +63,8 @@ class _FlowList extends ConsumerState<FlowList> {
       (title: "Req", key: 'reqLen'),
       (title: "Res", key: 'resLen'),
     ];
+    final theme = Theme.of(context);
+    final flowTableTheme = theme.extension<FlowTableTheme>()!;
     return DtTable(
       focusNode: tableFocusNode,
       source: _flowDataSource,
@@ -69,6 +72,8 @@ class _FlowList extends ConsumerState<FlowList> {
       // tableWidth: MediaQuery.sizeOf(context).width,
       tableWidth: double.infinity,
       headerHeight: 24,
+      headerClr: flowTableTheme.header,
+      headerBorderClr: flowTableTheme.headerBorder,
       rowHeight: 32,
       frozenColumnsCount: 1,
       menuProvider: buildContextMenu,

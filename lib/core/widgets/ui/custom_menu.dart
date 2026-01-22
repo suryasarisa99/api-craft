@@ -1,4 +1,4 @@
-import 'package:api_craft/features/themes/theme.dart';
+import 'package:api_craft/features/themes/models/theme_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_popup/flutter_popup.dart';
 

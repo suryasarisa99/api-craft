@@ -1,6 +1,6 @@
+import 'package:api_craft/features/themes/models/theme_model.dart';
 import 'package:api_craft/flows/flow_panel/flow_panel.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:multi_split_view/multi_split_view.dart';
 
@@ -62,10 +62,12 @@ class PanelHeader extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final flowPanelTheme = theme.extension<FlowPanelTheme>()!;
     return Container(
       decoration: BoxDecoration(
-        color: .new(0xff161819),
-        border: Border(bottom: .new(color: Colors.grey.shade800, width: 0.5)),
+        color: flowPanelTheme.headerBg,
+        border: Border(bottom: .new(color: theme.dividerColor, width: 0.5)),
       ),
       child: Row(
         children: [

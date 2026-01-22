@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:math';
 
-import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:api_craft/packages/dt_table/dt_models.dart';
@@ -158,6 +157,8 @@ class DtTable extends StatefulWidget {
     this.tableWidth,
     this.onKeyEvent,
     this.focusNode,
+    this.headerClr = Colors.grey,
+    this.headerBorderClr = Colors.grey,
     required this.menuProvider,
   });
 
@@ -166,6 +167,8 @@ class DtTable extends StatefulWidget {
   final double rowHeight;
   final List<DtColumn> headerColumns;
   final double headerHeight;
+  final Color headerClr;
+  final Color headerBorderClr;
   final Color resizeIndicatorColor;
   final int frozenColumnsCount;
   final double? tableWidth;
@@ -597,10 +600,11 @@ class _DtTableState extends State<DtTable> {
 
     return Container(
       decoration: BoxDecoration(
+        color: widget.headerClr,
         border: Border(
-          bottom: BorderSide(color: Colors.grey[700]!, width: 1),
+          bottom: BorderSide(color: widget.headerBorderClr, width: 1),
           right: columnIndex < widget.headerColumns.length - 1
-              ? BorderSide(color: Colors.grey[700]!, width: 1)
+              ? BorderSide(color: widget.headerBorderClr, width: 1)
               : BorderSide.none,
         ),
       ),
@@ -668,7 +672,7 @@ class _DtTableState extends State<DtTable> {
       isSelected,
       hasFocus,
     );
-
+    final borderClr = dataRowAdapter.borderColor;
     return ContextMenuWidget(
       menuProvider: (e) {
         if (!(_controller._selectedRowIds.contains(row.id))) {
@@ -683,6 +687,11 @@ class _DtTableState extends State<DtTable> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8.0),
           alignment: Alignment.centerLeft,
+          decoration: borderClr != null
+              ? BoxDecoration(
+                  border: Border(bottom: BorderSide(color: borderClr)),
+                )
+              : null,
           child: dataRowAdapter.cells[columnIndex],
         ),
       ),

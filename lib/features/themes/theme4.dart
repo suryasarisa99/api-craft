@@ -1,4 +1,4 @@
-import 'package:api_craft/features/themes/theme.dart';
+import 'package:api_craft/features/themes/models/theme_model.dart';
 import 'package:flutter/material.dart';
 
 ThemeData buildTheme4({required Brightness brightness, required Color color}) {

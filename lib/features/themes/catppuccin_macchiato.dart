@@ -1,6 +1,4 @@
-import 'dart:ui';
-
-import 'package:api_craft/features/themes/theme.dart';
+import 'package:api_craft/features/themes/models/theme_model.dart';
 import 'package:flutter/material.dart';
 
 final _cs = ColorScheme.fromSeed(
@@ -27,7 +25,6 @@ final catppuccinMacchiato = ThemeData(
     ),
     SidebarTheme(
       background: const Color.fromARGB(244, 35, 38, 55),
-      // background: const Color.fromARGB(244, 31, 35, 48),
       itemActive: const Color.fromARGB(149, 77, 85, 126),
       itemSelected: _cs.secondary.withValues(alpha: 0.1),
       itemHover: _cs.primaryContainer.withValues(alpha: 0.6),
@@ -40,6 +37,19 @@ final catppuccinMacchiato = ThemeData(
       headerBackground: Color.fromARGB(255, 40, 47, 66),
       text: _cs.onPrimaryContainer,
       divider: _cs.primaryContainer.withValues(alpha: 0.6),
+    ),
+    FlowTableTheme(
+      selectedRow: const Color.fromARGB(255, 96, 83, 215),
+      focusedRow: const Color.fromARGB(255, 141, 88, 255),
+      evenRow: const Color.fromARGB(255, 25, 29, 42),
+      oddRow: const Color.fromARGB(255, 31, 37, 54),
+      rowSeperator: const Color.fromARGB(255, 38, 39, 61),
+      header: const Color.fromARGB(255, 38, 45, 66),
+      headerBorder: const Color.fromARGB(255, 46, 47, 74),
+    ),
+    FlowPanelTheme(
+      urlBg: Color.fromARGB(255, 20, 23, 34),
+      headerBg: Color.fromARGB(255, 29, 34, 47),
     ),
   ],
   dividerColor: const Color.fromARGB(255, 39, 42, 66),

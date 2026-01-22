@@ -1,3 +1,4 @@
+import 'package:api_craft/features/themes/models/theme_model.dart';
 import 'package:api_craft/flows/flow_panel/selected_flow_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,6 +8,8 @@ class FlowDetailURL extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final flowPanelTheme = theme.extension<FlowPanelTheme>()!;
     final (statusCode, url, path, method) = ref.watch(
       flowProvider.select((s) {
         return (
@@ -38,9 +41,9 @@ class FlowDetailURL extends ConsumerWidget {
     // final methodColor = getMethodColor(method);
     final methodColor = Colors.grey;
     return Container(
-      padding: const .only(bottom: 10.0, top: 8),
+      padding: const .only(bottom: 6, top: 6),
       decoration: BoxDecoration(
-        color: Color(0xff161819),
+        color: flowPanelTheme.urlBg,
         border: Border(
           bottom: .new(color: Colors.grey[800]!, width: 0.5),
           // top: .new(color: Colors.grey[800]!, width: 0.5),

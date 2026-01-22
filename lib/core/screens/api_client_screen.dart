@@ -7,7 +7,7 @@ import 'package:api_craft/features/request/widgets/request.dart';
 import 'package:api_craft/features/response/response_tab.dart';
 import 'package:api_craft/features/sidebar/sidebar.dart';
 import 'package:api_craft/core/widgets/ui/top_bar.dart';
-import 'package:api_craft/features/themes/theme.dart';
+import 'package:api_craft/features/themes/models/theme_model.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';

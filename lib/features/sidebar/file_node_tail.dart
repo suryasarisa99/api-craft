@@ -7,7 +7,7 @@ import 'package:api_craft/features/response/utils/status_code_clr.dart';
 import 'package:api_craft/features/sidebar/context_menu.dart';
 import 'package:api_craft/features/sidebar/providers/sidebar_search_provider.dart';
 import 'package:api_craft/features/sidebar/sidebar.dart';
-import 'package:api_craft/features/themes/theme.dart';
+import 'package:api_craft/features/themes/models/theme_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

@@ -1,4 +1,4 @@
-import 'package:api_craft/features/themes/theme.dart';
+import 'package:api_craft/features/themes/models/theme_model.dart';
 import 'package:flutter/material.dart';
 
 ThemeData buildTheme3({required Brightness brightness, required Color color}) {
@@ -32,6 +32,19 @@ ThemeData buildTheme3({required Brightness brightness, required Color color}) {
         headerBackground: Color.fromARGB(255, 32, 32, 32),
         text: cs.onPrimaryContainer,
         divider: cs.primaryContainer.withValues(alpha: 0.6),
+      ),
+      FlowTableTheme(
+        selectedRow: cs.primary,
+        focusedRow: cs.primaryContainer,
+        evenRow: const Color.fromARGB(255, 17, 17, 17),
+        oddRow: const Color.fromARGB(255, 20, 20, 20),
+        rowSeperator: const Color.fromARGB(255, 27, 27, 27),
+        header: const Color.fromARGB(255, 22, 22, 22),
+        headerBorder: const Color.fromARGB(255, 38, 38, 38),
+      ),
+      FlowPanelTheme(
+        urlBg: Color.fromARGB(255, 22, 22, 22),
+        headerBg: Color.fromARGB(255, 22, 22, 22),
       ),
     ],
     dividerColor: const Color.fromARGB(255, 40, 40, 40),

@@ -55,6 +55,74 @@ class AppTheme extends ThemeExtension<AppTheme> {
   );
 }
 
+class FlowTableTheme extends ThemeExtension<FlowTableTheme> {
+  final Color selectedRow;
+  final Color focusedRow;
+  final Color evenRow;
+  final Color oddRow;
+  final Color rowSeperator;
+  final Color header;
+  final Color headerBorder;
+
+  const FlowTableTheme({
+    required this.selectedRow,
+    required this.focusedRow,
+    required this.evenRow,
+    required this.oddRow,
+    required this.rowSeperator,
+    required this.header,
+    required this.headerBorder,
+  });
+
+  @override
+  FlowTableTheme copyWith({
+    Color? selectedRow,
+    Color? focusedRow,
+    Color? evenRow,
+    Color? oddRow,
+    Color? rowSeperator,
+    Color? header,
+    Color? headerBorder,
+  }) => FlowTableTheme(
+    selectedRow: selectedRow ?? this.selectedRow,
+    focusedRow: focusedRow ?? this.focusedRow,
+    evenRow: evenRow ?? this.evenRow,
+    oddRow: oddRow ?? this.oddRow,
+    rowSeperator: rowSeperator ?? this.rowSeperator,
+    header: header ?? this.header,
+    headerBorder: headerBorder ?? this.headerBorder,
+  );
+
+  @override
+  FlowTableTheme lerp(ThemeExtension<FlowTableTheme>? other, double t) =>
+      FlowTableTheme(
+        selectedRow: selectedRow,
+        focusedRow: focusedRow,
+        evenRow: evenRow,
+        oddRow: oddRow,
+        rowSeperator: rowSeperator,
+        header: header,
+        headerBorder: headerBorder,
+      );
+}
+
+class FlowPanelTheme extends ThemeExtension<FlowPanelTheme> {
+  final Color urlBg;
+  final Color headerBg;
+
+  const FlowPanelTheme({required this.urlBg, required this.headerBg});
+
+  @override
+  FlowPanelTheme copyWith({Color? urlBg, Color? headerBg}) => FlowPanelTheme(
+    urlBg: urlBg ?? this.urlBg,
+    headerBg: headerBg ?? this.headerBg,
+  );
+
+  @override
+  FlowPanelTheme lerp(ThemeExtension<FlowPanelTheme>? other, double t) =>
+      FlowPanelTheme(urlBg: urlBg, headerBg: headerBg);
+}
+
 class SidebarTheme extends ThemeExtension<SidebarTheme> {
   final Color background;
   final Color itemActive;

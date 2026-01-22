@@ -1,6 +1,6 @@
 import 'package:api_craft/features/settings/widgets/themes_settings_view.dart';
 import 'package:api_craft/features/settings/widgets/ui_settings_view.dart';
-import 'package:api_craft/features/themes/theme.dart';
+import 'package:api_craft/features/themes/models/theme_model.dart';
 import 'package:flutter/material.dart';
 
 class SettingsDialog extends StatefulWidget {

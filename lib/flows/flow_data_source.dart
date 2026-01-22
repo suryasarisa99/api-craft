@@ -1,3 +1,4 @@
+import 'package:api_craft/features/themes/models/theme_model.dart';
 import 'package:api_craft/flows/models/flow.dart';
 import 'package:api_craft/flows/providers/paused_providers.dart';
 import 'package:api_craft/flows/providers/server_provider.dart';
@@ -105,18 +106,18 @@ class FlowDataSource extends DtSource {
   @override
   DtRowAdapter buildRow(ctx, row, index, isSelected, hasFocus) {
     final theme = Theme.of(ctx);
+    final flowTableTheme = theme.extension<FlowTableTheme>()!;
+
     // // int? rowId = int.tryParse(row.getCells().first.value);
     late Color rowColor;
     Color cellColor = Colors.white;
 
     FontWeight? fontWeight;
     if (isSelected) {
-      rowColor = theme.colorScheme.primaryContainer;
+      rowColor = flowTableTheme.focusedRow;
       cellColor = theme.colorScheme.onPrimaryContainer;
     } else {
-      rowColor = index.isEven
-          ? const .new(0xff1E1E1E) // Even rows - darker (same as background)
-          : const .new(0xFF2E2A29);
+      rowColor = index.isEven ? flowTableTheme.evenRow : flowTableTheme.oddRow;
     }
     final cells = row.cells.mapIndexed((cIndex, cell) {
       late String text;
@@ -185,7 +186,11 @@ class FlowDataSource extends DtSource {
         );
       }
     }).toList();
-    return DtRowAdapter(color: rowColor, cells: cells);
+    return DtRowAdapter(
+      color: rowColor,
+      borderColor: flowTableTheme.rowSeperator,
+      cells: cells,
+    );
   }
 
   /// Get the color for a HTTP method (GET, POST, etc.)

@@ -1,14 +1,12 @@
 import 'package:api_craft/core/widgets/ui/top_bar.dart';
 import 'package:api_craft/features/panel/status_bar.dart';
-import 'package:api_craft/features/themes/theme.dart';
+import 'package:api_craft/features/themes/models/theme_model.dart';
 import 'package:api_craft/flows/flow_panel/flow_panel.dart';
 import 'package:api_craft/flows/flow_panel/selected_flow_provider.dart';
-import 'package:api_craft/flows/providers/flows_provider.dart';
 import 'package:api_craft/flows/widgets/flows_list.dart';
 import 'package:api_craft/flows/providers/server_provider.dart';
 import 'package:api_craft/packages/dt_table/dt_models.dart';
 import 'package:api_craft/packages/dt_table/dt_table.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:multi_split_view/multi_split_view.dart';
