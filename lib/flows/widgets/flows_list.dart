@@ -39,29 +39,18 @@ class _FlowList extends ConsumerState<FlowList> {
     });
   }
 
-  final Map<String, double> _columnWidths = {
-    'id': 44,
-    'url': 1180,
-    'method': 80,
-    'status': 60,
-    'type': 150,
-    'time': 100,
-    'duration': 100,
-    'reqLen': 100,
-    'resLen': 100,
-  };
   @override
   Widget build(BuildContext context) {
     final headerCells = [
-      (title: "ID", key: 'id'),
-      (title: "URL", key: 'url'),
-      (title: "Method", key: 'method'),
-      (title: "Status", key: 'status'),
-      (title: "Type", key: 'type'),
-      (title: "Time", key: 'time'),
-      (title: "Duration", key: 'duration'),
-      (title: "Req", key: 'reqLen'),
-      (title: "Res", key: 'resLen'),
+      (title: "ID", key: 'id', min: 30, initial: 44),
+      (title: "URL", key: 'url', min: 300, initial: 300),
+      (title: "Method", key: 'method', min: 40, initial: 80),
+      (title: "Status", key: 'status', min: 30, initial: 60),
+      (title: "Type", key: 'type', min: 40, initial: 150),
+      (title: "Time", key: 'time', min: 40, initial: 100),
+      (title: "Duration", key: 'duration', min: 40, initial: 100),
+      (title: "Req", key: 'reqLen', min: 40, initial: 100),
+      (title: "Res", key: 'resLen', min: 40, initial: 100),
     ];
     final theme = Theme.of(context);
     final flowTableTheme = theme.extension<FlowTableTheme>()!;
@@ -84,10 +73,10 @@ class _FlowList extends ConsumerState<FlowList> {
             key: header.key,
             title: header.title,
             fontSize: 12,
-            initialWidth: _columnWidths[header.key]!,
+            initialWidth: header.initial.toDouble(),
             isNumeric: header.key == 'id' || header.key == 'status',
             isExpand: header.key == 'url',
-            // maxWidth: 1200,
+            maxWidth: 1200,
           ),
       ],
     );

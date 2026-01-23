@@ -45,7 +45,7 @@ final catppuccinMacchiato = ThemeData(
       oddRow: const Color.fromARGB(255, 31, 37, 54),
       rowSeperator: const Color.fromARGB(255, 38, 39, 61),
       header: const Color.fromARGB(255, 38, 45, 66),
-      headerBorder: const Color.fromARGB(255, 46, 47, 74),
+      headerBorder: const Color.fromARGB(255, 70, 71, 109),
     ),
     FlowPanelTheme(
       urlBg: Color.fromARGB(255, 20, 23, 34),

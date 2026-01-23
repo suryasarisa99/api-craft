@@ -25,6 +25,23 @@ class ResizeService {
   void hideResPanel() {
     controller.areas = [controller.areas.first];
   }
+  // final ResizableController controller;
+  // ResizeService(this.controller);
+
+  // bool get isSinglePanel =>
+  //     controller.isChild1Hidden || controller.isChild2Hidden;
+  // bool get firstPanelHidden => controller.isChild1Hidden;
+  // bool get secondPanelHidden => controller.isChild2Hidden;
+
+  // void showFirstChild() => controller.showFirstChild();
+  // void showSecondChild() => controller.showSecondChild();
+  // void hideReqPanel() {
+  //   controller.hideFirstChild();
+  // }
+
+  // void hideResPanel() {
+  //   controller.hideSecondChild();
+  // }
 }
 
 class PanelHeader extends ConsumerWidget {

@@ -1,4 +1,5 @@
 import 'package:api_craft/core/widgets/ui/top_bar.dart';
+import 'package:api_craft/features/panel/bottom_panel.dart';
 import 'package:api_craft/features/panel/status_bar.dart';
 import 'package:api_craft/features/themes/models/theme_model.dart';
 import 'package:api_craft/flows/flow_panel/flow_panel.dart';
@@ -7,27 +8,27 @@ import 'package:api_craft/flows/widgets/flows_list.dart';
 import 'package:api_craft/flows/providers/server_provider.dart';
 import 'package:api_craft/packages/dt_table/dt_models.dart';
 import 'package:api_craft/packages/dt_table/dt_table.dart';
+import 'package:api_craft/packages/resize/resize.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:multi_split_view/multi_split_view.dart';
 
 class FlowsScreen extends ConsumerStatefulWidget {
   const FlowsScreen({super.key});
 
   @override
-  ConsumerState<FlowsScreen> createState() => _FlowListScreenState();
+  ConsumerState<FlowsScreen> createState() => _FlowScreenState();
 }
 
-class _FlowListScreenState extends ConsumerState<FlowsScreen> {
+class _FlowScreenState extends ConsumerState<FlowsScreen> {
   // Single data source for all flows
 
   // Controller for the data grid to track selection and highlighting
   final _dtController = DtController();
 
-  final _multiSplitController = MultiSplitViewController(
-    areas: [Area(data: 'flow-list', flex: 1)],
-  );
-
+  // final _multiSplitController = MultiSplitViewController(
+  //   areas: [Area(data: 'flow-list', flex: 1)],
+  // );
+  final resizeController = ResizableController();
   late final flowsListWidget = FlowList(controller: _dtController);
   late final flowPanelWidget = FlowPanel();
 
@@ -49,17 +50,14 @@ class _FlowListScreenState extends ConsumerState<FlowsScreen> {
       String? rowId = _dtController.focusedRowId;
       debugPrint('rowId: $rowId');
       if (rowId == null) {
-        _multiSplitController.areas = [Area(data: 'flow-list', flex: 1)];
+        resizeController.hideSecondChild();
         ref.read(selectedFlowIdProvider.notifier).reset();
         return;
       }
       final flowId = ref.read(selectedFlowIdProvider);
       if (rowId != flowId) {
         debugPrint('rowId != flowId');
-        _multiSplitController.areas = [
-          Area(data: 'flow-list', flex: 1),
-          Area(data: 'flow-panel', size: 300),
-        ];
+        resizeController.showSecondChild();
         ref.read(selectedFlowIdProvider.notifier).set(rowId);
       }
     }
@@ -83,35 +81,21 @@ class _FlowListScreenState extends ConsumerState<FlowsScreen> {
       crossAxisAlignment: .start,
       children: [
         TopBar(left: [], right: []),
-        // Expanded(child: FlowList(controller: _dtController)),
         Expanded(
-          child: MultiSplitViewTheme(
-            data: MultiSplitViewThemeData(
-              dividerThickness: 0.8,
-              dividerHandleBuffer:
-                  MultiSplitViewThemeData.defaultDividerHandleBuffer + 4,
-              dividerPainter: DividerPainters.background(
-                color: appTheme.divider ?? theme.dividerColor,
-                highlightedColor: appTheme.hoverDivider ?? Colors.grey,
-                // highlightedColor: const Color.fromARGB(255, 92, 92, 92),
-              ),
-            ),
-            child: MultiSplitView(
-              axis: Axis.vertical,
-              antiAliasingWorkaround: true,
-              controller: _multiSplitController,
-              builder: (context, vArea) {
-                if (vArea.data == 'flow-list') {
-                  return flowsListWidget;
-                }
-                if (vArea.data == 'flow-panel') {
-                  return flowPanelWidget;
-                }
-                return const SizedBox.shrink();
-              },
-            ),
+          child: ResizableContainer(
+            controller: resizeController,
+            axis: Axis.vertical,
+            dividerColor: Colors.grey[600]!,
+            onDragDividerColor: theme.colorScheme.primary,
+            onDragDividerWidth: 3,
+            dividerWidth: 1,
+            dividerHandleWidth: 18,
+            maxRatio: 1,
+            child1: flowsListWidget,
+            child2: flowPanelWidget,
           ),
         ),
+        // Expanded(child: FlowList(controller: _dtController)),
         StatusBar(),
       ],
     );
