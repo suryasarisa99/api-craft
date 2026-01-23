@@ -160,7 +160,10 @@ class DtTable extends StatefulWidget {
     this.headerClr = Colors.grey,
     this.headerBorderClr = Colors.grey,
     required this.menuProvider,
+    this.allowTableWidthShrinking = false,
   });
+
+  final bool allowTableWidthShrinking;
 
   final DtSource source;
   final DtController? controller;
@@ -181,7 +184,9 @@ class DtTable extends StatefulWidget {
 }
 
 class _DtTableState extends State<DtTable> {
-  late List<double> _columnWidths;
+  late List<double>
+  _manualColumnWidths; // Stores the user-set or initial "manual" widths
+  late List<double> _columnWidths; // Stores the effective display widths
   late DtController _controller;
   double _actualTableWidth = 0;
 
@@ -200,9 +205,12 @@ class _DtTableState extends State<DtTable> {
     _lastFocusedRowId = _controller.focusedRowId;
     widget.source.addListener(_onDataSourceChanged);
     _controller.addListener(_onControllerChanged);
-    _columnWidths = widget.headerColumns.map((c) => c.initialWidth).toList();
+    _manualColumnWidths = widget.headerColumns
+        .map((c) => c.initialWidth)
+        .toList();
+    _columnWidths = List.from(_manualColumnWidths);
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _setInitialColumnWidths();
       if (_controller.focusedRowId != null) {
         final index = widget.source.effectiveRows.indexWhere(
           (r) => r.id == _controller.focusedRowId,
@@ -217,14 +225,7 @@ class _DtTableState extends State<DtTable> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final size = MediaQuery.sizeOf(context).width;
-      if (widget.tableWidth == double.infinity) {
-        _actualTableWidth = size;
-      }
-      _redistributeWidth();
-      setState(() {});
-    });
+    // LayoutBuilder will handle width updates, so we don't need logic here for width.
   }
 
   @override
@@ -257,42 +258,46 @@ class _DtTableState extends State<DtTable> {
     super.dispose();
   }
 
-  void _setInitialColumnWidths() {
-    final totalInitialWidth = widget.headerColumns
-        .map((column) => column.initialWidth)
-        .reduce((a, b) => a + b);
-
-    _actualTableWidth = widget.tableWidth ?? totalInitialWidth;
-    if (widget.tableWidth == double.infinity) {
-      _actualTableWidth = MediaQuery.sizeOf(context).width;
+  void _updateTableWidth(double parentWidth) {
+    double newTableWidth = widget.tableWidth ?? 0;
+    if (widget.tableWidth == double.infinity || widget.tableWidth == null) {
+      newTableWidth = parentWidth;
     }
 
-    _columnWidths = widget.headerColumns.map((c) => c.initialWidth).toList();
-
-    if (totalInitialWidth < _actualTableWidth) {
-      final extraSpace = _actualTableWidth - totalInitialWidth;
-      final expandColumnIndex = widget.headerColumns.indexWhere(
-        (c) => c.isExpand,
-      );
-      if (expandColumnIndex != -1) {
-        _columnWidths[expandColumnIndex] += extraSpace;
-      }
-    }
-
-    if (mounted) {
-      setState(() {});
+    if (_actualTableWidth != newTableWidth) {
+      _actualTableWidth = newTableWidth;
+      _redistributeWidth();
     }
   }
 
   void _redistributeWidth() {
-    final currentTotalWidth = _columnWidths.reduce((a, b) => a + b);
-    if (currentTotalWidth < _actualTableWidth) {
-      final extraSpace = _actualTableWidth - currentTotalWidth;
-      int targetIndex = widget.headerColumns.indexWhere((c) => c.isExpand);
-      if (targetIndex == -1) {
-        targetIndex = widget.headerColumns.length - 1;
+    // 1. Calculate total manual width
+    final totalManualWidth = _manualColumnWidths.reduce((a, b) => a + b);
+
+    // 2. Identify Fill Target
+    // If allowShrinking is TRUE: Target is Last Column (Floor Filler).
+    // If allowShrinking is FALSE: Target is Expand Column (Standard Filler).
+    int fillTargetIndex = -1;
+
+    if (widget.allowTableWidthShrinking) {
+      fillTargetIndex = widget.headerColumns.length - 1;
+    } else {
+      fillTargetIndex = widget.headerColumns.indexWhere((c) => c.isExpand);
+      // Fallback if no expand column
+      if (fillTargetIndex == -1) {
+        fillTargetIndex = widget.headerColumns.length - 1;
       }
-      _columnWidths[targetIndex] += extraSpace;
+    }
+
+    // 3. Calculate Gap
+    final gap = _actualTableWidth - totalManualWidth;
+
+    // 4. Distribute Gap
+    // We only create effective `_columnWidths` here.
+    _columnWidths = List.from(_manualColumnWidths);
+
+    if (gap > 0 && fillTargetIndex != -1) {
+      _columnWidths[fillTargetIndex] += gap;
     }
   }
 
@@ -549,47 +554,63 @@ class _DtTableState extends State<DtTable> {
     setState(() {
       _isResizing = true;
       _resizingColumnIndex = columnIndex;
-      _resizeStartWidth = _columnWidths[columnIndex];
+      // Sync the manual width to the visual width (especially important for the "fill" column)
+      // so that resizing starts from the current visual state.
+      _manualColumnWidths[columnIndex] = _columnWidths[columnIndex];
+      _resizeStartWidth = _manualColumnWidths[columnIndex];
     });
   }
 
   void _onColumnResizeUpdate(int columnIndex, double delta) {
     setState(() {
       final column = widget.headerColumns[columnIndex];
-      final newWidth = _columnWidths[columnIndex] + delta;
+      // Apply delta to the MANUAL width
+      // Note: _resizeStartWidth was set from _manualColumnWidths,
+      // but delta is cumulative from drag start?
+      // No, usually delta in GestureDetector is incremental.
+      // Wait, onHorizontalDragUpdate delta is incremental.
+      // So we should just add delta to current manual width.
 
-      final lastColumn = widget.headerColumns.last;
-      final lastColumnMaxWidth = lastColumn.maxWidth ?? lastColumn.initialWidth;
+      double newManualWidth = _manualColumnWidths[columnIndex] + delta;
 
-      double constrainedWidth = newWidth;
-      if (constrainedWidth < column.minWidth) {
-        constrainedWidth = column.minWidth;
+      // Constraints
+      if (newManualWidth < column.minWidth) {
+        newManualWidth = column.minWidth;
       }
-      if (column.maxWidth != null && constrainedWidth > column.maxWidth!) {
-        constrainedWidth = column.maxWidth!;
-      }
-
-      final oldWidth = _columnWidths[columnIndex];
-      _columnWidths[columnIndex] = constrainedWidth;
-
-      final totalColsWidth = _columnWidths.reduce((a, b) => a + b);
-      if (column.isExpand &&
-          constrainedWidth < oldWidth &&
-          totalColsWidth <= _actualTableWidth) {
-        final lastColumnIndex = widget.headerColumns.length - 1;
-        final extraSpace = oldWidth - constrainedWidth;
-        _columnWidths[lastColumnIndex] += extraSpace;
+      if (column.maxWidth != null && newManualWidth > column.maxWidth!) {
+        newManualWidth = column.maxWidth!;
       }
 
-      if (constrainedWidth > oldWidth &&
-          _columnWidths.last > lastColumnMaxWidth) {
-        final increasedWidth = constrainedWidth - oldWidth;
-        final lastColumnIndex = widget.headerColumns.length - 1;
+      final double actualDelta =
+          newManualWidth - _manualColumnWidths[columnIndex];
+      _manualColumnWidths[columnIndex] = newManualWidth;
 
-        var extraSpace = _columnWidths.last - lastColumnMaxWidth;
-        extraSpace = max(0, extraSpace - increasedWidth);
-        _columnWidths[lastColumnIndex] = lastColumnMaxWidth + extraSpace;
+      // Counter-Balance Logic
+      // Function: When resizing 'other', 'expand' column should shrink.
+      // Identify Expand Column (The "Flex" column)
+      final expandColIndex = widget.headerColumns.indexWhere((c) => c.isExpand);
+
+      if (expandColIndex != -1 && expandColIndex != columnIndex) {
+        // We are resizing someone else. Expand column should absorb the change.
+        // i.e., shrink by actualDelta.
+        double currentFlexWidth = _manualColumnWidths[expandColIndex];
+        final flexColumn = widget.headerColumns[expandColIndex];
+        double newFlexWidth = currentFlexWidth - actualDelta;
+
+        // Constrain Flex Column
+        if (newFlexWidth < flexColumn.minWidth) {
+          newFlexWidth = flexColumn.minWidth;
+        }
+        if (flexColumn.maxWidth != null &&
+            newFlexWidth > flexColumn.maxWidth!) {
+          newFlexWidth = flexColumn.maxWidth!;
+        }
+
+        _manualColumnWidths[expandColIndex] = newFlexWidth;
       }
+
+      // Finally, redistribute the gap (if any)
+      _redistributeWidth();
     });
   }
 
@@ -603,23 +624,29 @@ class _DtTableState extends State<DtTable> {
 
   @override
   Widget build(BuildContext context) {
-    return Focus(
-      focusNode: _focusNode,
-      autofocus: true,
-      canRequestFocus: true,
-      onKeyEvent: (node, event) => _handleKeyEvent(event),
-      child: TableView.builder(
-        pinnedRowCount: 1, // Header row
-        pinnedColumnCount: widget.frozenColumnsCount,
-        rowCount: widget.source.rowCount + 1, // +1 for header
-        columnCount: widget.headerColumns.length,
-        rowBuilder: _buildRow,
-        columnBuilder: _buildColumn,
-        cellBuilder: _buildCell,
-        verticalDetails: ScrollableDetails.vertical(
-          controller: _verticalController,
-        ),
-      ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        _updateTableWidth(constraints.maxWidth);
+
+        return Focus(
+          focusNode: _focusNode,
+          autofocus: true,
+          canRequestFocus: true,
+          onKeyEvent: (node, event) => _handleKeyEvent(event),
+          child: TableView.builder(
+            pinnedRowCount: 1, // Header row
+            pinnedColumnCount: widget.frozenColumnsCount,
+            rowCount: widget.source.rowCount + 1, // +1 for header
+            columnCount: widget.headerColumns.length,
+            rowBuilder: _buildRow,
+            columnBuilder: _buildColumn,
+            cellBuilder: _buildCell,
+            verticalDetails: ScrollableDetails.vertical(
+              controller: _verticalController,
+            ),
+          ),
+        );
+      },
     );
   }
 
