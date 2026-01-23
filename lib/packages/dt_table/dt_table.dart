@@ -185,7 +185,9 @@ class _DtTableState extends State<DtTable> {
   late DtController _controller;
   double _actualTableWidth = 0;
 
+  late final ScrollController _verticalController = ScrollController();
   late final FocusNode _focusNode = widget.focusNode ?? FocusNode();
+  String? _lastFocusedRowId;
 
   bool _isResizing = false;
   int _resizingColumnIndex = -1;
@@ -195,11 +197,20 @@ class _DtTableState extends State<DtTable> {
   void initState() {
     super.initState();
     _controller = widget.controller ?? DtController();
+    _lastFocusedRowId = _controller.focusedRowId;
     widget.source.addListener(_onDataSourceChanged);
     _controller.addListener(_onControllerChanged);
     _columnWidths = widget.headerColumns.map((c) => c.initialWidth).toList();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _setInitialColumnWidths();
+      if (_controller.focusedRowId != null) {
+        final index = widget.source.effectiveRows.indexWhere(
+          (r) => r.id == _controller.focusedRowId,
+        );
+        if (index != -1) {
+          _scrollToRow(index);
+        }
+      }
     });
   }
 
@@ -242,6 +253,7 @@ class _DtTableState extends State<DtTable> {
     if (widget.focusNode == null) {
       _focusNode.dispose();
     }
+    _verticalController.dispose();
     super.dispose();
   }
 
@@ -303,7 +315,65 @@ class _DtTableState extends State<DtTable> {
   }
 
   void _onControllerChanged() {
+    if (_controller.focusedRowId != _lastFocusedRowId) {
+      _lastFocusedRowId = _controller.focusedRowId;
+      if (_lastFocusedRowId != null) {
+        final index = widget.source.effectiveRows.indexWhere(
+          (r) => r.id == _lastFocusedRowId,
+        );
+        if (index != -1) {
+          _scrollToRow(index);
+        }
+      }
+    }
     setState(() {});
+  }
+
+  void _scrollToRow(int dataRowIndex) {
+    if (!_verticalController.hasClients) return;
+
+    final double headerHeight = widget.headerHeight;
+    final double rowHeight = widget.rowHeight;
+    final double viewportHeight =
+        _verticalController.position.viewportDimension;
+    final double currentOffset = _verticalController.offset;
+
+    // dataRowIndex 0 corresponds to position just after the header.
+    // Absolute top of the item in the scrollable content.
+    // Note: In TableView, index 0 is header, index 1 is first data row.
+    // It seems TableView treats all rows as part of the scrolling extent,
+    // but pinned rows stay fixed.
+    // So absolute position calculation needs to match TableView's layout.
+    // Assuming uniform row height is not guaranteed for header vs rows.
+    // Header height: widget.headerHeight. Row height: widget.rowHeight.
+    // Top of data row 'i' = headerHeight + i * rowHeight.
+
+    final double itemTopAbsolute = headerHeight + (dataRowIndex * rowHeight);
+    final double itemBottomAbsolute = itemTopAbsolute + rowHeight;
+
+    // If itemTop is hidden by the pinned header (which sits at relative 0 to headerHeight)
+    // We need itemTopRelative >= headerHeight.
+    // itemTopRelative = itemTopAbsolute - currentOffset.
+    // So itemTopAbsolute - currentOffset >= headerHeight
+    // currentOffset <= itemTopAbsolute - headerHeight
+    // If currentOffset > itemTopAbsolute - headerHeight, we are scrolled too far down.
+    // Target = itemTopAbsolute - headerHeight = (headerHeight + i*rowHeight) - headerHeight = i*rowHeight.
+
+    final double paddingFromHeader = 0.0; // Optional extra padding
+
+    if (currentOffset > itemTopAbsolute - headerHeight - paddingFromHeader) {
+      _verticalController.jumpTo(
+        max(0.0, itemTopAbsolute - headerHeight - paddingFromHeader),
+      );
+    }
+    // If itemBottom is below viewport bottom.
+    // itemBottomRelative = itemBottomAbsolute - currentOffset.
+    // itemBottomRelative <= viewportHeight.
+    // itemBottomAbsolute - currentOffset <= viewportHeight.
+    // currentOffset >= itemBottomAbsolute - viewportHeight.
+    else if (currentOffset < itemBottomAbsolute - viewportHeight) {
+      _verticalController.jumpTo(itemBottomAbsolute - viewportHeight);
+    }
   }
 
   void _navigateByOneStep({required bool isDown}) {
@@ -546,6 +616,9 @@ class _DtTableState extends State<DtTable> {
         rowBuilder: _buildRow,
         columnBuilder: _buildColumn,
         cellBuilder: _buildCell,
+        verticalDetails: ScrollableDetails.vertical(
+          controller: _verticalController,
+        ),
       ),
     );
   }
