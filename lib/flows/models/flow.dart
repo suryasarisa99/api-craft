@@ -201,6 +201,18 @@ class FlowRequest {
       protocol: protocol ?? this.protocol,
     );
   }
+
+  Map<String, dynamic> toJsMap() {
+    return {
+      'id': id,
+      'url': url,
+      'method': method,
+      'path': path, // Not always present in headers?
+      'headers': Map.fromEntries(headers.map((e) => MapEntry(e.key, e.value))),
+      // Body handling might be complex, simplified for now
+      'body': null, // Async body not tailored for sync JS check yet
+    };
+  }
 }
 
 class FlowResponse {
@@ -276,5 +288,15 @@ class FlowResponse {
       statusMessage: 'Ok',
       tags: [],
     );
+  }
+
+  Map<String, dynamic> toJsMap() {
+    return {
+      'id': id,
+      'statusCode': statusCode,
+      'headers': Map.fromEntries(headers.map((e) => MapEntry(e.key, e.value))),
+      // Body handling
+      'body': body?.toString(), // Potentially unsafe/partial
+    };
   }
 }

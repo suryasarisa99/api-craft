@@ -1,4 +1,5 @@
 import 'package:api_craft/core/widgets/ui/custom_menu.dart';
+import 'package:api_craft/core/widgets/ui/cf_code_editor.dart';
 import 'package:api_craft/flows/filter/widgets/filter_connector.dart';
 import 'package:api_craft/flows/filter/models/m.dart';
 import 'package:api_craft/flows/filter/condition_provider.dart';
@@ -206,128 +207,170 @@ class _FilterConditionWidgetState extends ConsumerState<FilterConditionWidget> {
                       ),
                     ),
 
-                    if (widget.condition.field.type !=
-                        FilterFieldType.bool) ...[
-                      MyCustomMenu.contentColumn(
-                        popupKey: _operatorPickerKey,
-                        useBtn: false,
-                        width: 200,
-                        items: [
-                          Padding(
-                            padding: const .symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            child: Text(
-                              'Operators',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.grey,
-                              ),
-                            ),
-                          ),
-                          ...FilterOperator.values
-                              .where(
-                                (op) => op.supportedTypes.contains(
-                                  widget.condition.field.type,
-                                ),
-                              )
-                              .map(
-                                (op) => CustomMenuIconItem(
-                                  title: Text(
-                                    '${op.symbol}   :  ${op.name}',
-                                    style: TextStyle(fontSize: 13),
-                                  ),
-                                  value: op.name,
-                                  onTap: (_) {
+                    if (widget.condition.field == FilterField.script) ...[
+                      // Script button
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                          child: ElevatedButton.icon(
+                            onPressed: () {
+                              showDialog(
+                                context: context,
+                                builder: (context) => _ScriptEditorDialog(
+                                  initialValue: widget.condition.value,
+                                  onSave: (val) {
                                     setState(() {
-                                      widget.condition.operator = op;
-                                      widget.condition.isNegated = false;
+                                      widget.condition.value = val;
                                     });
-                                    manager.notify(); // Corrected usage
+                                    manager.notify();
                                   },
                                 ),
-                              ),
-                          const Divider(height: 1),
-                          CustomMenuIconItem(
-                            title: Text(
-                              widget.condition.isNegated
-                                  ? '!  Remove Negation'
-                                  : '!  Negate',
-                              style: TextStyle(fontSize: 13),
-                            ),
-                            value: 'negate',
-                            onTap: (_) {
-                              setState(() {
-                                widget.condition.isNegated =
-                                    !widget.condition.isNegated;
-                              });
-                              manager.notify();
-                              // Automatic pop via CustomMenuIconItem
+                              );
                             },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor:
+                                  theme.colorScheme.surfaceContainerHighest,
+                              foregroundColor: theme.colorScheme.onSurface,
+                              elevation: 0,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                              ),
+                              maximumSize: const Size.fromHeight(28),
+                              minimumSize: const Size.fromHeight(28),
+                            ),
+                            icon: const Icon(Icons.code, size: 14),
+                            label: const Text(
+                              'Edit Script',
+                              style: TextStyle(fontSize: 12),
+                            ),
                           ),
-                        ],
-                        child: InkWell(
-                          onTap: () => _operatorPickerKey.currentState?.show(),
-                          child: Container(
-                            width: 50,
-                            padding: const .symmetric(horizontal: 8),
-                            decoration: BoxDecoration(
-                              border: Border(
-                                right: BorderSide(
-                                  color: _kBorderClr.withValues(alpha: 0.3),
-                                  width: 1,
+                        ),
+                      ),
+                    ] else ...[
+                      if (widget.condition.field.type !=
+                          FilterFieldType.bool) ...[
+                        MyCustomMenu.contentColumn(
+                          popupKey: _operatorPickerKey,
+                          useBtn: false,
+                          width: 200,
+                          items: [
+                            Padding(
+                              padding: const .symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              child: Text(
+                                'Operators',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.grey,
                                 ),
                               ),
                             ),
-                            alignment: Alignment.center,
-                            child: Text(
-                              operatorText,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 13,
+                            ...FilterOperator.values
+                                .where(
+                                  (op) => op.supportedTypes.contains(
+                                    widget.condition.field.type,
+                                  ),
+                                )
+                                .map(
+                                  (op) => CustomMenuIconItem(
+                                    title: Text(
+                                      '${op.symbol}   :  ${op.name}',
+                                      style: TextStyle(fontSize: 13),
+                                    ),
+                                    value: op.name,
+                                    onTap: (_) {
+                                      setState(() {
+                                        widget.condition.operator = op;
+                                        widget.condition.isNegated = false;
+                                      });
+                                      manager.notify(); // Corrected usage
+                                    },
+                                  ),
+                                ),
+                            const Divider(height: 1),
+                            CustomMenuIconItem(
+                              title: Text(
+                                widget.condition.isNegated
+                                    ? '!  Remove Negation'
+                                    : '!  Negate',
+                                style: TextStyle(fontSize: 13),
+                              ),
+                              value: 'negate',
+                              onTap: (_) {
+                                setState(() {
+                                  widget.condition.isNegated =
+                                      !widget.condition.isNegated;
+                                });
+                                manager.notify();
+                                // Automatic pop via CustomMenuIconItem
+                              },
+                            ),
+                          ],
+                          child: InkWell(
+                            onTap: () =>
+                                _operatorPickerKey.currentState?.show(),
+                            child: Container(
+                              width: 50,
+                              padding: const .symmetric(horizontal: 8),
+                              decoration: BoxDecoration(
+                                border: Border(
+                                  right: BorderSide(
+                                    color: _kBorderClr.withValues(alpha: 0.3),
+                                    width: 1,
+                                  ),
+                                ),
+                              ),
+                              alignment: Alignment.center,
+                              child: Text(
+                                operatorText,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 13,
+                                ),
                               ),
                             ),
                           ),
                         ),
-                      ),
 
-                      Expanded(
-                        child: TextField(
-                          controller: _valueController,
-                          focusNode: focusNode,
-                          inputFormatters: [
-                            if (widget.condition.field.type ==
-                                FilterFieldType.num) ...[
-                              LengthLimitingTextInputFormatter(3),
-                              FilteringTextInputFormatter.digitsOnly,
+                        Expanded(
+                          child: TextField(
+                            controller: _valueController,
+                            focusNode: focusNode,
+                            inputFormatters: [
+                              if (widget.condition.field.type ==
+                                  FilterFieldType.num) ...[
+                                LengthLimitingTextInputFormatter(3),
+                                FilteringTextInputFormatter.digitsOnly,
+                              ],
                             ],
-                          ],
-                          style: const TextStyle(fontSize: 13),
-                          decoration: InputDecoration(
-                            hintText: 'Enter value...',
-                            hintStyle: TextStyle(
-                              color: Colors.grey.withValues(alpha: 0.5),
-                              fontSize: 13,
+                            style: const TextStyle(fontSize: 13),
+                            decoration: InputDecoration(
+                              hintText: 'Enter value...',
+                              hintStyle: TextStyle(
+                                color: Colors.grey.withValues(alpha: 0.5),
+                                fontSize: 13,
+                              ),
+                              border: InputBorder.none,
+                              focusedBorder: InputBorder.none,
+                              enabledBorder: InputBorder.none,
+                              contentPadding: const .symmetric(
+                                horizontal: 10,
+                                vertical: 8,
+                              ),
                             ),
-                            border: InputBorder.none,
-                            focusedBorder: InputBorder.none,
-                            enabledBorder: InputBorder.none,
-                            contentPadding: const .symmetric(
-                              horizontal: 10,
-                              vertical: 8,
-                            ),
+                            onChanged: (value) {
+                              widget.condition.value = value;
+                              manager.notify();
+                            },
                           ),
-                          onChanged: (value) {
-                            widget.condition.value = value;
-                            manager.notify();
-                          },
                         ),
-                      ),
+                      ],
+                    ], // End if script else
 
-                      _buildMoreMenu(),
-                    ],
+                    _buildMoreMenu(),
                   ],
                 ),
               ),
@@ -478,6 +521,94 @@ class _KeyPickerContentState extends State<_KeyPickerContent> {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ScriptEditorDialog extends StatefulWidget {
+  final String initialValue;
+  final ValueChanged<String> onSave;
+  const _ScriptEditorDialog({required this.initialValue, required this.onSave});
+
+  @override
+  State<_ScriptEditorDialog> createState() => _ScriptEditorDialogState();
+}
+
+class _ScriptEditorDialogState extends State<_ScriptEditorDialog> {
+  late String _value;
+  static const _defaultScript = '''
+function filter(req, res) {
+  return res.statusCode == 200;
+}
+''';
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialValue.trim().isEmpty) {
+      _value = _defaultScript;
+    } else {
+      _value = widget.initialValue;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Container(
+        width: 600,
+        height: 480,
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Edit Script', style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 4),
+            Text(
+              'Define function filter(req, res) { ... } returning boolean.',
+              style: TextStyle(color: Colors.grey, fontSize: 12),
+            ),
+            const SizedBox(height: 12),
+            Expanded(
+              child: Container(
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey.withValues(alpha: 0.3)),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: CFCodeEditor(
+                    text: _value,
+                    language: 'javascript',
+                    onChanged: (v) => _value = v,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Cancel'),
+                ),
+                const SizedBox(width: 8),
+                FilledButton(
+                  onPressed: () {
+                    widget.onSave(_value);
+                    Navigator.of(context).pop();
+                  },
+                  child: const Text('Save'),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );

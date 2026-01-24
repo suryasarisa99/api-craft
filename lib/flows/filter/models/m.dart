@@ -57,7 +57,10 @@ enum FilterField {
   path('path'),
   query('query'),
   queryKey('qk'),
-  queryValue('qv');
+  queryValue('qv'),
+
+  // --- Script ---
+  script('script', type: .str);
 
   const FilterField(this.prettyName, {this.type = .str});
   final String prettyName;
@@ -89,7 +92,7 @@ abstract class FilterNode {
   // A unique object for making sure widgets have stable keys during rebuilds.
   final Object key = Object();
 
-  bool matches(HttpFlow flow);
+  Future<bool> matches(HttpFlow flow, {dynamic jsSession});
 }
 
 /// A leaf node representing a single filter condition (e.g., "~u example.com").
@@ -126,7 +129,21 @@ class FilterCondition extends FilterNode {
   }
 
   @override
-  bool matches(HttpFlow flow) {
+  Future<bool> matches(HttpFlow flow, {dynamic jsSession}) async {
+    // If it's a script field, we need a session
+    if (field == FilterField.script && jsSession != null) {
+      if (value.trim().isEmpty) return true;
+      // We assume jsSession is JsFilterSession (dynamic to avoid circ dep if needed, but imported models usually safe)
+      // Actually JsEngine imports m.dart? No. models imports engine? No.
+      // We can pass it as dynamic or abstract interface if we want clean arch,
+      // but for now dynamic with runtime check is practical.
+      try {
+        return await (jsSession as dynamic).evaluate(value, flow);
+      } catch (e) {
+        return false;
+      }
+    }
+
     bool result = FilterEvaluator.evaluate(this, flow);
     return isNegated ? !result : result;
   }
@@ -205,17 +222,20 @@ class FilterGroup extends FilterNode {
   }
 
   @override
-  bool matches(HttpFlow flow) {
+  Future<bool> matches(HttpFlow flow, {dynamic jsSession}) async {
     if (children.isEmpty) return true;
 
     // Evaluate first child
-    bool result = children[0].matches(flow);
+    bool result = await children[0].matches(flow, jsSession: jsSession);
 
     for (int i = 0; i < operators.length; i++) {
       final op = operators[i];
-      final nextResult = children[i + 1].matches(flow);
+      final nextResult = await children[i + 1].matches(
+        flow,
+        jsSession: jsSession,
+      );
 
-      if (op == .and) {
+      if (op == LogicalOperator.and) {
         result = result && nextResult;
       } else {
         result = result || nextResult;

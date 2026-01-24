@@ -1,5 +1,6 @@
 import 'package:api_craft/features/themes/models/theme_model.dart';
 import 'package:api_craft/flows/filter/condition_provider.dart';
+import 'package:api_craft/flows/filter/logic/filter_js_service.dart';
 import 'package:api_craft/flows/models/flow.dart';
 import 'package:api_craft/flows/providers/flows_provider.dart';
 import 'package:api_craft/flows/flow_data_source.dart';
@@ -21,26 +22,22 @@ class FlowList extends ConsumerStatefulWidget {
 class _FlowList extends ConsumerState<FlowList> {
   final tableFocusNode = FocusNode();
 
+  // We need to keep track of the filtered flows asynchronously
+  List<HttpFlow> _currentFilteredFlows = [];
+  bool _isFiltering = false;
+
   late final FlowDataSource _flowDataSource = FlowDataSource(
-    initialFlows: _getFilteredFlows(),
+    initialFlows: _currentFilteredFlows,
     dtController: widget.controller,
     ref: ref,
   );
 
-  List<HttpFlow> _getFilteredFlows() {
-    final allFlows = ref.read(flowsProvider).values.toList();
-    final filter = ref.read(filterManagerProvider).rootFilter;
-    return allFlows.where((f) => filter.matches(f)).toList();
-  }
-
-  void _updateFlows() {
-    final filtered = _getFilteredFlows();
-    _flowDataSource.handleFlows(filtered);
-  }
-
   @override
   void initState() {
     super.initState();
+    // Initial load
+    _updateFlows();
+
     ref.listenManual(flowsProvider, (oldFlows, newFlows) {
       _updateFlows();
     });
@@ -51,9 +48,30 @@ class _FlowList extends ConsumerState<FlowList> {
     });
 
     ref.listenManual(pausedFlowsProvider, (_, paused) {
-      // Re-apply filters even when paused state changes (if relevant, implies data source might need refresh)
       _updateFlows();
     });
+  }
+
+  Future<void> _updateFlows() async {
+    if (!mounted) return;
+
+    final allFlows = ref.read(flowsProvider).values.toList();
+    final filter = ref.read(filterManagerProvider).rootFilter;
+    final jsService = ref.read(filterJsServiceProvider);
+
+    final List<HttpFlow> filtered = [];
+
+    for (final flow in allFlows) {
+      // matches is async now
+      if (await filter.matches(flow, jsSession: jsService)) {
+        filtered.add(flow);
+      }
+    }
+
+    if (mounted) {
+      _currentFilteredFlows = filtered;
+      _flowDataSource.handleFlows(filtered);
+    }
   }
 
   @override
