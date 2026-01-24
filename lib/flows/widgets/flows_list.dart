@@ -1,4 +1,6 @@
 import 'package:api_craft/features/themes/models/theme_model.dart';
+import 'package:api_craft/flows/filter/condition_provider.dart';
+import 'package:api_craft/flows/models/flow.dart';
 import 'package:api_craft/flows/providers/flows_provider.dart';
 import 'package:api_craft/flows/flow_data_source.dart';
 import 'package:api_craft/flows/providers/paused_providers.dart';
@@ -20,22 +22,37 @@ class _FlowList extends ConsumerState<FlowList> {
   final tableFocusNode = FocusNode();
 
   late final FlowDataSource _flowDataSource = FlowDataSource(
-    initialFlows: ref.read(flowsProvider).values.toList(),
+    initialFlows: _getFilteredFlows(),
     dtController: widget.controller,
     ref: ref,
   );
+
+  List<HttpFlow> _getFilteredFlows() {
+    final allFlows = ref.read(flowsProvider).values.toList();
+    final filter = ref.read(filterManagerProvider).rootFilter;
+    return allFlows.where((f) => filter.matches(f)).toList();
+  }
+
+  void _updateFlows() {
+    final filtered = _getFilteredFlows();
+    _flowDataSource.handleFlows(filtered);
+  }
 
   @override
   void initState() {
     super.initState();
     ref.listenManual(flowsProvider, (oldFlows, newFlows) {
-      final flows = newFlows.values.toList();
-      debugPrint("@flowsProvider: ${flows.length}");
-      _flowDataSource.handleFlows(flows);
+      _updateFlows();
     });
+
+    // Listen for filter changes
+    ref.listenManual(filterManagerProvider, (previous, next) {
+      _updateFlows();
+    });
+
     ref.listenManual(pausedFlowsProvider, (_, paused) {
-      debugPrint("@pausedFlowsProvider: ${paused.length}");
-      _flowDataSource.handleFlows(ref.read(flowsProvider).values.toList());
+      // Re-apply filters even when paused state changes (if relevant, implies data source might need refresh)
+      _updateFlows();
     });
   }
 
@@ -58,7 +75,6 @@ class _FlowList extends ConsumerState<FlowList> {
       focusNode: tableFocusNode,
       source: _flowDataSource,
       controller: widget.controller,
-      // tableWidth: MediaQuery.sizeOf(context).width,
       tableWidth: double.infinity,
       headerHeight: 24,
       headerClr: flowTableTheme.header,
@@ -66,7 +82,6 @@ class _FlowList extends ConsumerState<FlowList> {
       rowHeight: 32,
       frozenColumnsCount: 1,
       menuProvider: buildContextMenu,
-      // onKeyEvent: handleKeyEvent,
       headerColumns: [
         for (final header in headerCells)
           DtColumn(

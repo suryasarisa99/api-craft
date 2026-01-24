@@ -49,6 +49,7 @@ class MainApp extends ConsumerWidget {
 
     return MaterialApp(
       builder: (context, child) => Stack(
+        fit: StackFit.expand,
         children: [
           child!,
           SonnerOverlay(

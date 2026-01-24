@@ -2,6 +2,8 @@ import 'package:api_craft/core/widgets/ui/top_bar.dart';
 import 'package:api_craft/features/panel/bottom_panel.dart';
 import 'package:api_craft/features/panel/status_bar.dart';
 import 'package:api_craft/features/themes/models/theme_model.dart';
+import 'package:api_craft/flows/filter/condition_provider.dart';
+import 'package:api_craft/flows/filter/filter_popup.dart';
 import 'package:api_craft/flows/flow_panel/flow_panel.dart';
 import 'package:api_craft/flows/flow_panel/selected_flow_provider.dart';
 import 'package:api_craft/flows/widgets/flows_list.dart';
@@ -81,7 +83,25 @@ class _FlowScreenState extends ConsumerState<FlowsScreen> {
     return Column(
       crossAxisAlignment: .start,
       children: [
-        TopBar(left: [], right: []),
+        TopBar(
+          left: [],
+          right: [
+            TextButton(
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (ctx) {
+                    return FilterPopup(
+                      filterManager: filterManagerProvider,
+                      title: "Filter",
+                    );
+                  },
+                );
+              },
+              child: Text("filter"),
+            ),
+          ],
+        ),
         Expanded(
           child: ResizableContainer(
             controller: resizeController,
