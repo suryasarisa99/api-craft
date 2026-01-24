@@ -16,8 +16,6 @@ class FilterPopup extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
-    final screenHeight = MediaQuery.sizeOf(context).height;
     final manager = ref.watch(filterManager);
 
     final filterWidget = FilterGroupWidget(

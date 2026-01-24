@@ -2,7 +2,7 @@ import 'package:api_craft/flows/filter/models/m.dart';
 import 'package:flutter/material.dart';
 
 class ConditionConnector extends StatelessWidget {
-  static const double x = 8;
+  static const double x = 6;
   static const gap = 4.0;
   static const borderClr = Color.fromARGB(255, 138, 138, 138);
   static const lineWidth = 1.2;

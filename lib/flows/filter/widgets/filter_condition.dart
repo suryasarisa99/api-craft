@@ -12,6 +12,7 @@ const _kBorderClr = Color.fromARGB(255, 138, 138, 138);
 class FilterConditionWidget extends ConsumerStatefulWidget {
   const FilterConditionWidget({
     super.key,
+    required this.index,
     required this.condition,
     required this.manager,
     required this.onRemove,
@@ -20,7 +21,11 @@ class FilterConditionWidget extends ConsumerStatefulWidget {
     required this.onOperatorToggle,
     this.showConnector = false,
     this.connectorOperator,
-    required this.index,
+    // Drag params
+    this.dragData,
+    this.dragFeedback,
+    this.onDragStarted,
+    this.onDragEnd,
   });
 
   final bool hasNextChild;
@@ -32,6 +37,12 @@ class FilterConditionWidget extends ConsumerStatefulWidget {
   final VoidCallback? onOperatorToggle;
   final bool showConnector;
   final LogicalOperator? connectorOperator;
+
+  // Drag
+  final Object? dragData;
+  final Widget? dragFeedback;
+  final VoidCallback? onDragStarted;
+  final VoidCallback? onDragEnd;
 
   @override
   ConsumerState<FilterConditionWidget> createState() =>
@@ -115,11 +126,31 @@ class _FilterConditionWidgetState extends ConsumerState<FilterConditionWidget> {
                   children: [
                     SizedBox(
                       width: 32,
-                      child: Icon(
-                        Icons.drag_indicator,
-                        size: 16,
-                        color: Colors.grey.withValues(alpha: 0.4),
-                      ),
+                      child: widget.dragData != null
+                          ? Draggable(
+                              data: widget.dragData,
+                              feedback: widget.dragFeedback ?? SizedBox(),
+                              childWhenDragging: Opacity(
+                                opacity: 0.0,
+                                child: Icon(
+                                  Icons.drag_indicator,
+                                  size: 16,
+                                  color: Colors.grey.withValues(alpha: 0.4),
+                                ),
+                              ),
+                              onDragStarted: widget.onDragStarted,
+                              onDragEnd: (_) => widget.onDragEnd?.call(),
+                              child: Icon(
+                                Icons.drag_indicator,
+                                size: 16,
+                                color: Colors.grey.withValues(alpha: 0.4),
+                              ),
+                            )
+                          : Icon(
+                              Icons.drag_indicator,
+                              size: 16,
+                              color: Colors.grey.withValues(alpha: 0.4),
+                            ),
                     ),
 
                     MyCustomMenu(
@@ -282,6 +313,7 @@ class _FilterConditionWidgetState extends ConsumerState<FilterConditionWidget> {
                             ),
                             border: InputBorder.none,
                             focusedBorder: InputBorder.none,
+                            enabledBorder: InputBorder.none,
                             contentPadding: const .symmetric(
                               horizontal: 10,
                               vertical: 8,

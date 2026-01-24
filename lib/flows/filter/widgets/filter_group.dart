@@ -22,6 +22,11 @@ class FilterGroupWidget extends ConsumerStatefulWidget {
     this.showConnector = false,
     this.connectorOperator,
     this.onOperatorToggle,
+    // Drag params
+    this.dragData,
+    this.dragFeedback,
+    this.onDragStarted,
+    this.onDragEnd,
   });
   final int index;
   final FilterGroup group;
@@ -33,12 +38,19 @@ class FilterGroupWidget extends ConsumerStatefulWidget {
   final bool showConnector;
   final LogicalOperator? connectorOperator;
 
+  // Drag
+  final Object? dragData;
+  final Widget? dragFeedback;
+  final VoidCallback? onDragStarted;
+  final VoidCallback? onDragEnd;
+
   @override
   ConsumerState<FilterGroupWidget> createState() => _FilterGroupWidgetState();
 }
 
 class _FilterGroupWidgetState extends ConsumerState<FilterGroupWidget> {
   bool _isHidden = false;
+  int? _draggingIndex;
   final _groupActionsPickerKey = GlobalKey<CustomPopupState>();
 
   ConditionManagerNotifier get manager =>
@@ -73,6 +85,23 @@ class _FilterGroupWidgetState extends ConsumerState<FilterGroupWidget> {
     // This moves all children to parent and removes this group
   }
 
+  void _onReorder(int oldIndex, int newIndex) {
+    if (oldIndex == newIndex) return;
+    setState(() {
+      manager.moveNode(widget.group, oldIndex, newIndex);
+    });
+  }
+
+  bool _isDescendant(FilterNode target, FilterNode ancestor) {
+    if (ancestor == target) return true;
+    if (ancestor is FilterGroup) {
+      for (final child in ancestor.children) {
+        if (_isDescendant(target, child)) return true;
+      }
+    }
+    return false;
+  }
+
   Widget? _buildConnector() {
     if (widget.showConnector) {
       return ConditionConnector(
@@ -87,6 +116,9 @@ class _FilterGroupWidgetState extends ConsumerState<FilterGroupWidget> {
 
   @override
   Widget build(BuildContext context) {
+    // Watch for changes to trigger rebuilds
+    ref.watch(widget.managerProvider);
+
     // is Hidden
     if (_isHidden && !widget.isRoot) {
       return Row(
@@ -166,8 +198,11 @@ class _FilterGroupWidgetState extends ConsumerState<FilterGroupWidget> {
         // Group Header
         if (!widget.isRoot) _buildGroupHeader(),
 
-        // Children with connectors
-        for (int i = 0; i < widget.group.children.length; i++) _buildChild(i),
+        // Children with connectors and DragTarget
+        for (int i = 0; i < widget.group.children.length; i++)
+          _buildDraggableChild(i),
+
+        _buildFinalDropZone(),
 
         SizedBox(height: 8),
         if (widget.isRoot) SizedBox(height: 6),
@@ -175,6 +210,152 @@ class _FilterGroupWidgetState extends ConsumerState<FilterGroupWidget> {
         // Action Buttons Row
         if (!widget.isRoot) buildActions(),
       ],
+    );
+  }
+
+  Widget _buildDraggableChild(int index) {
+    // Data is a record: (Parent Group, Index)
+    return DragTarget<(FilterGroup, int)>(
+      onWillAcceptWithDetails: (details) {
+        // Allow drag from different groups
+        // Prevent dropping onto itself (index match)
+        if (details.data.$1 == widget.group && details.data.$2 == index) {
+          return false;
+        }
+
+        // Prevent dropping a group into its own descendant
+        final draggedNode = details.data.$1.children[details.data.$2];
+        // Target is 'widget.group'. If 'widget.group' is a descendant of 'draggedNode', return false.
+        if (_isDescendant(widget.group, draggedNode)) {
+          return false;
+        }
+
+        return true;
+      },
+      onAcceptWithDetails: (details) {
+        if (details.data.$1 == widget.group) {
+          _onReorder(details.data.$2, index);
+        } else {
+          // Cross-group move
+          setState(() {
+            manager.moveNodeBetweenGroups(
+              details.data.$1, // source group
+              details.data.$2, // source index
+              widget.group, // target group
+              index, // target index
+            );
+          });
+        }
+      },
+      builder: (context, candidateData, rejectedData) {
+        final isHovered = candidateData.isNotEmpty;
+        final isBeingDragged = _draggingIndex == index;
+
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (isHovered)
+              Container(
+                height: 2,
+                color: Theme.of(context).colorScheme.primary,
+                margin: const EdgeInsets.symmetric(vertical: 2),
+              ),
+            Opacity(
+              opacity: isBeingDragged ? 0.3 : 1.0,
+              child: _buildChild(
+                index,
+                // Pass drag params down
+                dragData: (widget.group, index),
+                dragFeedback: SizedBox(
+                  width: 300,
+                  child: Material(
+                    color: Colors.transparent,
+                    child: Opacity(
+                      opacity: 0.7,
+                      child: _buildChild(
+                        index,
+                        forceNoConnector: true,
+                        isFeedback: true,
+                      ),
+                    ),
+                  ),
+                ),
+                onDragStarted: () {
+                  setState(() {
+                    _draggingIndex = index;
+                  });
+                },
+                onDragEnd: () {
+                  setState(() {
+                    _draggingIndex = null;
+                  });
+                },
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildFinalDropZone() {
+    final len = widget.group.children.length;
+    final isEmpty = len == 0;
+
+    return DragTarget<(FilterGroup, int)>(
+      onWillAcceptWithDetails: (details) {
+        // Prevent dropping a group into its own descendant (even at end)
+        final draggedNode = details.data.$1.children[details.data.$2];
+        if (_isDescendant(widget.group, draggedNode)) {
+          return false;
+        }
+
+        if (details.data.$1 == widget.group) {
+          // Don't drag if already at end
+          return details.data.$2 != len && details.data.$2 != len - 1;
+        }
+        return true;
+      },
+      onAcceptWithDetails: (details) {
+        if (details.data.$1 == widget.group) {
+          _onReorder(details.data.$2, len);
+        } else {
+          setState(() {
+            manager.moveNodeBetweenGroups(
+              details.data.$1,
+              details.data.$2,
+              widget.group,
+              len,
+            );
+          });
+        }
+      },
+      builder: (context, candidateData, rejectedData) {
+        final isHovered = candidateData.isNotEmpty;
+        return Container(
+          height: (isHovered || isEmpty) ? 20 : 10,
+          width: double.infinity,
+          color: Colors.transparent,
+          alignment: Alignment.center,
+          child: isHovered
+              ? Container(
+                  height: 2, // Standard drop line
+                  color: Theme.of(context).colorScheme.primary,
+                )
+              : (isEmpty
+                    ? Container(
+                        height: 1.5,
+                        width: 50,
+                        decoration: BoxDecoration(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(1),
+                        ),
+                      )
+                    : null),
+        );
+      },
     );
   }
 
@@ -260,9 +441,6 @@ class _FilterGroupWidgetState extends ConsumerState<FilterGroupWidget> {
             height: 26,
             child: FilledButton.icon(
               onPressed: () {
-                // manager.apply(); // Removed apply method from manager
-                // Now manager updates state directly.
-                // If user wants to "Apply", maybe we just pop? Or do nothing if it's already live.
                 Navigator.of(context).pop();
               },
               style: OutlinedButton.styleFrom(
@@ -290,11 +468,32 @@ class _FilterGroupWidgetState extends ConsumerState<FilterGroupWidget> {
       ),
       child: Row(
         children: [
-          Icon(
-            Icons.drag_indicator,
-            size: 14,
-            color: Colors.grey.withValues(alpha: 0.4),
-          ),
+          if (widget.dragData != null)
+            Draggable(
+              data: widget.dragData,
+              feedback: widget.dragFeedback ?? SizedBox(),
+              childWhenDragging: Opacity(
+                opacity: 0.0,
+                child: Icon(
+                  Icons.drag_indicator,
+                  size: 14,
+                  color: Colors.grey.withValues(alpha: 0.4),
+                ),
+              ),
+              onDragStarted: widget.onDragStarted,
+              onDragEnd: (_) => widget.onDragEnd?.call(),
+              child: Icon(
+                Icons.drag_indicator,
+                size: 14,
+                color: Colors.grey.withValues(alpha: 0.4),
+              ),
+            )
+          else
+            Icon(
+              Icons.drag_indicator,
+              size: 14,
+              color: Colors.grey.withValues(alpha: 0.4),
+            ),
           const SizedBox(width: 6),
 
           Text(
@@ -386,9 +585,18 @@ class _FilterGroupWidgetState extends ConsumerState<FilterGroupWidget> {
     );
   }
 
-  Widget _buildChild(int index) {
+  Widget _buildChild(
+    int index, {
+    bool forceNoConnector = false,
+    bool isFeedback = false,
+    // Drag params to pass down
+    Object? dragData,
+    Widget? dragFeedback,
+    VoidCallback? onDragStarted,
+    VoidCallback? onDragEnd,
+  }) {
     final node = widget.group.children[index];
-    final showConnector = index > 0;
+    final showConnector = !forceNoConnector && index > 0;
     final hasNextChild = index < widget.group.children.length - 1;
     final connectorOp = showConnector
         ? widget.group.operators[index - 1]
@@ -427,6 +635,9 @@ class _FilterGroupWidgetState extends ConsumerState<FilterGroupWidget> {
     }
 
     if (node is FilterGroup) {
+      if (isFeedback) {
+        // Avoid recursion in feedback if needed, but for visual it's okay unless deep.
+      }
       return FilterGroupWidget(
         index: index,
         group: node,
@@ -436,6 +647,11 @@ class _FilterGroupWidgetState extends ConsumerState<FilterGroupWidget> {
         showConnector: showConnector,
         connectorOperator: connectorOp,
         onOperatorToggle: handleOperatorToggle,
+        // Pass drag params
+        dragData: dragData,
+        dragFeedback: dragFeedback,
+        onDragStarted: onDragStarted,
+        onDragEnd: onDragEnd,
       );
     }
 
@@ -450,6 +666,11 @@ class _FilterGroupWidgetState extends ConsumerState<FilterGroupWidget> {
         showConnector: showConnector,
         connectorOperator: connectorOp,
         onOperatorToggle: handleOperatorToggle,
+        // Pass drag params
+        dragData: dragData,
+        dragFeedback: dragFeedback,
+        onDragStarted: onDragStarted,
+        onDragEnd: onDragEnd,
       );
     }
 
