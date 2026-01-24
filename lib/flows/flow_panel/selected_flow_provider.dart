@@ -1,3 +1,4 @@
+import 'package:api_craft/core/utils/parsers.dart';
 import 'package:api_craft/flows/models/flow.dart';
 import 'package:api_craft/flows/providers/flows_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -32,13 +33,9 @@ final flowProvider = Provider((ref) {
   }
   return ref.watch((flowsProvider).select((flows) => flows[flowId]));
 });
-// class FlowNotifier extends Notifier<HttpFlow?> {
-//   @override
-//   HttpFlow? build() {
-//     final flowId = ref.watch(selectedFlowIdProvider);
-//     if (flowId == null) {
-//       return null;
-//     }
-//     return ref.watch((flowsProvider).select((flows) => flows[flowId]));
-//   }
-// }
+
+// provider for parser query params
+final queryParamsProvider = Provider((ref) {
+  final url = ref.watch(flowProvider.select((flow) => flow?.request?.url));
+  return ParserUtils.parseQuery(url);
+});

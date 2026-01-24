@@ -3,11 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mockhttp/types.dart';
 import 'package:mockhttp/types/ongoing.dart';
 
-final flowsProvider = NotifierProvider<FlowNotifier, Map<String, HttpFlow>>(
-  FlowNotifier.new,
+final flowsProvider = NotifierProvider<FlowsNotifier, Map<String, HttpFlow>>(
+  FlowsNotifier.new,
 );
 
-class FlowNotifier extends Notifier<Map<String, HttpFlow>> {
+class FlowsNotifier extends Notifier<Map<String, HttpFlow>> {
   @override
   build() {
     return {};
@@ -36,6 +36,16 @@ class FlowNotifier extends Notifier<Map<String, HttpFlow>> {
     } else {
       state = {...state, id: prv.updateRes(res)};
     }
+  }
+
+  void editReq(FlowRequest req) {
+    final id = req.id;
+    state = {...state, id: state[id]!.editReq(req)};
+  }
+
+  void editRes(FlowResponse res) {
+    final id = res.id;
+    state = {...state, id: state[id]!.editRes(res)};
   }
 }
 

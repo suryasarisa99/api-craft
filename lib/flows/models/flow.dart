@@ -1,3 +1,5 @@
+import 'package:api_craft/core/models/models.dart';
+import 'package:collection/collection.dart';
 import 'package:mockhttp/types.dart';
 import 'package:mockhttp/types/ongoing.dart';
 
@@ -7,7 +9,9 @@ class HttpFlow {
   final bool reqEdited;
   final bool resEdited;
   final FlowRequest? request;
+  final FlowRequest? requestBackup;
   final FlowResponse? response;
+  final FlowResponse? responseBackup;
 
   HttpFlow({
     required this.id,
@@ -16,6 +20,8 @@ class HttpFlow {
     this.resEdited = false,
     this.request,
     this.response,
+    this.requestBackup,
+    this.responseBackup,
   });
 
   // copy with
@@ -26,6 +32,8 @@ class HttpFlow {
     bool? reqEdited,
     bool? resEdited,
     FlowResponse? response,
+    FlowRequest? requestBackup,
+    FlowResponse? responseBackup,
   }) {
     return HttpFlow(
       id: id ?? this.id,
@@ -34,6 +42,8 @@ class HttpFlow {
       state: state ?? this.state,
       request: request ?? this.request,
       response: response ?? this.response,
+      requestBackup: requestBackup ?? this.requestBackup,
+      responseBackup: responseBackup ?? this.responseBackup,
     );
   }
 
@@ -45,10 +55,50 @@ class HttpFlow {
     return copyWith(response: res);
   }
 
+  HttpFlow editReq(FlowRequest req) {
+    if (!reqEdited) {
+      return copyWith(reqEdited: true, requestBackup: request, request: req);
+    }
+    return copyWith(request: req);
+  }
+
+  HttpFlow editRes(FlowResponse res) {
+    if (!resEdited) {
+      return copyWith(resEdited: true, responseBackup: response, response: res);
+    }
+    return copyWith(response: res);
+  }
+
+  HttpFlow reset() {
+    return copyWith(
+      reqEdited: false,
+      resEdited: false,
+      request: requestBackup,
+      response: responseBackup,
+      requestBackup: null,
+      responseBackup: null,
+    );
+  }
+
   static String? getHeader(List<List<String>> headers, String headerName) {
     final key = headerName.toLowerCase();
     return headers.firstWhere((h) => h.first.toLowerCase() == key).last;
   }
+}
+
+List<KeyValueItem> _fromList(List<List<String>> headers) {
+  return headers
+      .mapIndexed(
+        (i, e) => KeyValueItem(id: i.toString(), key: e.first, value: e.last),
+      )
+      .toList();
+}
+
+List<List<String>> _toList(List<KeyValueItem> headers) {
+  return headers
+      .where((e) => e.isEnabled)
+      .map((e) => [e.key, e.value])
+      .toList();
 }
 
 class FlowRequest {
@@ -57,8 +107,9 @@ class FlowRequest {
   final String path;
   final String httpVersion;
   final String method;
-  final List<List<String>> headers;
-  final OngoingBody? body;
+  final Destination destination;
+  final List<KeyValueItem> headers;
+  final OngoingBody body;
   final TimingEvents timingEvents;
   final String? ipAddress;
   final int? contentLen;
@@ -74,8 +125,9 @@ class FlowRequest {
     required this.headers,
     required this.protocol,
     required this.timingEvents,
+    required this.destination,
     this.contentLen,
-    this.body,
+    required this.body,
     this.ipAddress,
     this.port,
   });
@@ -90,18 +142,71 @@ class FlowRequest {
       ipAddress: r.remoteIpAddress,
       port: r.remotePort,
       httpVersion: r.httpVersion,
-      headers: r.headers,
+      destination: r.destination,
+      headers: _fromList(r.headers),
       body: r.body,
       protocol: r.protocol,
       timingEvents: r.timingEvents,
+    );
+  }
+
+  Future<MutableRequest> toMutableReq() async {
+    return MutableRequest(
+      id: id,
+      url: url,
+      method: method,
+      path: path,
+      remoteIpAddress: ipAddress,
+      remotePort: port,
+      httpVersion: httpVersion,
+      destination: destination,
+      headers: _toList(headers),
+      tags: [],
+      //body: Uint8List
+      body: await body.asBuffer(),
+      protocol: protocol,
+      timingEvents: timingEvents,
+    );
+  }
+
+  //copy with
+  FlowRequest copyWith({
+    String? id,
+    String? url,
+    String? path,
+    String? httpVersion,
+    String? method,
+    List<KeyValueItem>? headers,
+    OngoingBody? body,
+    TimingEvents? timingEvents,
+    String? ipAddress,
+    int? contentLen,
+    int? port,
+    String? protocol,
+    Destination? destination,
+  }) {
+    return FlowRequest(
+      id: id ?? this.id,
+      url: url ?? this.url,
+      path: path ?? this.path,
+      httpVersion: httpVersion ?? this.httpVersion,
+      method: method ?? this.method,
+      headers: headers ?? this.headers,
+      destination: destination ?? this.destination,
+      body: body ?? this.body,
+      timingEvents: timingEvents ?? this.timingEvents,
+      ipAddress: ipAddress ?? this.ipAddress,
+      contentLen: contentLen ?? this.contentLen,
+      port: port ?? this.port,
+      protocol: protocol ?? this.protocol,
     );
   }
 }
 
 class FlowResponse {
   final String id;
-  final List<List<String>> headers;
-  final OngoingBody? body;
+  final List<KeyValueItem> headers;
+  final CompletedBody? body;
   final int statusCode;
   final TimingEvents timingEvents;
   final String? contentType;
@@ -121,8 +226,8 @@ class FlowResponse {
     return FlowResponse(
       id: r.id,
       contentLen: null,
-      headers: r.getHeaders(),
-      body: r.body,
+      headers: _fromList(r.getHeaders()),
+      // body: r.body,
       statusCode: r.statusCode,
       contentType: HttpFlow.getHeader(r.getHeaders(), 'content-type'),
       timingEvents: r.timingEvents,
@@ -132,10 +237,44 @@ class FlowResponse {
     return FlowResponse(
       id: r.id,
       contentLen: r.contentLength,
-      headers: r.headers,
+      body: r.body,
+      headers: _fromList(r.headers),
       statusCode: r.statusCode,
       contentType: HttpFlow.getHeader(r.headers, 'content-type'),
       timingEvents: r.timingEvents,
+    );
+  }
+
+  //copy with
+  FlowResponse copyWith({
+    String? id,
+    List<KeyValueItem>? headers,
+    CompletedBody? body,
+    int? contentLen,
+    int? statusCode,
+    String? contentType,
+    TimingEvents? timingEvents,
+  }) {
+    return FlowResponse(
+      id: id ?? this.id,
+      headers: headers ?? this.headers,
+      body: body ?? this.body,
+      contentLen: contentLen ?? this.contentLen,
+      statusCode: statusCode ?? this.statusCode,
+      contentType: contentType ?? this.contentType,
+      timingEvents: timingEvents ?? this.timingEvents,
+    );
+  }
+
+  Future<MutableResponse> toMutableRes() async {
+    return MutableResponse(
+      id: id,
+      headers: _toList(headers),
+      body: body?.buffer,
+      statusCode: statusCode,
+      timingEvents: timingEvents,
+      statusMessage: 'Ok',
+      tags: [],
     );
   }
 }

@@ -25,6 +25,7 @@ class _FlowPanelState extends ConsumerState<FlowPanel> {
   Widget build(BuildContext context) {
     final flowId = ref.watch(selectedFlowIdProvider);
     return Container(
+      key: ValueKey(flowId),
       child: Column(
         children: [
           FlowDetailURL(),

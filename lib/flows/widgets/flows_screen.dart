@@ -36,6 +36,7 @@ class _FlowScreenState extends ConsumerState<FlowsScreen> {
   void initState() {
     super.initState();
     ref.read(serverProvider);
+    resizeController.hideSecondChild();
     _dtController.addSpecificListener(_flowIdListener);
   }
 

@@ -59,7 +59,6 @@ abstract class PanelAbstractState extends State<PanelAbstract>
           tabController: tabController,
           tabIndex: tabIndex,
           title: title,
-          // panelTabsBuilder: (id, t) => panelTitles,
           panelTabs: panelTitles,
         ),
         Expanded(

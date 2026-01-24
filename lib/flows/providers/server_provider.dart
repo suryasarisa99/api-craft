@@ -15,7 +15,7 @@ final serverProvider = NotifierProvider<ServerNotifier, RawMockttpServer>(
 class ServerNotifier extends Notifier<RawMockttpServer> {
   final String caCertPath = '${Directory.current.path}/mockttp-ca-cert.pem';
   final String caKeyPath = '${Directory.current.path}/mockttp-ca-key.pem';
-  late final FlowNotifier flowNotifier;
+  late final FlowsNotifier flowNotifier;
   @override
   RawMockttpServer build() {
     flowNotifier = ref.read(flowsProvider.notifier);
@@ -49,6 +49,10 @@ class ServerNotifier extends Notifier<RawMockttpServer> {
         //   return req;
         // });
         state.matching(.domain('example.com')).thenPauseReqRes();
+        state.matching(.port(3000)).thenEditRes((res) {
+          res.statusCode = 111;
+          return res;
+        });
         state.forAnyRequest().thenPassThrough();
 
         // listeners:
@@ -74,13 +78,16 @@ class ServerNotifier extends Notifier<RawMockttpServer> {
     );
   }
 
-  void resume(String id, String type) {
+  void resume(String id, String type) async {
     final pausedFlow = ref.read(pausedFlowsProvider.notifier);
+    final flow = ref.read(flowsProvider)[id]!;
     pausedFlow.remove(id);
     if (type == "req") {
-      state.resumePausedRequest(id);
+      final mutableReq = await flow.request!.toMutableReq();
+      state.resumePausedRequest(id, editedRequest: mutableReq);
     } else {
-      state.resumePausedResponse(id);
+      final mutableRes = await flow.response?.toMutableRes();
+      state.resumePausedResponse(id, editedResponse: mutableRes);
     }
   }
 }

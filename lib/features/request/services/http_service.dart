@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 import 'dart:convert';
+import 'package:api_craft/core/utils/parsers.dart';
 import 'package:nanoid/nanoid.dart';
 
 import 'package:api_craft/core/network/raw/raw_http_req.dart';
@@ -80,33 +81,10 @@ class HttpService {
       // Scripts might want to access cookies.
       final cookieJarId = ref.read(environmentProvider).selectedCookieJarId;
       if (cookieJarId != null) {
-        final newCookies = <CookieDef>[];
-        for (final h in response.headers) {
-          if (h[0].toLowerCase() == 'set-cookie') {
-            try {
-              final c = Cookie.fromSetCookieValue(h[1]);
-
-              final isHostOnly = c.domain == null;
-              final domain = (c.domain ?? req.uri.host).toLowerCase();
-              final path = c.path ?? _defaultPath(req.uri.path);
-
-              newCookies.add(
-                CookieDef(
-                  key: c.name,
-                  value: c.value,
-                  domain: domain,
-                  path: path,
-                  expires: c.expires,
-                  isSecure: c.secure,
-                  isHttpOnly: c.httpOnly,
-                  isHostOnly: isHostOnly,
-                ),
-              );
-            } catch (e) {
-              debugPrint("Failed to parse cookie: ${h[1]}");
-            }
-          }
-        }
+        final newCookies = RawHeaderUtils.getSetCookies(
+          response.headers,
+          req.uri,
+        );
         if (newCookies.isNotEmpty) {
           ref
               .read(environmentProvider.notifier)
@@ -253,12 +231,6 @@ class HttpService {
       return responses.first;
     }
     return null;
-  }
-
-  String _defaultPath(String reqPath) {
-    if (!reqPath.startsWith('/') || reqPath == '/') return '/';
-    final i = reqPath.lastIndexOf('/');
-    return i == 0 ? '/' : reqPath.substring(0, i);
   }
 }
 

@@ -1,3 +1,4 @@
+import 'package:api_craft/flows/flow_panel/req_res_panel/edit_views.dart';
 import 'package:api_craft/flows/flow_panel/req_res_panel/panel_abstract.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -51,9 +52,9 @@ class _RequestPanelState extends PanelAbstractState {
   @override
   List<Widget> buildViews() {
     return [
-      Text("Headers"),
+      EditResHeadersView(),
       Text("Query Params"),
-      Text("Query Params"),
+      ReadOnlySetCookiesView(),
       Text("Query Params"),
       Text("Query Params"),
       // ReqHeadersView(

@@ -53,30 +53,10 @@ class _RequestPanelState extends PanelAbstractState {
   List<Widget> buildViews() {
     return [
       EditHeadersView(),
-
-      Text("Query Params"),
-      Text("Query Params"),
-      Text("Query Params"),
-      Text("Query Params"),
-      // ReqHeadersView(
-      //   id: widget.id,
-      //   title: "Headers",
-      //   keyValueJoiner: ":",
-      //   linesJoiner: "\n",
-      // ),
-      // QueryView(
-      //   id: widget.id,
-      //   title: "Query",
-      //   keyValueJoiner: "=",
-      //   linesJoiner: "&",
-      // ),
-      // EditQueryParams(id: widget.id),
-      // CookiesView(
-      //   id: widget.id,
-      //   title: "Cookies",
-      //   keyValueJoiner: "=",
-      //   linesJoiner: "; ",
-      // ),
+      EditQueryParamsView(),
+      ReadOnlyCookiesView(),
+      Text("----"),
+      Text("----"),
     ];
   }
 }
