@@ -60,7 +60,7 @@ class _HeaderEntry {
   _HeaderEntry(this.originalKey, this.values);
 }
 
-class HeaderUtils {
+class HeaderHandle {
   // static List<List<String>> handleHeaders(
   //   List<List<String>> headers, {
   //   bool preserveCase = false,

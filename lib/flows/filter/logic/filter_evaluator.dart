@@ -1,4 +1,6 @@
 import 'package:api_craft/core/models/models.dart';
+import 'package:api_craft/core/network/header_utils.dart';
+import 'package:api_craft/core/utils/parsers.dart';
 import 'package:api_craft/flows/filter/models/m.dart';
 import 'package:api_craft/flows/models/flow.dart';
 
@@ -123,6 +125,11 @@ class FilterEvaluator {
     switch (field) {
       case FilterField.all:
         return true;
+      case FilterField.contentType:
+        return [
+          HeaderUtils.getValue(req?.headers ?? [], 'content-type'),
+          HeaderUtils.getValue(res?.headers ?? [], 'content-type'),
+        ];
       // --- req ---
       case FilterField.url:
         return req?.url;
@@ -139,6 +146,8 @@ class FilterEvaluator {
         final path = uri.path;
         final idx = path.lastIndexOf('.');
         return idx != -1 ? path.substring(idx + 1) : '';
+      case FilterField.reqContentType:
+        return HeaderUtils.getValue(req?.headers ?? [], 'content-type');
 
       // --- res ---
       case FilterField.res:
@@ -151,6 +160,8 @@ class FilterEvaluator {
         return res == null;
       case FilterField.error:
         return false;
+      case FilterField.resContentType:
+        return HeaderUtils.getValue(res?.headers ?? [], 'content-type');
 
       // Headers
       case FilterField.reqHeader:

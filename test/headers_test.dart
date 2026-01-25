@@ -8,7 +8,7 @@ void main() {
       ['set-cookie', 'b=2'],
     ];
 
-    final result = HeaderUtils.handleHeaders(input);
+    final result = HeaderHandle.handleHeaders(input);
 
     expect(result.length, 2);
     expect(result, anyElement(equals(['set-cookie', 'a=1'])));
@@ -21,7 +21,7 @@ void main() {
       ['cookie', 'b=2'],
     ];
 
-    final result = HeaderUtils.handleHeaders(input);
+    final result = HeaderHandle.handleHeaders(input);
 
     expect(result.length, 2);
     expect(result, anyElement(equals(['cookie', 'a=1'])));
@@ -34,7 +34,7 @@ void main() {
       ['x-custom', 'b'],
     ];
 
-    final result = HeaderUtils.handleHeaders(input);
+    final result = HeaderHandle.handleHeaders(input);
 
     expect(result.length, 2);
     expect(result, anyElement(equals(['x-custom', 'a'])));
@@ -52,7 +52,7 @@ void main() {
       ['x-test', 'v2'],
     ];
 
-    final result = HeaderUtils.handleHeaders(input);
+    final result = HeaderHandle.handleHeaders(input);
 
     expect(
       result,
@@ -71,7 +71,7 @@ void main() {
       ['Accept', 'application/xml'],
     ];
 
-    final result = HeaderUtils.handleHeaders(input);
+    final result = HeaderHandle.handleHeaders(input);
     expect(result.length, 1);
     expect(
       result,

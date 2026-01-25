@@ -761,7 +761,7 @@ class RequestResolver {
       }),
     );
     debugPrint("Resolved Header Keys: $resolvedHeaderKeys");
-    final handledHeaders = HeaderUtils.handleHeaders(resolvedHeaderKeys);
+    final handledHeaders = HeaderHandle.handleHeaders(resolvedHeaderKeys);
     final resolvedHeaders = await Future.wait(
       handledHeaders.map((h) async {
         return [h[0], await resolveVariables(h[1], resolver, context: context)];
