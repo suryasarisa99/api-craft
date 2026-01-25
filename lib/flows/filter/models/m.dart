@@ -69,21 +69,23 @@ enum FilterField {
 
 enum FilterOperator {
   // str and (may also be number)
-  regex('~', [.str, .num]),
-  equals('=', [.str, .num]),
-  contains(':', [.str, .num]),
-  startsWith('^', [.str, .num]),
-  endsWith('\$', [.str, .num]),
+  regex('~', .str),
+  equals('=', .str),
+  contains(':', .str),
+  startsWith('^', .str),
+  endsWith('\$', .str),
 
   // num operators
-  lessThan('<', [.num]),
-  lessThanOrEqual('<=', [.num]),
-  greaterThan('>', [.num]),
-  greaterThanOrEqual('>=', [.num]);
+  numEquals('=', .num), // Use same symbol '=' for UI if desired, or '=='
+  lessThan('<', .num),
+  lessThanOrEqual('<=', .num),
+  greaterThan('>', .num),
+  greaterThanOrEqual('>=', .num),
+  between('<>', .num);
 
-  const FilterOperator(this.symbol, this.supportedTypes);
+  const FilterOperator(this.symbol, this.supportedType);
   final String symbol;
-  final List<FilterFieldType> supportedTypes;
+  final FilterFieldType supportedType;
 }
 
 /// Base class for all nodes in the filter tree.

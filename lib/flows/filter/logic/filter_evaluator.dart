@@ -42,20 +42,24 @@ class FilterEvaluator {
           : num.tryParse(actualValue.toString());
       if (numVal == null) return false;
 
-      final num? targetNum = num.tryParse(condition.value);
-      // For string ops on numbers (like regex on status code), convert to string
-      if (['~', ':', '^', '\$', '='].contains(condition.operator.symbol)) {
-        return compareString(
-          actualValue.toString(),
-          condition.value,
-          condition.operator,
-        );
+      // Handle 'between' operator specially as it needs split
+      if (condition.operator == FilterOperator.between) {
+        final parts = condition.value.split(','); // simple split
+        if (parts.length >= 2) {
+          final start = num.tryParse(parts[0].trim());
+          final end = num.tryParse(parts[1].trim());
+          if (start != null && end != null) {
+            return numVal >= start && numVal <= end;
+          }
+        }
+        return false;
       }
 
+      final num? targetNum = num.tryParse(condition.value);
       if (targetNum == null) return false;
 
       switch (condition.operator) {
-        case FilterOperator.equals:
+        case FilterOperator.numEquals:
           return numVal == targetNum;
         case FilterOperator.lessThan:
           return numVal < targetNum;

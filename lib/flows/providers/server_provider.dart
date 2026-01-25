@@ -48,8 +48,8 @@ class ServerNotifier extends Notifier<RawMockttpServer> {
         //   req.url = "https://www.google.com";
         //   return req;
         // });
-        state.matching(.domain('example.com')).thenPauseReqRes();
-        state.matching(.port(3000)).thenEditRes((res) {
+        state.matching(.domain(.eq('sample.com'))).thenPauseReqRes();
+        state.matching(.port(.eq(3000))).thenEditRes((res) {
           res.statusCode = 111;
           return res;
         });

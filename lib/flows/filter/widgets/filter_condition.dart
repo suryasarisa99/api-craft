@@ -270,9 +270,9 @@ class _FilterConditionWidgetState extends ConsumerState<FilterConditionWidget> {
                             ),
                             ...FilterOperator.values
                                 .where(
-                                  (op) => op.supportedTypes.contains(
-                                    widget.condition.field.type,
-                                  ),
+                                  (op) =>
+                                      op.supportedType ==
+                                      widget.condition.field.type,
                                 )
                                 .map(
                                   (op) => CustomMenuIconItem(
@@ -342,8 +342,9 @@ class _FilterConditionWidgetState extends ConsumerState<FilterConditionWidget> {
                             inputFormatters: [
                               if (widget.condition.field.type ==
                                   FilterFieldType.num) ...[
-                                LengthLimitingTextInputFormatter(3),
-                                FilteringTextInputFormatter.digitsOnly,
+                                FilteringTextInputFormatter.allow(
+                                  RegExp(r'[0-9, ]'),
+                                ),
                               ],
                             ],
                             style: const TextStyle(fontSize: 13),
