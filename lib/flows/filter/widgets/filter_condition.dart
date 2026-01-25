@@ -159,9 +159,39 @@ class _FilterConditionWidgetState extends ConsumerState<FilterConditionWidget> {
                       useBtn: false,
                       content: _KeyPickerContent(
                         onSelected: (field) {
-                          if (field.type == FilterFieldType.num) {
-                            _valueController.text = '';
+                          final oldType = widget.condition.field.type;
+                          final newType = field.type;
+
+                          if (oldType != newType) {
+                            // If switching to Number
+                            if (newType == FilterFieldType.num) {
+                              _valueController.text =
+                                  ''; // Clear potentially invalid text
+                              widget.condition.value = '';
+
+                              if (widget.condition.operator ==
+                                  FilterOperator.inListStr) {
+                                widget.condition.operator =
+                                    FilterOperator.inListNum;
+                              } else {
+                                widget.condition.operator =
+                                    FilterOperator.numEquals;
+                              }
+                            }
+                            // If switching to String
+                            else if (newType == FilterFieldType.str) {
+                              // Num -> Str (keep value usually strictly string is permissive)
+                              if (widget.condition.operator ==
+                                  FilterOperator.inListNum) {
+                                widget.condition.operator =
+                                    FilterOperator.inListStr;
+                              } else {
+                                widget.condition.operator =
+                                    FilterOperator.equals;
+                              }
+                            }
                           }
+
                           setState(() => widget.condition.field = field);
                           manager.notify(); // Notifying change
                           focusNode.requestFocus();
