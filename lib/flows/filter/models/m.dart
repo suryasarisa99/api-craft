@@ -14,36 +14,36 @@ enum FilterField {
   metadata('meta'),
 
   // --- req ---
-  url('u'),
-  method('m'),
-  domain('d'),
-  reqHeader('hq'),
-  reqBody('bq'),
-  reqContentType('tq'),
-  reqWithNoRes('q', type: .bool),
+  url('url'),
+  method('method'),
+  domain('domain'),
+  reqHeader('req-header'),
+  reqBody('req-body'),
+  reqContentType('req-content-type'),
+  reqWithNoRes('no-response', type: .bool),
 
   // --- res ---
-  res('s', type: .bool),
-  statusCode('c', type: .num),
-  asset('a', type: .bool),
-  resHeader('hs'),
-  resBody('bs'),
-  resContentType('ts'),
+  res('res', type: .bool),
+  statusCode('status-code', type: .num),
+  asset('asset', type: .bool),
+  resHeader('res-header'),
+  resBody('res-body'),
+  resContentType('res-content-type'),
 
   // --- Combined ---
-  header('h'),
-  body('b'),
-  contentType('t'),
+  header('header'),
+  body('body'),
+  contentType('content-type'),
 
   // --- Connection ---
-  sourceAddress('src'),
-  destinationAddress('dst'),
-  error('e', type: .bool),
+  sourceAddress('src-addr'),
+  destinationAddress('dst-addr'),
+  error('error', type: .bool),
 
   // --- Replay ---
   replayedFlow('replay', type: .bool),
-  replayedReq('replayq', type: .bool),
-  replayedRes('replays', type: .bool),
+  replayedReq('replay-req', type: .bool),
+  replayedRes('replay-res', type: .bool),
 
   // --- Protocols ---
   http('http', type: .bool),
@@ -56,8 +56,8 @@ enum FilterField {
   fileExtension('ext'),
   path('path'),
   query('query'),
-  queryKey('qk'),
-  queryValue('qv'),
+  queryKey('query-key'),
+  queryValue('query-value'),
 
   // --- Script ---
   script('script', type: .str);
@@ -71,17 +71,22 @@ enum FilterOperator {
   // str and (may also be number)
   regex('~', .str),
   equals('=', .str),
-  contains(':', .str),
-  startsWith('^', .str),
-  endsWith('\$', .str),
+  contains(':', FilterFieldType.str),
+  startsWith('^', FilterFieldType.str),
+  endsWith('\$', FilterFieldType.str),
+  inListStr('in', FilterFieldType.str),
 
   // num operators
-  numEquals('=', .num), // Use same symbol '=' for UI if desired, or '=='
-  lessThan('<', .num),
-  lessThanOrEqual('<=', .num),
-  greaterThan('>', .num),
-  greaterThanOrEqual('>=', .num),
-  between('<>', .num);
+  numEquals(
+    '=',
+    FilterFieldType.num,
+  ), // Use same symbol '=' for UI if desired, or '=='
+  lessThan('<', FilterFieldType.num),
+  lessThanOrEqual('<=', FilterFieldType.num),
+  greaterThan('>', FilterFieldType.num),
+  greaterThanOrEqual('>=', FilterFieldType.num),
+  between('<>', FilterFieldType.num),
+  inListNum('in', FilterFieldType.num);
 
   const FilterOperator(this.symbol, this.supportedType);
   final String symbol;

@@ -55,6 +55,15 @@ class FilterEvaluator {
         return false;
       }
 
+      // Handle 'inListNum' operator
+      if (condition.operator == FilterOperator.inListNum) {
+        final parts = condition.value.split(',');
+        return parts.any((p) {
+          final n = num.tryParse(p.trim());
+          return n != null && n == numVal;
+        });
+      }
+
       final num? targetNum = num.tryParse(condition.value);
       if (targetNum == null) return false;
 
@@ -98,6 +107,9 @@ class FilterEvaluator {
         return actual.toLowerCase().startsWith(target.toLowerCase());
       case FilterOperator.endsWith:
         return actual.toLowerCase().endsWith(target.toLowerCase());
+      case FilterOperator.inListStr:
+        final parts = target.split(',');
+        return parts.any((p) => p.trim().toLowerCase() == actual.toLowerCase());
       default:
         return false;
     }
