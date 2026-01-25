@@ -306,9 +306,21 @@ class _FilterConditionWidgetState extends ConsumerState<FilterConditionWidget> {
                                 )
                                 .map(
                                   (op) => CustomMenuIconItem(
-                                    title: Text(
-                                      '${op.symbol}   :  ${op.name}',
-                                      style: TextStyle(fontSize: 13),
+                                    title: Row(
+                                      children: [
+                                        SizedBox(
+                                          width: 25,
+                                          child: Text(
+                                            op.symbol,
+                                            textAlign: .center,
+                                          ),
+                                        ),
+                                        SizedBox(width: 12),
+                                        Text(
+                                          op.label,
+                                          style: TextStyle(fontSize: 13),
+                                        ),
+                                      ],
                                     ),
                                     value: op.name,
                                     onTap: (_) {

@@ -69,28 +69,26 @@ enum FilterField {
 
 enum FilterOperator {
   // str and (may also be number)
-  regex('~', .str),
-  equals('=', .str),
-  contains(':', FilterFieldType.str),
-  startsWith('^', FilterFieldType.str),
-  endsWith('\$', FilterFieldType.str),
-  inListStr('in', FilterFieldType.str),
+  regex('~', FilterFieldType.str, 'Regex'),
+  equals('=', FilterFieldType.str, 'Equals'),
+  contains(':', FilterFieldType.str, 'Contains'),
+  startsWith('^', FilterFieldType.str, 'Starts With'),
+  endsWith('\$', FilterFieldType.str, 'Ends With'),
+  inListStr('in', FilterFieldType.str, 'In List'),
 
   // num operators
-  numEquals(
-    '=',
-    FilterFieldType.num,
-  ), // Use same symbol '=' for UI if desired, or '=='
-  lessThan('<', FilterFieldType.num),
-  lessThanOrEqual('<=', FilterFieldType.num),
-  greaterThan('>', FilterFieldType.num),
-  greaterThanOrEqual('>=', FilterFieldType.num),
-  between('<>', FilterFieldType.num),
-  inListNum('in', FilterFieldType.num);
+  numEquals('=', FilterFieldType.num, 'Equals'),
+  lessThan('<', FilterFieldType.num, 'Less Than'),
+  lessThanOrEqual('<=', FilterFieldType.num, 'Less Than Or Equal'),
+  greaterThan('>', FilterFieldType.num, 'Greater Than'),
+  greaterThanOrEqual('>=', FilterFieldType.num, 'Greater Than Or Equal'),
+  between('<>', FilterFieldType.num, 'Between'),
+  inListNum('in', FilterFieldType.num, 'In List');
 
-  const FilterOperator(this.symbol, this.supportedType);
+  const FilterOperator(this.symbol, this.supportedType, this.label);
   final String symbol;
   final FilterFieldType supportedType;
+  final String label;
 }
 
 /// Base class for all nodes in the filter tree.
