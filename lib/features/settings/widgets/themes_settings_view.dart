@@ -1,8 +1,10 @@
 import 'package:api_craft/core/services/theme_service.dart';
+import 'package:api_craft/core/widgets/ui/surya_theme_icon.dart';
 import 'package:api_craft/features/themes/app_themes.dart';
 import 'package:api_craft/features/themes/models/theme_info.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:suryaicons/bulk_rounded.dart';
 
 class ThemesSettingsView extends ConsumerStatefulWidget {
   const ThemesSettingsView({super.key});
@@ -117,23 +119,25 @@ class _ThemesSettingsViewState extends ConsumerState<ThemesSettingsView> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // Simple visual representation
-                      Container(
-                        width: 32,
-                        height: 32,
-                        decoration: BoxDecoration(
-                          color: seedPreview,
-                          shape: BoxShape.circle,
+                      if (themeInfo.supportCustomColor)
+                        //show indicator support custom accent
+                        const SuryaThemeIcon(BulkRounded.paintBoard, size: 32)
+                      else
+                        Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: seedPreview,
+                            shape: BoxShape.circle,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 12),
                       Text(
                         themeInfo.name,
+                        textAlign: .center,
                         style: TextStyle(
                           color: themeInfo.isDark ? Colors.white : Colors.black,
-                          fontWeight: isSelected
-                              ? FontWeight.bold
-                              : FontWeight.normal,
+                          fontSize: 12,
                         ),
                       ),
                     ],
