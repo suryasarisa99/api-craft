@@ -6,6 +6,7 @@ import 'package:api_craft/features/response/response_headers.dart';
 import 'package:api_craft/features/response/response_provider.dart';
 import 'package:api_craft/features/response/widgets/response_body_tab.dart';
 import 'package:api_craft/features/response/widgets/response_info_tab.dart';
+import 'package:api_craft/features/response/widgets/response_cookies_tab.dart';
 import 'package:api_craft/features/response/widgets/response_info_tab.dart';
 import 'package:api_craft/features/response/widgets/response_status_bar.dart';
 import 'package:api_craft/features/response/widgets/tests_result_tab.dart';
@@ -40,7 +41,7 @@ class _ResponseTabState extends ConsumerState<ResponseTab>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 5, vsync: this);
   }
 
   @override
@@ -252,10 +253,17 @@ class _ResponseTabState extends ConsumerState<ResponseTab>
                           ),
                         ),
                       ),
-                      const Tab(text: "Headers"),
                       Tab(
                         text:
-                            "Tests (${response!.testResults.length + response!.assertionResults.length})",
+                            "Headers (${response.reqHeaders?.length ?? 0}/${response.headers.length})",
+                      ),
+                      Tab(
+                        text:
+                            "Cookies (${response.reqCookies.length}/${response.resCookies.length})",
+                      ),
+                      Tab(
+                        text:
+                            "Tests (${response.testResults.length + response.assertionResults.length})",
                       ),
                       const Tab(text: "Info"),
                     ],
@@ -268,6 +276,7 @@ class _ResponseTabState extends ConsumerState<ResponseTab>
                     children: [
                       ResponseBodyTab(response: response, mode: _bodyViewMode),
                       ResponseHeaders(id: id),
+                      ResponseCookiesTab(id: id),
                       TestsResultTab(
                         results: response.testResults,
                         assertionResults: response.assertionResults,

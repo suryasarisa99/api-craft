@@ -41,10 +41,10 @@ class ParserUtils {
     final cookies = headers
         .where((e) => e.key.toLowerCase() == 'cookie')
         .toList();
-    return cookies.map((e) => _parseCookies(e.value)).toList();
+    return cookies.map((e) => parseCookies(e.value)).toList();
   }
 
-  static List<List<String>> _parseCookies(String raw) {
+  static List<List<String>> parseCookies(String raw) {
     debugPrint('parsing cookies');
     final cookieList = raw
         .split(';')

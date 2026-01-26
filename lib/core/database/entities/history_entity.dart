@@ -49,6 +49,10 @@ class HistoryEntity {
   String? testResultsJson;
   String? assertionResultsJson;
 
+  // Request Details
+  List<dynamic>? reqHeaders;
+  String? reqBody;
+
   HistoryEntity({
     this.id = 0,
     required this.uid,
@@ -68,9 +72,11 @@ class HistoryEntity {
     this.finalUrl,
     this.testResultsJson,
     this.assertionResultsJson,
+    this.reqHeaders,
+    this.reqBody,
   });
 
-  factory HistoryEntity.fromModel(RawHttpResponse model, String workspaceId) {
+  factory HistoryEntity.fromModel(ResponseHistory model, String workspaceId) {
     // Model doesn't have workspaceId, inherited from context
     return HistoryEntity(
       uid: model.id,
@@ -94,12 +100,22 @@ class HistoryEntity {
       assertionResultsJson: jsonEncode(
         model.assertionResults.map((e) => e.toMap()).toList(),
       ),
+      reqHeaders: model.reqHeaders,
+      reqBody: model.reqBody,
     );
   }
 
-  RawHttpResponse toModel() {
+  ResponseHistory toModel() {
     // Convert List<dynamic> -> List<List<String>>
     final List<List<String>> explicitHeaders = (headers ?? []).map((e) {
+      if (e is List) {
+        return e.map((s) => s.toString()).toList();
+      }
+      return <String>[];
+    }).toList();
+
+    // Convert List<dynamic> -> List<List<String>> for reqHeaders
+    final List<List<String>>? explicitReqHeaders = reqHeaders?.map((e) {
       if (e is List) {
         return e.map((s) => s.toString()).toList();
       }
@@ -126,7 +142,7 @@ class HistoryEntity {
       }
     }
 
-    return RawHttpResponse(
+    return ResponseHistory(
       id: uid,
       requestId: requestId,
       statusCode: statusCode,
@@ -143,6 +159,8 @@ class HistoryEntity {
       finalUrl: finalUrl,
       testResults: tests,
       assertionResults: assertions,
+      reqHeaders: explicitReqHeaders,
+      reqBody: reqBody,
     );
   }
 }

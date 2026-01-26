@@ -32,7 +32,7 @@ class DataRepository {
 
   // --- History ---
 
-  Future<void> addHistoryEntry(RawHttpResponse entry, {int limit = 10}) async {
+  Future<void> addHistoryEntry(ResponseHistory entry, {int limit = 10}) async {
     final box = await _historyBox;
     final entity = HistoryEntity.fromModel(entry, workspaceId);
 
@@ -62,7 +62,7 @@ class DataRepository {
     }
   }
 
-  Future<List<RawHttpResponse>> getHistory(
+  Future<List<ResponseHistory>> getHistory(
     String requestId, {
     int limit = 10,
   }) async {

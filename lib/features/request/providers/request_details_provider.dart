@@ -17,7 +17,7 @@ final requestDetailsProvider = NotifierProvider.autoDispose
 class RequestDetailsState {
   final String? body;
   final InheritedRequest inherit;
-  final List<RawHttpResponse>? history;
+  final List<ResponseHistory>? history;
   final bool isLoading;
   final Map<String, dynamic> bodyData;
 
@@ -45,7 +45,7 @@ class RequestDetailsState {
   RequestDetailsState copyWith({
     String? body,
     InheritedRequest? inherit,
-    List<RawHttpResponse>? history,
+    List<ResponseHistory>? history,
     bool? isLoading,
   }) {
     // If body changes, re-parse. If not, keep existing bodyData.
@@ -133,7 +133,7 @@ class RequestDetailsNotifier extends Notifier<RequestDetailsState> {
     }
   }
 
-  RawHttpResponse? get selectedHistory {
+  ResponseHistory? get selectedHistory {
     final node = ref.read(fileTreeProvider).nodeMap[id];
     final historyId = node is RequestNode ? node.config.historyId : null;
 
@@ -229,7 +229,7 @@ class RequestDetailsNotifier extends Notifier<RequestDetailsState> {
     state = state.copyWith(inherit: inherit);
   }
 
-  void addHistoryEntry(RawHttpResponse entry, {int limit = 10}) {
+  void addHistoryEntry(ResponseHistory entry, {int limit = 10}) {
     final currentHistory = state.history ?? [];
     final updatedHistory = [entry, ...currentHistory];
     if (updatedHistory.length > limit) {

@@ -1,6 +1,7 @@
 import 'package:api_craft/core/models/models.dart';
 import 'package:api_craft/core/utils/parsers.dart';
 import 'package:api_craft/core/widgets/ui/key_value_editor.dart';
+import 'package:api_craft/core/widgets/ui/key_value_view.dart';
 import 'package:api_craft/features/response/response_headers.dart';
 import 'package:api_craft/flows/flow_panel/selected_flow_provider.dart';
 import 'package:api_craft/flows/models/flow.dart';
@@ -218,7 +219,7 @@ class _ReadOnlyCookiesViewState extends ConsumerState<ReadOnlyCookiesView> {
     final headerClr = Theme.of(context).colorScheme.primary;
     return KeyValueView(
       items: _cookies,
-      pairSeparator: ": ",
+      pairSeparator: "=",
       itemSeparator: "; ",
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       keyStyle: TextStyle(
@@ -263,7 +264,7 @@ class _ReadOnlySetCookiesViewState
       itemCount: _cookies.length,
       itemBuilder: (context, index) {
         final c = _cookies[index];
-        return Row(children: [Text(c.key), Text(c.value)]);
+        return Text('not implemented');
       },
     );
   }

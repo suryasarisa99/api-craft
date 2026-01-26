@@ -1,4 +1,4 @@
-import 'package:api_craft/features/response/models/http_response_model.dart';
+import 'package:api_craft/features/response/models/response_history.dart';
 import 'package:flutter/material.dart';
 
 class TestsResultTab extends StatelessWidget {

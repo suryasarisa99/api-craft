@@ -4,14 +4,14 @@ import 'package:api_craft/features/request/providers/request_details_provider.da
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final responseProvider = NotifierProvider.autoDispose
-    .family<ResponseNotifier, RawHttpResponse?, String>(ResponseNotifier.new);
+    .family<ResponseNotifier, ResponseHistory?, String>(ResponseNotifier.new);
 
-class ResponseNotifier extends Notifier<RawHttpResponse?> {
+class ResponseNotifier extends Notifier<ResponseHistory?> {
   final String id;
   ResponseNotifier(this.id);
 
   @override
-  RawHttpResponse? build() {
+  ResponseHistory? build() {
     final historyId = ref.watch(
       fileTreeProvider.select(
         (state) => (state.nodeMap[id] as RequestNode?)?.config.historyId,

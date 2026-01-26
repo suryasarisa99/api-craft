@@ -130,7 +130,7 @@ final _entities = <obx_int.ModelEntity>[
   obx_int.ModelEntity(
     id: const obx_int.IdUid(4, 1589747562368478009),
     name: 'HistoryEntity',
-    lastPropertyId: const obx_int.IdUid(19, 188782147522577182),
+    lastPropertyId: const obx_int.IdUid(21, 4756130884778994263),
     flags: 0,
     properties: <obx_int.ModelProperty>[
       obx_int.ModelProperty(
@@ -243,6 +243,18 @@ final _entities = <obx_int.ModelEntity>[
         type: 9,
         flags: 2048,
         indexId: const obx_int.IdUid(20, 1825587858392337929),
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(20, 3156215941567585003),
+        name: 'reqHeaders',
+        type: 13,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(21, 4756130884778994263),
+        name: 'reqBody',
+        type: 9,
+        flags: 0,
       ),
     ],
     relations: <obx_int.ModelRelation>[],
@@ -842,7 +854,13 @@ obx_int.ModelDefinition getObjectBoxModel() {
             ? null
             : fbb.writeString(object.assertionResultsJson!);
         final workspaceIdOffset = fbb.writeString(object.workspaceId);
-        fbb.startTable(20);
+        final reqHeadersOffset = object.reqHeaders == null
+            ? null
+            : fbb.writeListInt8(obx_int.toFlexBuffer(object.reqHeaders!));
+        final reqBodyOffset = object.reqBody == null
+            ? null
+            : fbb.writeString(object.reqBody!);
+        fbb.startTable(22);
         fbb.addInt64(0, object.id);
         fbb.addOffset(1, uidOffset);
         fbb.addOffset(2, requestIdOffset);
@@ -861,6 +879,8 @@ obx_int.ModelDefinition getObjectBoxModel() {
         fbb.addOffset(16, testResultsJsonOffset);
         fbb.addOffset(17, assertionResultsJsonOffset);
         fbb.addOffset(18, workspaceIdOffset);
+        fbb.addOffset(19, reqHeadersOffset);
+        fbb.addOffset(20, reqBodyOffset);
         fbb.finish(fbb.endTable());
         return object.id;
       },
@@ -931,6 +951,14 @@ obx_int.ModelDefinition getObjectBoxModel() {
         final assertionResultsJsonParam = const fb.StringReader(
           asciiOptimization: true,
         ).vTableGetNullable(buffer, rootOffset, 38);
+        final reqHeadersParam = obx_int.flexBufferToList(
+          buffer,
+          rootOffset,
+          42,
+        );
+        final reqBodyParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGetNullable(buffer, rootOffset, 44);
         final object = HistoryEntity(
           id: idParam,
           uid: uidParam,
@@ -950,6 +978,8 @@ obx_int.ModelDefinition getObjectBoxModel() {
           finalUrl: finalUrlParam,
           testResultsJson: testResultsJsonParam,
           assertionResultsJson: assertionResultsJsonParam,
+          reqHeaders: reqHeadersParam,
+          reqBody: reqBodyParam,
         );
 
         return object;
@@ -1541,6 +1571,11 @@ class HistoryEntity_ {
   /// See [HistoryEntity.workspaceId].
   static final workspaceId = obx.QueryStringProperty<HistoryEntity>(
     _entities[2].properties[17],
+  );
+
+  /// See [HistoryEntity.reqBody].
+  static final reqBody = obx.QueryStringProperty<HistoryEntity>(
+    _entities[2].properties[19],
   );
 }
 

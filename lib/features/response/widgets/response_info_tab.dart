@@ -1,10 +1,10 @@
-import 'package:api_craft/features/response/models/http_response_model.dart';
+import 'package:api_craft/features/response/models/response_history.dart';
 import 'package:api_craft/core/utils/formatters.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 class ResponseInfoTab extends StatelessWidget {
-  final RawHttpResponse response;
+  final ResponseHistory response;
   const ResponseInfoTab({super.key, required this.response});
 
   @override

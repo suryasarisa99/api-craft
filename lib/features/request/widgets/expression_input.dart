@@ -3,7 +3,7 @@ import 'package:api_craft/core/providers/providers.dart';
 import 'package:api_craft/core/services/assertion_service.dart';
 import 'package:api_craft/core/widgets/ui/custom_input.dart';
 import 'package:api_craft/features/request/models/node_model.dart';
-import 'package:api_craft/features/response/models/http_response_model.dart';
+import 'package:api_craft/features/response/models/response_history.dart';
 import 'package:api_craft/features/response/response_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -227,7 +227,7 @@ class _ExpressionInputState extends ConsumerState<ExpressionInput> {
     );
   }
 
-  RawHttpResponse? getRes() {
+  ResponseHistory? getRes() {
     final tree = ref.read(fileTreeProvider);
     final map = tree.nodeMap;
     final node = map[widget.id];
@@ -239,7 +239,7 @@ class _ExpressionInputState extends ConsumerState<ExpressionInput> {
           return ref.read(responseProvider(child.id));
         }
       }
-      return RawHttpResponse.dummyRes();
+      return ResponseHistory.dummyRes();
     } else {
       // If node is not found or is RequestNode
       return ref.read(responseProvider(widget.id));

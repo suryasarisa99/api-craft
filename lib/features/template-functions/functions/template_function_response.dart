@@ -126,7 +126,7 @@ final responseBodyRaw = TemplateFunction(
 );
 
 /// Helpers
-Future<RawHttpResponse?> getResponse(
+Future<ResponseHistory?> getResponse(
   Ref ref, {
   required String purpose,
   String? behavior,
@@ -157,7 +157,7 @@ Future<RawHttpResponse?> getResponse(
   return response;
 }
 
-bool shouldSendExpired(RawHttpResponse? response, String? ttl) {
+bool shouldSendExpired(ResponseHistory? response, String? ttl) {
   if (response == null) return true;
   if (ttl == null) return false;
   final expiryDuration = Duration(seconds: int.tryParse(ttl) ?? 0);

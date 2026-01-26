@@ -129,7 +129,7 @@ class ReqComposeNotifier extends Notifier<UiRequestContext> {
     _treeNotifier.updateRequestSettings(id, settings, persist: true);
   }
 
-  void addHistoryEntry(RawHttpResponse entry, {int limit = 10}) {
+  void addHistoryEntry(ResponseHistory entry, {int limit = 10}) {
     // History State is managed by RequestDetailsProvider
     _detailsNotifier.addHistoryEntry(entry, limit: limit);
     // Ephemeral state for compose provider if any?

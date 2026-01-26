@@ -96,7 +96,7 @@
     },
     {
       "id": "4:1589747562368478009",
-      "lastPropertyId": "19:188782147522577182",
+      "lastPropertyId": "21:4756130884778994263",
       "name": "HistoryEntity",
       "properties": [
         {
@@ -195,6 +195,16 @@
           "indexId": "20:1825587858392337929",
           "type": 9,
           "flags": 2048
+        },
+        {
+          "id": "20:3156215941567585003",
+          "name": "reqHeaders",
+          "type": 13
+        },
+        {
+          "id": "21:4756130884778994263",
+          "name": "reqBody",
+          "type": 9
         }
       ],
       "relations": []

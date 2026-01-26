@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:api_craft/features/response/models/http_response_model.dart';
+import 'package:api_craft/features/response/models/response_history.dart';
 import 'package:api_craft/features/response/response_tab.dart';
 import 'package:api_craft/features/response/widgets/json_viewer.dart';
 import 'package:api_craft/features/response/widgets/image_viewer.dart';
@@ -10,7 +10,7 @@ import 'package:xml/xml.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 class ResponseBodyTab extends StatelessWidget {
-  final RawHttpResponse response;
+  final ResponseHistory response;
   final BodyViewMode mode;
 
   const ResponseBodyTab({

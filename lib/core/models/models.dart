@@ -5,7 +5,7 @@ export 'resolve_config_model.dart';
 export '../../features/sidebar/models/visual_model.dart';
 export '../../features/sidebar/models/clipboard_models.dart';
 export '../../features/auth/models/auth_model.dart';
-export '../../features/response/models/http_response_model.dart';
+export '../../features/response/models/response_history.dart';
 export 'environment_model.dart';
 export 'cookie_jar_model.dart';
 export '../../features/request/models/ui_req_context.dart';

@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:api_craft/core/models/cookie_jar_model.dart';
+import 'package:api_craft/core/utils/parsers.dart';
 import 'package:flutter/foundation.dart';
 
 class TestResult {
@@ -25,7 +27,7 @@ class TestResult {
 }
 
 /// A class to hold the parsed raw HTTP response details
-class RawHttpResponse {
+class ResponseHistory {
   final String id;
   final String requestId;
   final int statusCode;
@@ -43,8 +45,14 @@ class RawHttpResponse {
   final String? finalUrl;
   final List<TestResult> testResults;
   final List<TestResult> assertionResults;
+  final List<List<String>>? reqHeaders;
+  final String? reqBody;
 
-  RawHttpResponse({
+  // Derived properties (not stored in DB, parsed from headers)
+  late final List<List<String>> reqCookies;
+  late final List<CookieDef> resCookies;
+
+  ResponseHistory({
     required this.id,
     required this.statusCode,
     required this.statusMessage,
@@ -62,9 +70,27 @@ class RawHttpResponse {
     this.finalUrl,
     this.testResults = const [],
     this.assertionResults = const [],
-  });
+    this.reqHeaders,
+    this.reqBody,
+  }) {
+    // Parse Cookies from Request Headers
+    if (reqHeaders != null) {
+      final cookieHeaders = reqHeaders!
+          .where((h) => h[0].toLowerCase() == 'cookie')
+          .toList();
+      // Use expand to flatten multiple Cookie headers, then ParserUtils.parseCookies returns List<List<String>>
+      reqCookies = cookieHeaders
+          .expand((h) => ParserUtils.parseCookies(h[1]))
+          .toList();
+    } else {
+      reqCookies = [];
+    }
 
-  RawHttpResponse copyWith({
+    // Parse Set-Cookies from Response Headers
+    resCookies = RawHeaderUtils.getSetCookies(headers, null);
+  }
+
+  ResponseHistory copyWith({
     String? id,
     String? requestId,
     int? statusCode,
@@ -81,8 +107,10 @@ class RawHttpResponse {
     String? finalUrl,
     List<TestResult>? testResults,
     List<TestResult>? assertionResults,
+    List<List<String>>? reqHeaders,
+    String? reqBody,
   }) {
-    return RawHttpResponse(
+    return ResponseHistory(
       id: id ?? this.id,
       requestId: requestId ?? this.requestId,
       statusCode: statusCode ?? this.statusCode,
@@ -99,11 +127,13 @@ class RawHttpResponse {
       finalUrl: finalUrl ?? this.finalUrl,
       testResults: testResults ?? this.testResults,
       assertionResults: assertionResults ?? this.assertionResults,
+      reqHeaders: reqHeaders ?? this.reqHeaders,
+      reqBody: reqBody ?? this.reqBody,
     );
   }
 
-  factory RawHttpResponse.fromMap(Map<String, dynamic> map) {
-    return RawHttpResponse(
+  factory ResponseHistory.fromMap(Map<String, dynamic> map) {
+    return ResponseHistory(
       id: map['id'],
       requestId: map['request_id'],
       executeAt: DateTime.fromMillisecondsSinceEpoch(map['executed_at'] as int),
@@ -137,6 +167,11 @@ class RawHttpResponse {
               ?.map((e) => TestResult.fromMap(e))
               .toList() ??
           [],
+      reqHeaders: (map['req_headers'] as List?)?.map<List<String>>((e) {
+        final list = e as List;
+        return [list[0].toString(), list[1].toString()];
+      }).toList(),
+      reqBody: map['req_body'],
     );
   }
 
@@ -159,6 +194,8 @@ class RawHttpResponse {
       'final_url': finalUrl,
       'test_results': testResults.map((e) => e.toMap()).toList(),
       'assertion_results': assertionResults.map((e) => e.toMap()).toList(),
+      'req_headers': reqHeaders,
+      'req_body': reqBody,
     };
   }
 
@@ -179,11 +216,13 @@ class RawHttpResponse {
       'finalUrl': finalUrl,
       'testResults': testResults.map((e) => e.toMap()).toList(),
       'assertionResults': assertionResults.map((e) => e.toMap()).toList(),
+      'reqHeaders': reqHeaders,
+      'reqBody': reqBody,
     };
   }
 
-  factory RawHttpResponse.dummyRes() {
-    return RawHttpResponse.fromMap({
+  factory ResponseHistory.dummyRes() {
+    return ResponseHistory.fromMap({
       'id': 'dummy',
       'request_id': 'dummy',
       'executed_at': DateTime.now().millisecondsSinceEpoch,
@@ -206,6 +245,10 @@ class RawHttpResponse {
       'assertion_results': [
         {'description': 'dummy', 'status': 'dummy', 'error': 'dummy'},
       ],
+      'req_headers': [
+        ['dummy-req-header', 'dummy-req-value'],
+      ],
+      'req_body': 'dummy-req-body',
     });
   }
 }

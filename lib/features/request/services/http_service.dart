@@ -16,7 +16,7 @@ import 'package:api_craft/features/request/providers/request_loading_provider.da
 import 'package:api_craft/core/services/assertion_service.dart';
 
 class HttpService {
-  Future<RawHttpResponse> run(
+  Future<ResponseHistory> run(
     Ref ref,
     String requestId, {
     required BuildContext context,
@@ -54,7 +54,7 @@ class HttpService {
 
       ref.read(requestLoadingProvider(requestId).notifier).startSending();
 
-      RawHttpResponse response = await sendRawHttp(
+      ResponseHistory response = await sendRawHttp(
         method: req.request.method,
         url: req.uri,
         headers: req.headers,
@@ -197,7 +197,7 @@ class HttpService {
     } catch (e, stack) {
       debugPrint("catch: Error sending request: $e\n$stack");
 
-      final errorResponse = RawHttpResponse(
+      final errorResponse = ResponseHistory(
         id: nanoid(),
         requestId: requestId,
         statusCode: 0,
@@ -224,7 +224,7 @@ class HttpService {
     }
   }
 
-  Future<RawHttpResponse?> getRes(Ref ref, String requestId) async {
+  Future<ResponseHistory?> getRes(Ref ref, String requestId) async {
     final repo = ref.read(dataRepositoryProvider);
     final responses = await repo.getHistory(requestId, limit: 1);
     if (responses.isNotEmpty) {

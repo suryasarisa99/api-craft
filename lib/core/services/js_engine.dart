@@ -28,7 +28,7 @@ class JsEngineService {
   Future<List<TestResult>> executeScript(
     String id,
     String script, {
-    RawHttpResponse? response,
+    ResponseHistory? response,
     required BuildContext context,
     bool isPreview = false,
   }) async {

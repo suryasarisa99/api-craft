@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:api_craft/features/request/models/node_config_model.dart';
-import 'package:api_craft/features/response/models/http_response_model.dart';
+import 'package:api_craft/features/response/models/response_history.dart';
 import 'package:flutter/widgets.dart';
 import 'package:json_path/json_path.dart';
 
@@ -19,7 +19,7 @@ var fakeReqHeaders = [
 class AssertionService {
   static List<TestResult> evaluate(
     List<AssertionDefinition> assertions,
-    RawHttpResponse response,
+    ResponseHistory response,
   ) {
     List<TestResult> results = [];
 
@@ -52,7 +52,7 @@ class AssertionService {
 
   static dynamic _getActualValue(
     String expression,
-    RawHttpResponse res,
+    ResponseHistory res,
     Map<String, dynamic>? jsonBody,
   ) {
     if (expression.trim() == 'res') {
@@ -464,7 +464,7 @@ class AssertionService {
 
   static AssertionInspection inspectPath(
     String expression,
-    RawHttpResponse res, {
+    ResponseHistory res, {
     Map<String, dynamic>? jsonBody,
   }) {
     String exp = expression.trim();
@@ -509,7 +509,7 @@ class AssertionService {
     // 4. Generate Suggestions based on the resolved value
     if (value is Map) {
       suggestions = value.keys.map((e) => e.toString()).toList();
-    } else if (value is RawHttpResponse) {
+    } else if (value is ResponseHistory) {
       // Should not happen as we convert toJsMap, but safety check
       suggestions = ['statusCode', 'body', 'headers', 'responseTime'];
     }

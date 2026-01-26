@@ -8,7 +8,7 @@ class UiRequestContext {
   final AuthData effectiveAuth;
   final Node? authSource;
   final Map<String, VariableValue> inheritVariables;
-  final List<RawHttpResponse>? history;
+  final List<ResponseHistory>? history;
   final bool isLoading;
 
   UiRequestContext({
@@ -44,7 +44,7 @@ class UiRequestContext {
     AuthData? effectiveAuth,
     Node? authSource,
     Map<String, VariableValue>? allVariables,
-    List<RawHttpResponse>? history,
+    List<ResponseHistory>? history,
     bool? isLoading,
   }) {
     return UiRequestContext(

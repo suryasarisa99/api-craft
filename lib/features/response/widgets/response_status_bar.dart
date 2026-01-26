@@ -2,7 +2,7 @@ import 'package:api_craft/core/utils/formatters.dart';
 import 'package:api_craft/core/widgets/ui/custom_menu.dart';
 import 'package:api_craft/core/widgets/ui/surya_theme_icon.dart';
 import 'package:api_craft/features/request/providers/request_details_provider.dart';
-import 'package:api_craft/features/response/models/http_response_model.dart';
+import 'package:api_craft/features/response/models/response_history.dart';
 import 'package:api_craft/features/response/utils/status_code_clr.dart';
 import 'package:collection/collection.dart';
 import 'package:file_picker/file_picker.dart';
@@ -18,7 +18,7 @@ import 'package:api_craft/features/request/models/node_config_model.dart';
 
 class ResponseStatusBar extends ConsumerWidget {
   final String requestId;
-  final RawHttpResponse? response;
+  final ResponseHistory? response;
   final bool isSending;
   final String? error;
 

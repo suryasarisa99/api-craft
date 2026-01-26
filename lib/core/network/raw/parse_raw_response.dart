@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:nanoid/nanoid.dart';
 
 /// Helper: Parses the raw bytes into a structured Object
-RawHttpResponse parseRawResponse(
+ResponseHistory parseRawResponse(
   Uint8List allBytes, {
 
   required DateTime requestSentTime,
@@ -112,7 +112,7 @@ RawHttpResponse parseRawResponse(
     }
   }
 
-  return RawHttpResponse(
+  return ResponseHistory(
     id: nanoid(),
     requestId: requestId,
     statusCode: statusCode,

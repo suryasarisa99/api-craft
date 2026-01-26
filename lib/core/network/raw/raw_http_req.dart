@@ -6,7 +6,7 @@ import 'package:api_craft/core/network/raw/parse_raw_response.dart';
 import 'package:api_craft/core/models/models.dart';
 import 'package:flutter/foundation.dart';
 
-Future<RawHttpResponse> sendRawHttp({
+Future<ResponseHistory> sendRawHttp({
   required String method,
   required Uri url,
   List<List<String>>? headers,
@@ -26,6 +26,8 @@ Future<RawHttpResponse> sendRawHttp({
   int redirectCount = 0;
   List<String> redirectUrls = [];
   final requestSentTime = DateTime.now(); // Start time of FIRST request
+  List<List<String>> actualReqHeaders = [];
+  String? actualReqBody;
 
   // If followRedirects is false, we technically shouldn't loop for redirects.
   // We can treat maxRedirects as 0 effectively.
@@ -110,6 +112,7 @@ Future<RawHttpResponse> sendRawHttp({
           ? currentUrl.host
           : '${currentUrl.host}:${currentUrl.port}';
       buffer.write('Host: $hostHeader\r\n');
+      actualReqHeaders.add(['Host', hostHeader]);
 
       bool hasConnectionHeader = false;
       bool hasAcceptEncoding = false;
@@ -119,14 +122,15 @@ Future<RawHttpResponse> sendRawHttp({
           if (h.length != 2) continue;
           if (h[0].toLowerCase() == 'connection') hasConnectionHeader = true;
           if (h[0].toLowerCase() == 'accept-encoding') hasAcceptEncoding = true;
-          // Don't send Host header if we already set it?? No, we set it manually above.
-          // Should filter out 'Host' from user headers to avoid dupes?
+          // Don't send Host header if we already set it manually above.
           if (h[0].toLowerCase() == 'host') continue;
           buffer.write('${h[0]}: ${h[1]}\r\n');
+          actualReqHeaders.add([h[0], h[1]]);
         }
       }
       if (!hasConnectionHeader) {
         buffer.write('Connection: close\r\n');
+        actualReqHeaders.add(['Connection', 'close']);
       }
 
       // Proxy Auth for Non-Tunnel (HTTP Proxy)
@@ -137,10 +141,12 @@ Future<RawHttpResponse> sendRawHttp({
         final auth =
             'Basic ${base64Encode(utf8.encode('$proxyUsername:$proxyPassword'))}';
         buffer.write('Proxy-Authorization: $auth\r\n');
+        actualReqHeaders.add(['Proxy-Authorization', auth]);
       }
       // Asking for Gzip is standard, but you can remove this if you want pure raw
       if (!hasAcceptEncoding) {
         buffer.write('Accept-Encoding: gzip\r\n');
+        actualReqHeaders.add(['Accept-Encoding', 'gzip']);
       }
 
       // 5. Body Preparation
@@ -166,8 +172,17 @@ Future<RawHttpResponse> sendRawHttp({
 
       if (body != null) {
         if (body is String) {
+          actualReqBody = body;
           bodyBytesToSend = utf8.encode(body);
         } else if (body is List<int>) {
+          // If list<int>, we probably can't easily stringify it unless it's text.
+          // For now assume mostly used for text body in this tool or store placeholder
+          // But actually utf8 decode might work if it's text.
+          try {
+            actualReqBody = utf8.decode(body, allowMalformed: true);
+          } catch (_) {
+            actualReqBody = "<binary data>";
+          }
           bodyBytesToSend = body;
         }
 
@@ -176,6 +191,7 @@ Future<RawHttpResponse> sendRawHttp({
             false;
         if (!hasContentLength) {
           buffer.write('Content-Length: ${bodyBytesToSend.length}\r\n');
+          actualReqHeaders.add(['Content-Length', '${bodyBytesToSend.length}']);
         }
       }
 
@@ -259,13 +275,18 @@ Future<RawHttpResponse> sendRawHttp({
       // `tempResponse` is a final object. We might need to copyWith or just parse again correctly.
       // simpler to parse again or create new.
 
-      return parseRawResponse(
+      final response = parseRawResponse(
         allBytes,
         requestSentTime: requestSentTime,
         durationMs: durationMs,
         requestId: requestId,
         redirectUrls: redirectUrls,
         finalUrl: currentUrl.toString(),
+      );
+
+      return response.copyWith(
+        reqHeaders: actualReqHeaders,
+        reqBody: actualReqBody,
       );
     } catch (e) {
       // Ensure socket is closed on error
