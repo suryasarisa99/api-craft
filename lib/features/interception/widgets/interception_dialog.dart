@@ -1,4 +1,5 @@
 import 'package:api_craft/core/widgets/ui/custom_dialog.dart';
+import 'package:api_craft/core/widgets/ui/surya_theme_icon.dart';
 import 'package:api_craft/features/interception/widgets/action_editor.dart';
 import 'package:api_craft/flows/filter/condition_provider.dart';
 import 'package:api_craft/flows/filter/models/m.dart';
@@ -7,6 +8,7 @@ import 'package:api_craft/flows/filter/filter_converter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mockhttp/ui/rule_config.dart';
+import 'package:suryaicons/bulk_rounded.dart';
 
 class InterceptionDialog extends StatefulWidget {
   final List<ProxyRule> initialRules;
@@ -24,6 +26,7 @@ class InterceptionDialog extends StatefulWidget {
 
 class _InterceptionDialogState extends State<InterceptionDialog> {
   late List<ProxyRule> _rules;
+  static const _autoSave = true;
 
   @override
   void initState() {
@@ -99,61 +102,72 @@ class _InterceptionDialogState extends State<InterceptionDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return CustomDialog(
-      width: 900,
-      height: 800,
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Interception Rules',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              IconButton(
-                icon: const Icon(Icons.add),
-                onPressed: _addRule,
-                tooltip: 'Add Rule',
-              ),
-            ],
-          ),
-          const Divider(),
-          Expanded(
-            child: ListView.builder(
-              itemCount: _rules.length,
-              itemBuilder: (context, index) {
-                final rule = _rules[index];
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 8.0),
-                  child: _InterceptionRuleItem(
-                    key: ValueKey(rule.id), // Important for state preservation
-                    rule: rule,
-                    onDelete: () => _removeRule(index),
-                    onUpdate: (updatedRule) {
-                      // _rules[index] refers to the object, simpler to just access object ref
-                      // But if we replaced the object:
-                      _rules[index] = updatedRule;
-                    },
-                  ),
-                );
-              },
+    return PopScope(
+      onPopInvokedWithResult: (result, _) {
+        if (_autoSave) {
+          widget.onSave(_rules);
+        }
+      },
+      child: CustomDialog(
+        width: 900,
+        height: 800,
+        showCloseButton: false,
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Interception Rules',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.add),
+                  onPressed: _addRule,
+                  tooltip: 'Add Rule',
+                ),
+              ],
             ),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Cancel'),
+            const Divider(),
+            Expanded(
+              child: ListView.builder(
+                itemCount: _rules.length,
+                itemBuilder: (context, index) {
+                  final rule = _rules[index];
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 8.0),
+                    child: _InterceptionRuleItem(
+                      key: ValueKey(
+                        rule.id,
+                      ), // Important for state preservation
+                      rule: rule,
+                      onDelete: () => _removeRule(index),
+                      onUpdate: (updatedRule) {
+                        // _rules[index] refers to the object, simpler to just access object ref
+                        // But if we replaced the object:
+                        _rules[index] = updatedRule;
+                      },
+                    ),
+                  );
+                },
               ),
-              const SizedBox(width: 8),
-              FilledButton(onPressed: _save, child: const Text('Save')),
-            ],
-          ),
-        ],
+            ),
+            const SizedBox(height: 16),
+            if (!_autoSave)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('Cancel'),
+                  ),
+                  const SizedBox(width: 8),
+                  FilledButton(onPressed: _save, child: const Text('Save')),
+                ],
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -254,7 +268,10 @@ class _InterceptionRuleItemState extends ConsumerState<_InterceptionRuleItem> {
               });
             },
             child: Padding(
-              padding: const EdgeInsets.all(12.0),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 12.0,
+                vertical: 6,
+              ),
               child: Row(
                 children: [
                   Checkbox(
@@ -266,7 +283,7 @@ class _InterceptionRuleItemState extends ConsumerState<_InterceptionRuleItem> {
                       widget.onUpdate(widget.rule);
                     },
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       widget.rule.name ?? 'Unnamed Rule',
@@ -274,13 +291,10 @@ class _InterceptionRuleItemState extends ConsumerState<_InterceptionRuleItem> {
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(
-                      Icons.delete,
-                      color: Colors.grey,
-                      size: 20,
-                    ),
+                    icon: const SuryaThemeIcon(BulkRounded.delete01),
                     onPressed: widget.onDelete,
                   ),
+                  const SizedBox(width: 8),
                   Icon(
                     _isExpanded
                         ? Icons.keyboard_arrow_up
@@ -335,10 +349,6 @@ class _InterceptionRuleItemState extends ConsumerState<_InterceptionRuleItem> {
                   const SizedBox(height: 16),
 
                   // Action Section
-                  const Text(
-                    'Action',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
                   const SizedBox(height: 8),
                   ActionEditor(
                     config: widget.rule.action,

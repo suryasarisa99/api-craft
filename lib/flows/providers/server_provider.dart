@@ -93,9 +93,6 @@ class ServerNotifier extends Notifier<RawMockttpServer> {
     debugPrint("Applying ${rules.length} interception rules");
     final manager = ProxyRuleManager(state);
 
-    // reset() is called inside reapplyRules (via manager.clearAllRules)
-    // This clears existing rules.
-    // Hydrate script actions
     final hydratedRules = rules.map((rule) {
       if (rule.action.type == 'editReq' &&
           rule.action.script != null &&

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:api_craft/core/widgets/ui/cf_code_editor.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:mockhttp/ui/rule_config.dart';
@@ -88,32 +89,56 @@ class _ActionEditorState extends State<ActionEditor> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        DropdownButton<String>(
-          value: _config.type,
-          underline: SizedBox.shrink(),
-          items: const [
-            DropdownMenuItem(value: 'passthrough', child: Text('Passthrough')),
-            DropdownMenuItem(value: 'reply', child: Text('Reply (Text/HTML)')),
-            DropdownMenuItem(value: 'json', child: Text('Reply (JSON)')),
-            DropdownMenuItem(value: 'file', child: Text('Reply (File)')),
-            DropdownMenuItem(value: 'pauseReq', child: Text('Pause Request')),
-            DropdownMenuItem(value: 'pauseRes', child: Text('Pause Response')),
-            DropdownMenuItem(
-              value: 'pauseReqRes',
-              child: Text('Pause Req/Res'),
+        Row(
+          children: [
+            const Text('Action', style: TextStyle(fontWeight: FontWeight.bold)),
+            const Spacer(),
+            DropdownButton<String>(
+              value: _config.type,
+              underline: SizedBox.shrink(),
+              items: const [
+                DropdownMenuItem(
+                  value: 'passthrough',
+                  child: Text('Passthrough'),
+                ),
+                DropdownMenuItem(
+                  value: 'reply',
+                  child: Text('Reply (Text/HTML)'),
+                ),
+                DropdownMenuItem(value: 'json', child: Text('Reply (JSON)')),
+                DropdownMenuItem(value: 'file', child: Text('Reply (File)')),
+                DropdownMenuItem(
+                  value: 'pauseReq',
+                  child: Text('Pause Request'),
+                ),
+                DropdownMenuItem(
+                  value: 'pauseRes',
+                  child: Text('Pause Response'),
+                ),
+                DropdownMenuItem(
+                  value: 'pauseReqRes',
+                  child: Text('Pause Req/Res'),
+                ),
+                DropdownMenuItem(value: 'editReq', child: Text('Edit Request')),
+                DropdownMenuItem(
+                  value: 'editRes',
+                  child: Text('Edit Response'),
+                ),
+                DropdownMenuItem(
+                  value: 'close',
+                  child: Text('Close Connection'),
+                ),
+                DropdownMenuItem(value: 'timeout', child: Text('Timeout')),
+              ],
+              onChanged: (val) {
+                if (val == null) return;
+                setState(() {
+                  _config.type = val;
+                });
+                _updateConfig();
+              },
             ),
-            DropdownMenuItem(value: 'editReq', child: Text('Edit Request')),
-            DropdownMenuItem(value: 'editRes', child: Text('Edit Response')),
-            DropdownMenuItem(value: 'close', child: Text('Close Connection')),
-            DropdownMenuItem(value: 'timeout', child: Text('Timeout')),
           ],
-          onChanged: (val) {
-            if (val == null) return;
-            setState(() {
-              _config.type = val;
-            });
-            _updateConfig();
-          },
         ),
         const SizedBox(height: 16),
         ..._buildSpecificFields(),
@@ -208,23 +233,16 @@ class _ActionEditorState extends State<ActionEditor> {
             style: const TextStyle(fontSize: 12, color: Colors.grey),
           ),
           const SizedBox(height: 8),
-          TextField(
-            controller: TextEditingController(text: _config.script)
-              ..selection = TextSelection.collapsed(
-                offset: (_config.script ?? '').length,
-              ),
-            decoration: const InputDecoration(
-              labelText: 'Script',
-              hintText:
-                  "function edit(obj) { obj.headers['new']='val'; return obj; }",
-              alignLabelWithHint: true,
-              border: OutlineInputBorder(),
+          SizedBox(
+            height: 300,
+            child: CFCodeEditor(
+              language: 'js',
+              text: _config.script ?? '',
+              onChanged: (val) {
+                _config.script = val;
+                _updateConfig();
+              },
             ),
-            maxLines: 10,
-            onChanged: (val) {
-              _config.script = val;
-              _updateConfig();
-            },
           ),
           if (_config.type == 'editRes')
             CheckboxListTile(
@@ -249,6 +267,7 @@ class _ActionEditorState extends State<ActionEditor> {
               _updateConfig();
             },
           ),
+          const SizedBox(height: 8),
           TextField(
             controller: _filePathController,
             decoration: InputDecoration(
