@@ -17,15 +17,15 @@ class FilterManagerData {
 typedef FilterManagerProvider =
     NotifierProvider<ConditionManagerNotifier, FilterManagerData>;
 
-final _filterManagerProvider =
+final filterManagerFamilyProvider =
     NotifierProvider.family<
       ConditionManagerNotifier,
       FilterManagerData,
       String
     >((s) => ConditionManagerNotifier(s));
 
-final filterManagerProvider = _filterManagerProvider("filter");
-final interceptManagerProvider = _filterManagerProvider("intercept");
+final filterManagerProvider = filterManagerFamilyProvider("filter");
+final interceptManagerProvider = filterManagerFamilyProvider("intercept");
 
 class ConditionManagerNotifier extends Notifier<FilterManagerData> {
   final String? type;
@@ -38,6 +38,10 @@ class ConditionManagerNotifier extends Notifier<FilterManagerData> {
 
   void reset() {
     state = FilterManagerData.empty();
+  }
+
+  void setRoot(FilterGroup group) {
+    state = FilterManagerData(rootFilter: group);
   }
 
   /// Forces a state update to notify listeners.

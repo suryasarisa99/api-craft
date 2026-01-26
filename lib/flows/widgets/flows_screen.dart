@@ -1,4 +1,6 @@
 import 'package:api_craft/core/widgets/ui/top_bar.dart';
+import 'package:api_craft/features/interception/providers/interception_provider.dart';
+import 'package:api_craft/features/interception/widgets/interception_dialog.dart';
 import 'package:api_craft/features/panel/bottom_panel.dart';
 import 'package:api_craft/features/panel/status_bar.dart';
 import 'package:api_craft/features/themes/models/theme_model.dart';
@@ -99,6 +101,24 @@ class _FlowScreenState extends ConsumerState<FlowsScreen> {
                 );
               },
               child: Text("filter"),
+            ),
+            IconButton(
+              icon: const Icon(Icons.security, size: 18),
+              tooltip: 'Interception Rules',
+              onPressed: () {
+                final currentRules = ref.read(interceptionProvider);
+                showDialog(
+                  context: context,
+                  builder: (context) => InterceptionDialog(
+                    initialRules: currentRules,
+                    onSave: (newRules) {
+                      ref
+                          .read(interceptionProvider.notifier)
+                          .setRules(newRules);
+                    },
+                  ),
+                );
+              },
             ),
           ],
         ),

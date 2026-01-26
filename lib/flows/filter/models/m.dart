@@ -83,7 +83,7 @@ enum FilterOperator {
   greaterThan('>', FilterFieldType.num, 'Greater Than'),
   greaterThanOrEqual('>=', FilterFieldType.num, 'Greater Than Or Equal'),
   between('<>', FilterFieldType.num, 'Between'),
-  inListNum('in', FilterFieldType.num, 'In List');
+  inListNum('in', FilterFieldType.num, 'One Of');
 
   const FilterOperator(this.symbol, this.supportedType, this.label);
   final String symbol;
@@ -98,6 +98,8 @@ abstract class FilterNode {
   final Object key = Object();
 
   Future<bool> matches(HttpFlow flow, {dynamic jsSession});
+  FilterNode copy();
+  Map<String, dynamic> toJson();
 }
 
 /// A leaf node representing a single filter condition (e.g., "~u example.com").
@@ -131,6 +133,12 @@ class FilterCondition extends FilterNode {
       'value': value,
       'type': 'condition',
     };
+  }
+
+  @override
+  FilterCondition copy() {
+    return FilterCondition(field: field, operator: operator, value: value)
+      ..isNegated = isNegated;
   }
 
   @override
@@ -208,6 +216,7 @@ class FilterGroup extends FilterNode {
   }
 
   //copy
+  @override
   FilterGroup copy() {
     return FilterGroup(
       children: children.map((child) {
