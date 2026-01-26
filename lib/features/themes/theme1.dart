@@ -120,10 +120,13 @@ ThemeData buildTheme1({
       contentPadding: EdgeInsets.symmetric(horizontal: 6, vertical: 7),
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(6.0)),
       enabledBorder: OutlineInputBorder(
-        borderSide: BorderSide(color: cs.outline),
+        borderSide: BorderSide(
+          color: const Color.fromARGB(255, 102, 102, 102),
+          width: 0.7,
+        ),
       ),
       focusedBorder: OutlineInputBorder(
-        borderSide: BorderSide(color: cs.primary, width: 1.5),
+        borderSide: BorderSide(color: cs.primary, width: 1),
       ),
       prefixIconConstraints: BoxConstraints.tight(Size(32, 28)),
       suffixIconConstraints: BoxConstraints.tight(Size(32, 28)),

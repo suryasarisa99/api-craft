@@ -2,6 +2,7 @@ import 'package:api_craft/core/models/models.dart';
 import 'package:collection/collection.dart';
 import 'package:mockhttp/types.dart';
 import 'package:mockhttp/types/ongoing.dart';
+import 'package:nanoid/non_secure.dart';
 
 class HttpFlow {
   final String id;
@@ -77,6 +78,20 @@ class HttpFlow {
       response: responseBackup,
       requestBackup: null,
       responseBackup: null,
+    );
+  }
+
+  HttpFlow duplicate() {
+    final id = nanoid();
+    return HttpFlow(
+      id: id,
+      reqEdited: reqEdited,
+      resEdited: resEdited,
+      state: state,
+      request: request?.copyWith(id: id),
+      response: response?.copyWith(id: id),
+      requestBackup: requestBackup?.copyWith(id: id),
+      responseBackup: responseBackup?.copyWith(id: id),
     );
   }
 

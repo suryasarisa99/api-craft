@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:api_craft/features/themes/models/theme_model.dart';
 import 'package:api_craft/flows/filter/condition_provider.dart';
 import 'package:api_craft/flows/filter/logic/filter_js_service.dart';
@@ -8,6 +10,7 @@ import 'package:api_craft/flows/providers/paused_providers.dart';
 import 'package:api_craft/packages/dt_table/dt_models.dart';
 import 'package:api_craft/packages/dt_table/dt_table.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:super_context_menu/super_context_menu.dart';
 
@@ -31,6 +34,7 @@ class _FlowList extends ConsumerState<FlowList> {
     dtController: widget.controller,
     ref: ref,
   );
+  late final FlowsNotifier flowsNotifier = ref.read(flowsProvider.notifier);
 
   @override
   void initState() {
@@ -100,6 +104,7 @@ class _FlowList extends ConsumerState<FlowList> {
       rowHeight: 32,
       frozenColumnsCount: 1,
       menuProvider: buildContextMenu,
+      onKeyEvent: onKey,
       headerColumns: [
         for (final header in headerCells)
           DtColumn(
@@ -115,7 +120,100 @@ class _FlowList extends ConsumerState<FlowList> {
     );
   }
 
+  Iterable<String> get modifiedIds => widget.controller.selectedRowIds.where(
+    (id) =>
+        ref.read(flowsProvider)[id]!.reqEdited ||
+        ref.read(flowsProvider)[id]!.resEdited,
+  );
+
+  bool onKey(KeyEvent event) {
+    if (event is! KeyDownEvent) return false;
+    final hk = HardwareKeyboard.instance;
+    final isCtrl = Platform.isMacOS ? hk.isMetaPressed : hk.isControlPressed;
+    final isAlt = hk.isAltPressed;
+    final k = event.logicalKey;
+    final flowId = widget.controller.focusedRowId;
+    if (flowId == null) return false;
+    final selectedIds = widget.controller.selectedRowIds;
+    if (isCtrl && k == .keyC) {
+      copyUrls(selectedIds);
+      return true;
+    } else if (k == .delete) {
+      deleteSelected(selectedIds);
+      return true;
+    } else if (isCtrl && k == .keyD) {
+      duplicateFlows(selectedIds);
+      return true;
+    }
+    return false;
+  }
+
   Menu buildContextMenu(MenuRequest e) {
-    return Menu(children: []);
+    final selectedIds = _flowDataSource.dtController.selectedRowIds;
+    final modified = modifiedIds;
+    final multiple = selectedIds.length > 1;
+    return Menu(
+      children: [
+        MenuAction(
+          activator: SingleActivator(LogicalKeyboardKey.keyC, meta: true),
+          callback: () => copyUrls(selectedIds),
+          title: 'Copy Url${multiple ? 's' : ''}',
+        ),
+        MenuAction(
+          callback: () => duplicateFlows(selectedIds),
+          title: "Duplicate",
+        ),
+        MenuAction(
+          attributes: MenuActionAttributes(disabled: modified.isEmpty),
+          activator: SingleActivator(LogicalKeyboardKey.backspace, meta: true),
+          callback: () => revertChanges(modified),
+          title: "Revert Changes",
+        ),
+        MenuAction(
+          title: 'Delete',
+          activator: SingleActivator(LogicalKeyboardKey.delete),
+          callback: () {
+            deleteSelected(selectedIds);
+          },
+        ),
+      ],
+    );
+  }
+
+  void deleteSelected(Iterable<String> ids) {
+    final firstSelectedIndex = _flowDataSource.getIndexByRowId(ids.first);
+    flowsNotifier.deleteFlows(ids);
+
+    if (_flowDataSource.effectiveRows.isEmpty) {
+      widget.controller.clearSelection();
+      widget.controller.updateFocusedRow(null);
+      return;
+    }
+    // set selected to same index after deletion, or last if index out of range(if not items after deletion)
+    final newFirstFlowId =
+        _flowDataSource.effectiveRows.length > firstSelectedIndex
+        ? _flowDataSource.effectiveRows[firstSelectedIndex].id
+        : _flowDataSource
+              .effectiveRows[_flowDataSource.effectiveRows.length - 1]
+              .id;
+    debugPrint('newFirstFlowId: $newFirstFlowId');
+    widget.controller.updateFocusedRow(newFirstFlowId);
+    widget.controller.setSelectedRows({newFirstFlowId});
+  }
+
+  void copyUrls(Set<String> selectedIds) {
+    final urls = selectedIds
+        .map((id) => ref.read(flowsProvider)[id]?.request?.url)
+        .whereType<String>()
+        .join('\n\n');
+    Clipboard.setData(ClipboardData(text: urls));
+  }
+
+  void revertChanges(Iterable<String> modifiedIds) {
+    flowsNotifier.revertChanges(modifiedIds);
+  }
+
+  void duplicateFlows(Iterable<String> selectedIds) {
+    flowsNotifier.duplicateFlows(selectedIds);
   }
 }

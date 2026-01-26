@@ -47,6 +47,27 @@ class FlowsNotifier extends Notifier<Map<String, HttpFlow>> {
     final id = res.id;
     state = {...state, id: state[id]!.editRes(res)};
   }
+
+  void deleteFlows(Iterable<String> ids) {
+    state.removeWhere((k, v) => ids.contains(k));
+    state = {...state};
+  }
+
+  void revertChanges(Iterable<String> ids) {
+    for (final id in ids) {
+      state[id] = state[id]!.reset();
+    }
+    state = {...state};
+  }
+
+  void duplicateFlows(Iterable<String> ids) {
+    final Map<String, HttpFlow> duplicated = {};
+    for (final id in ids) {
+      final flow = state[id]!.duplicate();
+      duplicated[flow.id] = flow;
+    }
+    state = {...state, ...duplicated};
+  }
 }
 
 class FlowIdList extends Notifier<List<String>> {
