@@ -82,7 +82,7 @@ class HttpService {
             req.settings.followRedirects ??
             true, // This param might not exist in sendRawHttp yet
         requestId: req.request.id,
-        initialCookies: initialCookies,
+        cookiesJar: initialCookies,
       );
       debugPrint(
         'Response status: ${response.statusCode}: ${response.durationMs} ms',

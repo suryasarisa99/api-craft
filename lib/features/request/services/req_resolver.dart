@@ -162,10 +162,6 @@ class RequestResolver {
       }
     }
 
-    // Inject Cookies
-    // Removed: Cookies are now handled in raw_http_req.dart to support redirects
-    // addRelevantCookies(ref, fullUri, headers);
-
     // resolve auth
     final resolvedAuthData = <String, dynamic>{};
     for (final entry in auth.data.entries) {

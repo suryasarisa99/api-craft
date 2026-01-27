@@ -26,7 +26,7 @@ Future<ResponseHistory> sendRawHttp({
   Duration connectTimeout = const Duration(seconds: 10),
   int maxRedirects = 5,
   bool followRedirects = true,
-  List<CookieDef> initialCookies = const [],
+  List<CookieDef> cookiesJar = const [],
 }) async {
   Uri currentUrl = url;
   int redirectCount = 0;
@@ -37,7 +37,11 @@ Future<ResponseHistory> sendRawHttp({
 
   // Cookies for the session
   // We use a mutable list to track cookies across redirects
-  List<CookieDef> currentCookies = List.from(initialCookies);
+  List<CookieDef> currentCookies = List.from(cookiesJar);
+  // Mutable headers list
+  List<List<String>> currentHeaders = headers != null
+      ? List<List<String>>.from(headers)
+      : [];
 
   // History tracking
   List<RedirectStep> redirects = [];
@@ -137,11 +141,11 @@ Future<ResponseHistory> sendRawHttp({
       bool hasConnectionHeader = false;
       bool hasAcceptEncoding = false;
       bool hasContentLength = false;
-      bool hasCookieHeader = false;
+      List<String> userManualCookies = [];
 
       // Add User Headers
-      if (headers != null) {
-        for (final h in headers) {
+      if (currentHeaders.isNotEmpty) {
+        for (final h in currentHeaders) {
           if (h.length != 2) continue;
           final keyLower = h[0].toLowerCase();
 
@@ -149,13 +153,17 @@ Future<ResponseHistory> sendRawHttp({
           if (keyLower == 'connection') hasConnectionHeader = true;
           if (keyLower == 'accept-encoding') hasAcceptEncoding = true;
           if (keyLower == 'content-length') hasContentLength = true;
-          if (keyLower == 'cookie')
-            hasCookieHeader = true; // We might merge or replace this
+
+          if (keyLower == 'cookie') {
+            userManualCookies.add(h[1]);
+            continue; // We handle cookies properly later
+          }
 
           // Logic: For redirects, we might want to strip sensitive headers if domain changes?
           // Standard practice: Authorization, Cookie, Proxy-Authorization.
           // For now, we simple-mindedly forward everything EXCEPT Cookies which we handle specially.
-          if (keyLower == 'cookie') continue;
+
+          // Note: 'cookie' is already skipped above.
 
           buffer.write('${h[0]}: ${h[1]}\r\n');
           stepReqHeaders.add([h[0], h[1]]);
@@ -169,30 +177,43 @@ Future<ResponseHistory> sendRawHttp({
         currentCookies,
       );
 
-      // Also consider User provided 'Cookie' header?
-      // Usually users want their manual header to override or merge.
-      // Let's prepend user's manual cookie if any (simplistic merge).
-      // Or better: Just use our jar managed cookies + manual ones.
+      // Support for duplicate vs merged cookies
+      if (userManualCookies.length <= 1) {
+        // SCENARIO 1: User provided single cookie header.
+        // We merge Jar cookies into it (standard modern behavior + user convenience)
+        // Result: Cookie: user=val; jar=val
+        String combined = userManualCookies.firstOrNull ?? '';
+        if (relevantCookies.isNotEmpty) {
+          final jarCookieStr = CookieUtils.generateCookieHeader(
+            relevantCookies,
+          );
+          if (combined.isEmpty) {
+            combined = jarCookieStr;
+          } else if (combined.trim().endsWith(';')) {
+            combined += ' $jarCookieStr';
+          } else {
+            combined += '; $jarCookieStr';
+          }
+        }
+        buffer.write('Cookie: $combined\r\n');
+        stepReqHeaders.add(['Cookie', combined]);
+      } else {
+        // SCENARIO 2: User provided MULTIPLE cookie headers (or zero).
+        // If multiple, they likely want to support legacy/custom behavior (separate headers).
+        // So we write them out separately, and append Jar cookies as yet another separate header.
 
-      List<String> cookieParts = [];
-      // If user manually added cookie header, finding it and adding parts
-      if (hasCookieHeader) {
-        final userCookie =
-            headers?.firstWhere(
-              (h) => h[0].toLowerCase() == 'cookie',
-              orElse: () => [],
-            ) ??
-            [];
-        if (userCookie.isNotEmpty) cookieParts.add(userCookie[1]);
-      }
-      if (relevantCookies.isNotEmpty) {
-        cookieParts.add(CookieUtils.generateCookieHeader(relevantCookies));
-      }
+        for (final uc in userManualCookies) {
+          buffer.write('Cookie: $uc\r\n');
+          stepReqHeaders.add(['Cookie', uc]);
+        }
 
-      if (cookieParts.isNotEmpty) {
-        final finalCookieVal = cookieParts.join('; ');
-        buffer.write('Cookie: $finalCookieVal\r\n');
-        stepReqHeaders.add(['Cookie', finalCookieVal]);
+        if (relevantCookies.isNotEmpty) {
+          final jarCookieStr = CookieUtils.generateCookieHeader(
+            relevantCookies,
+          );
+          buffer.write('Cookie: $jarCookieStr\r\n');
+          stepReqHeaders.add(['Cookie', jarCookieStr]);
+        }
       }
 
       if (!hasConnectionHeader) {
@@ -336,6 +357,17 @@ Future<ResponseHistory> sendRawHttp({
             currentBody = null;
           }
           // 307/308 preserve method/body (so currentMethod/currentBody remain same)
+
+          // Strip sensitive headers if domain changes
+          if (nextUrl.host != currentUrl.host) {
+            currentHeaders = currentHeaders.where((h) {
+              final key = h[0].toLowerCase();
+              return key != 'authorization' &&
+                  key != 'cookie' &&
+                  key != 'proxy-authorization' &&
+                  key != 'www-authenticate';
+            }).toList();
+          }
 
           currentUrl = nextUrl;
           debugPrint(

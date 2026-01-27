@@ -350,7 +350,17 @@ class EnvironmentNotifier extends Notifier<EnvironmentState> {
   ) async {
     final jar = state.cookieJars.firstWhere((j) => j.id == jarId);
 
-    final updatedJar = jar.copyWith(cookies: newCookies);
+    // Merge logic: Update existing or add new
+    final currentList = List<CookieDef>.from(jar.cookies);
+    for (final newC in newCookies) {
+      currentList.removeWhere(
+        (c) =>
+            c.key == newC.key && c.domain == newC.domain && c.path == newC.path,
+      );
+      currentList.add(newC);
+    }
+
+    final updatedJar = jar.copyWith(cookies: currentList);
     await updateCookieJar(updatedJar);
   }
 }
