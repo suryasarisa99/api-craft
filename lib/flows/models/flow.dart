@@ -1,7 +1,10 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:api_craft/core/models/models.dart';
 import 'package:collection/collection.dart';
 import 'package:mockhttp/types.dart';
-import 'package:mockhttp/types/ongoing.dart';
+// import 'package:mockhttp/types/ongoing.dart'; // No longer needed directly for body
 import 'package:nanoid/non_secure.dart';
 
 class HttpFlow {
@@ -97,7 +100,10 @@ class HttpFlow {
 
   static String? getHeader(List<List<String>> headers, String headerName) {
     final key = headerName.toLowerCase();
-    return headers.firstWhere((h) => h.first.toLowerCase() == key).last;
+    final header = headers.firstWhereOrNull(
+      (h) => h.first.toLowerCase() == key,
+    );
+    return header?.last;
   }
 }
 
@@ -124,7 +130,8 @@ class FlowRequest {
   final String method;
   final Destination destination;
   final List<KeyValueItem> headers;
-  final OngoingBody body;
+  // final OngoingBody body;
+  final Uint8List body; // Changed to Uint8List
   final TimingEvents timingEvents;
   final String? ipAddress;
   final int? contentLen;
@@ -147,7 +154,8 @@ class FlowRequest {
     this.port,
   });
 
-  factory FlowRequest.fromOngoingReq(OngoingRequest r) {
+  // Keep for compatibility if possible, or make it async static
+  static Future<FlowRequest> createFromOngoingReq(OngoingRequest r) async {
     return FlowRequest(
       id: r.id,
       url: r.url,
@@ -159,7 +167,25 @@ class FlowRequest {
       httpVersion: r.httpVersion,
       destination: r.destination,
       headers: _fromList(r.headers),
-      body: r.body,
+      body: await r.body.asBuffer(),
+      protocol: r.protocol,
+      timingEvents: r.timingEvents,
+    );
+  }
+
+  factory FlowRequest.fromMutableReq(MutableRequest r) {
+    return FlowRequest(
+      id: r.id,
+      url: r.url,
+      method: r.method,
+      path: r.path,
+      contentLen: r.body?.length, // Approximate
+      ipAddress: r.remoteIpAddress,
+      port: r.remotePort,
+      httpVersion: r.httpVersion,
+      destination: r.destination,
+      headers: _fromList(r.headers),
+      body: r.body ?? Uint8List(0),
       protocol: r.protocol,
       timingEvents: r.timingEvents,
     );
@@ -178,7 +204,7 @@ class FlowRequest {
       headers: _toList(headers),
       tags: [],
       //body: Uint8List
-      body: await body.asBuffer(),
+      body: body,
       protocol: protocol,
       timingEvents: timingEvents,
     );
@@ -192,7 +218,7 @@ class FlowRequest {
     String? httpVersion,
     String? method,
     List<KeyValueItem>? headers,
-    OngoingBody? body,
+    Uint8List? body,
     TimingEvents? timingEvents,
     String? ipAddress,
     int? contentLen,
@@ -225,15 +251,31 @@ class FlowRequest {
       'path': path, // Not always present in headers?
       'headers': Map.fromEntries(headers.map((e) => MapEntry(e.key, e.value))),
       // Body handling might be complex, simplified for now
-      'body': null, // Async body not tailored for sync JS check yet
+      'body': asText(), // Async body not tailored for sync JS check yet
     };
+  }
+
+  String asText() {
+    try {
+      return utf8.decode(body);
+    } catch (_) {
+      return String.fromCharCodes(body);
+    }
+  }
+
+  dynamic asJson() {
+    try {
+      return jsonDecode(asText());
+    } catch (_) {
+      return null;
+    }
   }
 }
 
 class FlowResponse {
   final String id;
   final List<KeyValueItem> headers;
-  final CompletedBody? body;
+  final Uint8List? body;
   final int statusCode;
   final TimingEvents timingEvents;
   final String? contentType;
@@ -249,22 +291,25 @@ class FlowResponse {
     this.body,
   });
 
-  factory FlowResponse.fromOngoingRes(OngoingResponse r) {
-    return FlowResponse(
-      id: r.id,
-      contentLen: null,
-      headers: _fromList(r.getHeaders()),
-      // body: r.body,
-      statusCode: r.statusCode,
-      contentType: HttpFlow.getHeader(r.getHeaders(), 'content-type'),
-      timingEvents: r.timingEvents,
-    );
-  }
-  factory FlowResponse.fromCompletedRes(CompletedResponse r) {
+  static Future<FlowResponse> createFromCompletedRes(
+    CompletedResponse r,
+  ) async {
     return FlowResponse(
       id: r.id,
       contentLen: r.contentLength,
-      body: r.body,
+      body: r.body.buffer,
+      headers: _fromList(r.headers),
+      statusCode: r.statusCode,
+      contentType: HttpFlow.getHeader(r.headers, 'content-type'),
+      timingEvents: r.timingEvents,
+    );
+  }
+
+  factory FlowResponse.fromMutableRes(MutableResponse r) {
+    return FlowResponse(
+      id: r.id,
+      contentLen: r.body?.length,
+      body: r.body ?? Uint8List(0),
       headers: _fromList(r.headers),
       statusCode: r.statusCode,
       contentType: HttpFlow.getHeader(r.headers, 'content-type'),
@@ -276,7 +321,7 @@ class FlowResponse {
   FlowResponse copyWith({
     String? id,
     List<KeyValueItem>? headers,
-    CompletedBody? body,
+    Uint8List? body,
     int? contentLen,
     int? statusCode,
     String? contentType,
@@ -297,7 +342,7 @@ class FlowResponse {
     return MutableResponse(
       id: id,
       headers: _toList(headers),
-      body: body?.buffer,
+      body: body,
       statusCode: statusCode,
       timingEvents: timingEvents,
       statusMessage: 'Ok',
@@ -311,7 +356,16 @@ class FlowResponse {
       'statusCode': statusCode,
       'headers': Map.fromEntries(headers.map((e) => MapEntry(e.key, e.value))),
       // Body handling
-      'body': body?.toString(), // Potentially unsafe/partial
+      'body': asText(), // Potentially unsafe/partial
     };
+  }
+
+  String asText() {
+    if (body == null) return '';
+    try {
+      return utf8.decode(body!);
+    } catch (_) {
+      return String.fromCharCodes(body!);
+    }
   }
 }

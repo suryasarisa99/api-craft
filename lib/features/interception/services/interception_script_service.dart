@@ -14,7 +14,7 @@ class InterceptionScriptService {
   final Completer<void> _initCompleter = Completer();
 
   InterceptionScriptService._internal() {
-    engine = getJavascriptRuntime();
+    engine = getJavascriptRuntime(xhr: false);
     _initEngine();
   }
 
