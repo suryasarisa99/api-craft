@@ -163,38 +163,8 @@ class RequestResolver {
     }
 
     // Inject Cookies
-    final envState = ref.read(environmentProvider);
-    final jar = envState.selectedCookieJar;
-    if (jar != null) {
-      final relevantCookies = jar.cookies.where((c) {
-        debugPrint(
-          "cookie: ${c.key} enabled: ${c.isEnabled}, domain: ${c.domain}",
-        );
-        if (!c.isEnabled) return false;
-        if (!domainMatches(uri, c)) return false;
-        if (!pathMatches(uri, c)) return false;
-        if (c.isSecure && uri.scheme != 'https') return false;
-        return true;
-      });
-      debugPrint("relevantCookies: ${relevantCookies.length}");
-
-      if (relevantCookies.isNotEmpty) {
-        final cookieHeaderVal = relevantCookies
-            .map((c) => '${c.key}=${c.value}')
-            .join('; ');
-        bool found = false;
-        for (var h in headers) {
-          if (h[0].toLowerCase() == 'cookie') {
-            h[1] = '${h[1]}; $cookieHeaderVal';
-            found = true;
-            break;
-          }
-        }
-        if (!found) {
-          headers.add(['Cookie', cookieHeaderVal]);
-        }
-      }
-    }
+    // Removed: Cookies are now handled in raw_http_req.dart to support redirects
+    // addRelevantCookies(ref, fullUri, headers);
 
     // resolve auth
     final resolvedAuthData = <String, dynamic>{};
@@ -558,14 +528,49 @@ class RequestResolver {
     );
   }
 
-  bool domainMatches(Uri uri, CookieDef c) {
+  static void addRelevantCookies(Ref ref, Uri uri, List<List<String>> headers) {
+    final envState = ref.read(environmentProvider);
+    final jar = envState.selectedCookieJar;
+    if (jar != null) {
+      final relevantCookies = jar.cookies.where((c) {
+        debugPrint(
+          "cookie: ${c.key} enabled: ${c.isEnabled}, domain: ${c.domain}",
+        );
+        if (!c.isEnabled) return false;
+        if (!domainMatches(uri, c)) return false;
+        if (!pathMatches(uri, c)) return false;
+        if (c.isSecure && uri.scheme != 'https') return false;
+        return true;
+      });
+      debugPrint("relevantCookies: ${relevantCookies.length}");
+
+      if (relevantCookies.isNotEmpty) {
+        final cookieHeaderVal = relevantCookies
+            .map((c) => '${c.key}=${c.value}')
+            .join('; ');
+        bool found = false;
+        for (var h in headers) {
+          if (h[0].toLowerCase() == 'cookie') {
+            h[1] = '${h[1]}; $cookieHeaderVal';
+            found = true;
+            break;
+          }
+        }
+        if (!found) {
+          headers.add(['Cookie', cookieHeaderVal]);
+        }
+      }
+    }
+  }
+
+  static bool domainMatches(Uri uri, CookieDef c) {
     if (c.isHostOnly) {
       return uri.host == c.domain;
     }
     return uri.host == c.domain || uri.host.endsWith('.${c.domain}');
   }
 
-  bool pathMatches(Uri uri, CookieDef c) {
+  static bool pathMatches(Uri uri, CookieDef c) {
     final cookiePath = c.path;
     final reqPath = uri.path.isEmpty ? '/' : uri.path;
 

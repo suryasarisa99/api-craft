@@ -42,7 +42,7 @@ class HistoryEntity {
   String? errorMessage;
 
   // Flex
-  List<String>? redirectUrls;
+  String? redirectsJson;
 
   String? finalUrl;
 
@@ -68,7 +68,7 @@ class HistoryEntity {
     required this.body,
     this.bodyType,
     this.errorMessage,
-    this.redirectUrls,
+    this.redirectsJson,
     this.finalUrl,
     this.testResultsJson,
     this.assertionResultsJson,
@@ -92,7 +92,7 @@ class HistoryEntity {
       body: model.body,
       bodyType: model.bodyType,
       errorMessage: model.errorMessage,
-      redirectUrls: model.redirectUrls,
+      redirectsJson: jsonEncode(model.redirects.map((e) => e.toMap()).toList()),
       finalUrl: model.finalUrl,
       testResultsJson: jsonEncode(
         model.testResults.map((e) => e.toMap()).toList(),
@@ -142,6 +142,16 @@ class HistoryEntity {
       }
     }
 
+    List<RedirectStep> redirects = [];
+    if (redirectsJson != null) {
+      try {
+        final List<dynamic> list = jsonDecode(redirectsJson!);
+        redirects = list.map((e) => RedirectStep.fromMap(e)).toList();
+      } catch (e) {
+        // failed to parse redirects
+      }
+    }
+
     return ResponseHistory(
       id: uid,
       requestId: requestId,
@@ -155,7 +165,7 @@ class HistoryEntity {
       executeAt: executeAt,
       durationMs: durationMs,
       errorMessage: errorMessage,
-      redirectUrls: redirectUrls ?? [],
+      redirects: redirects,
       finalUrl: finalUrl,
       testResults: tests,
       assertionResults: assertions,

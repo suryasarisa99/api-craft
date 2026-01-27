@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:api_craft/core/models/models.dart';
+import 'package:api_craft/features/response/models/response_history.dart';
 import 'package:flutter/material.dart';
 import 'package:nanoid/nanoid.dart';
 
@@ -13,7 +14,7 @@ ResponseHistory parseRawResponse(
   required DateTime requestSentTime,
   required int durationMs,
   required String requestId,
-  List<String> redirectUrls = const [],
+  List<RedirectStep> redirects = const [],
   String? finalUrl,
 }) {
   // Find the double CRLF separating headers from body
@@ -125,7 +126,7 @@ ResponseHistory parseRawResponse(
     bodyBytes: rawBodyBytes,
     body: utf8.decode(rawBodyBytes, allowMalformed: true),
     bodyType: bodyType,
-    redirectUrls: redirectUrls,
+    redirects: redirects,
     finalUrl: finalUrl,
   );
 }

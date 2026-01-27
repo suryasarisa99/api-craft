@@ -130,7 +130,7 @@ final _entities = <obx_int.ModelEntity>[
   obx_int.ModelEntity(
     id: const obx_int.IdUid(4, 1589747562368478009),
     name: 'HistoryEntity',
-    lastPropertyId: const obx_int.IdUid(21, 4756130884778994263),
+    lastPropertyId: const obx_int.IdUid(22, 2329583920459602344),
     flags: 0,
     properties: <obx_int.ModelProperty>[
       obx_int.ModelProperty(
@@ -214,12 +214,6 @@ final _entities = <obx_int.ModelEntity>[
         flags: 0,
       ),
       obx_int.ModelProperty(
-        id: const obx_int.IdUid(15, 1102702881259066499),
-        name: 'redirectUrls',
-        type: 30,
-        flags: 0,
-      ),
-      obx_int.ModelProperty(
         id: const obx_int.IdUid(16, 4266804411084962393),
         name: 'finalUrl',
         type: 9,
@@ -253,6 +247,12 @@ final _entities = <obx_int.ModelEntity>[
       obx_int.ModelProperty(
         id: const obx_int.IdUid(21, 4756130884778994263),
         name: 'reqBody',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(22, 2329583920459602344),
+        name: 'redirectsJson',
         type: 9,
         flags: 0,
       ),
@@ -666,6 +666,7 @@ obx_int.ModelDefinition getObjectBoxModel() {
       6656238608472947287,
       8033670793440821754,
       7087347246569023560,
+      1102702881259066499,
     ],
     retiredRelationUids: const [],
     modelVersion: 5,
@@ -837,13 +838,6 @@ obx_int.ModelDefinition getObjectBoxModel() {
         final errorMessageOffset = object.errorMessage == null
             ? null
             : fbb.writeString(object.errorMessage!);
-        final redirectUrlsOffset = object.redirectUrls == null
-            ? null
-            : fbb.writeList(
-                object.redirectUrls!
-                    .map(fbb.writeString)
-                    .toList(growable: false),
-              );
         final finalUrlOffset = object.finalUrl == null
             ? null
             : fbb.writeString(object.finalUrl!);
@@ -860,7 +854,10 @@ obx_int.ModelDefinition getObjectBoxModel() {
         final reqBodyOffset = object.reqBody == null
             ? null
             : fbb.writeString(object.reqBody!);
-        fbb.startTable(22);
+        final redirectsJsonOffset = object.redirectsJson == null
+            ? null
+            : fbb.writeString(object.redirectsJson!);
+        fbb.startTable(23);
         fbb.addInt64(0, object.id);
         fbb.addOffset(1, uidOffset);
         fbb.addOffset(2, requestIdOffset);
@@ -874,13 +871,13 @@ obx_int.ModelDefinition getObjectBoxModel() {
         fbb.addOffset(11, bodyOffset);
         fbb.addOffset(12, bodyTypeOffset);
         fbb.addOffset(13, errorMessageOffset);
-        fbb.addOffset(14, redirectUrlsOffset);
         fbb.addOffset(15, finalUrlOffset);
         fbb.addOffset(16, testResultsJsonOffset);
         fbb.addOffset(17, assertionResultsJsonOffset);
         fbb.addOffset(18, workspaceIdOffset);
         fbb.addOffset(19, reqHeadersOffset);
         fbb.addOffset(20, reqBodyOffset);
+        fbb.addOffset(21, redirectsJsonOffset);
         fbb.finish(fbb.endTable());
         return object.id;
       },
@@ -938,10 +935,9 @@ obx_int.ModelDefinition getObjectBoxModel() {
         final errorMessageParam = const fb.StringReader(
           asciiOptimization: true,
         ).vTableGetNullable(buffer, rootOffset, 30);
-        final redirectUrlsParam = const fb.ListReader<String>(
-          fb.StringReader(asciiOptimization: true),
-          lazy: false,
-        ).vTableGetNullable(buffer, rootOffset, 32);
+        final redirectsJsonParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGetNullable(buffer, rootOffset, 46);
         final finalUrlParam = const fb.StringReader(
           asciiOptimization: true,
         ).vTableGetNullable(buffer, rootOffset, 34);
@@ -974,7 +970,7 @@ obx_int.ModelDefinition getObjectBoxModel() {
           body: bodyParam,
           bodyType: bodyTypeParam,
           errorMessage: errorMessageParam,
-          redirectUrls: redirectUrlsParam,
+          redirectsJson: redirectsJsonParam,
           finalUrl: finalUrlParam,
           testResultsJson: testResultsJsonParam,
           assertionResultsJson: assertionResultsJsonParam,
@@ -1548,33 +1544,33 @@ class HistoryEntity_ {
     _entities[2].properties[12],
   );
 
-  /// See [HistoryEntity.redirectUrls].
-  static final redirectUrls = obx.QueryStringVectorProperty<HistoryEntity>(
-    _entities[2].properties[13],
-  );
-
   /// See [HistoryEntity.finalUrl].
   static final finalUrl = obx.QueryStringProperty<HistoryEntity>(
-    _entities[2].properties[14],
+    _entities[2].properties[13],
   );
 
   /// See [HistoryEntity.testResultsJson].
   static final testResultsJson = obx.QueryStringProperty<HistoryEntity>(
-    _entities[2].properties[15],
+    _entities[2].properties[14],
   );
 
   /// See [HistoryEntity.assertionResultsJson].
   static final assertionResultsJson = obx.QueryStringProperty<HistoryEntity>(
-    _entities[2].properties[16],
+    _entities[2].properties[15],
   );
 
   /// See [HistoryEntity.workspaceId].
   static final workspaceId = obx.QueryStringProperty<HistoryEntity>(
-    _entities[2].properties[17],
+    _entities[2].properties[16],
   );
 
   /// See [HistoryEntity.reqBody].
   static final reqBody = obx.QueryStringProperty<HistoryEntity>(
+    _entities[2].properties[18],
+  );
+
+  /// See [HistoryEntity.redirectsJson].
+  static final redirectsJson = obx.QueryStringProperty<HistoryEntity>(
     _entities[2].properties[19],
   );
 }

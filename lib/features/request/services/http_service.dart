@@ -54,6 +54,16 @@ class HttpService {
 
       ref.read(requestLoadingProvider(requestId).notifier).startSending();
 
+      // IMPL: Get Cookies from Jar
+      final cookieJarId = ref.read(environmentProvider).selectedCookieJarId;
+      List<CookieDef> initialCookies = [];
+      if (cookieJarId != null) {
+        final jar = ref.read(environmentProvider).selectedCookieJar;
+        if (jar != null) {
+          initialCookies = jar.cookies;
+        }
+      }
+
       ResponseHistory response = await sendRawHttp(
         method: req.request.method,
         url: req.uri,
@@ -72,18 +82,39 @@ class HttpService {
             req.settings.followRedirects ??
             true, // This param might not exist in sendRawHttp yet
         requestId: req.request.id,
+        initialCookies: initialCookies,
       );
       debugPrint(
         'Response status: ${response.statusCode}: ${response.durationMs} ms',
       );
 
-      // Extract & Save Cookies (Before scripts in case scripts rely on them? Or after?)
-      // Scripts might want to access cookies.
-      final cookieJarId = ref.read(environmentProvider).selectedCookieJarId;
+      // Extract & Save Cookies (Before scripts)
       if (cookieJarId != null) {
+        // 1. From Redirects
+        for (final step in response.redirects) {
+          try {
+            final stepUri = Uri.parse(step.url);
+            final stepCookies = RawHeaderUtils.getSetCookies(
+              step.resHeaders,
+              stepUri,
+            );
+            if (stepCookies.isNotEmpty) {
+              ref
+                  .read(environmentProvider.notifier)
+                  .saveCookiesToJar(cookieJarId, stepCookies);
+            }
+          } catch (e) {
+            debugPrint("Error saving redirect cookies: $e");
+          }
+        }
+
+        // 2. From Final Response
+        final finalUri = (response.finalUrl != null)
+            ? Uri.parse(response.finalUrl!)
+            : req.uri;
         final newCookies = RawHeaderUtils.getSetCookies(
           response.headers,
-          req.uri,
+          finalUri,
         );
         if (newCookies.isNotEmpty) {
           ref

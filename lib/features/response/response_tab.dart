@@ -10,6 +10,7 @@ import 'package:api_craft/features/response/widgets/response_cookies_tab.dart';
 import 'package:api_craft/features/response/widgets/response_info_tab.dart';
 import 'package:api_craft/features/response/widgets/response_status_bar.dart';
 import 'package:api_craft/features/response/widgets/tests_result_tab.dart';
+import 'package:api_craft/features/response/widgets/response_redirects_tab.dart'; // NEW
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -41,7 +42,7 @@ class _ResponseTabState extends ConsumerState<ResponseTab>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 5, vsync: this);
+    _tabController = TabController(length: 6, vsync: this);
   }
 
   @override
@@ -261,6 +262,7 @@ class _ResponseTabState extends ConsumerState<ResponseTab>
                         text:
                             "Cookies (${response.reqCookies.length}/${response.resCookies.length})",
                       ),
+                      Tab(text: "Redirects (${response.redirects.length})"),
                       Tab(
                         text:
                             "Tests (${response.testResults.length + response.assertionResults.length})",
@@ -277,6 +279,7 @@ class _ResponseTabState extends ConsumerState<ResponseTab>
                       ResponseBodyTab(response: response, mode: _bodyViewMode),
                       ResponseHeaders(id: id),
                       ResponseCookiesTab(id: id),
+                      ResponseRedirectsTab(response: response), // NEW
                       TestsResultTab(
                         results: response.testResults,
                         assertionResults: response.assertionResults,

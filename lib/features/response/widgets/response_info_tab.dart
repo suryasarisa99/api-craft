@@ -25,16 +25,16 @@ class ResponseInfoTab extends StatelessWidget {
         if (response.finalUrl != null) _buildInfoRow("URL", response.finalUrl!),
         _buildInfoRow("Protocol", response.protocolVersion),
         _buildInfoRow("Body Type", response.bodyType ?? "Unknown"),
-        if (response.redirectUrls.isNotEmpty) ...[
+        if (response.redirects.isNotEmpty) ...[
           const Divider(),
           ExpansionTile(
             title: Text(
-              "Redirects (${response.redirectUrls.length})",
+              "Redirects (${response.redirects.length})",
               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
             ),
             dense: true,
-            tilePadding: .symmetric(horizontal: 8),
-            children: response.redirectUrls.map((url) {
+            tilePadding: const EdgeInsets.symmetric(horizontal: 8),
+            children: response.redirects.map((step) {
               return Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16.0,
@@ -42,12 +42,25 @@ class ResponseInfoTab extends StatelessWidget {
                 ),
                 child: Align(
                   alignment: Alignment.centerLeft,
-                  child: SelectableText(
-                    url,
-                    style: const TextStyle(
-                      fontFamily: 'monospace',
-                      fontSize: 12,
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "${step.statusCode} ${step.method}",
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                          color: Colors.blueGrey,
+                        ),
+                      ),
+                      SelectableText(
+                        step.url,
+                        style: const TextStyle(
+                          fontFamily: 'monospace',
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               );

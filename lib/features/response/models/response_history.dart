@@ -27,6 +27,60 @@ class TestResult {
 }
 
 /// A class to hold the parsed raw HTTP response details
+
+class RedirectStep {
+  final int statusCode;
+  final String method;
+  final String url;
+  final List<List<String>> reqHeaders;
+  final List<List<String>> resHeaders;
+  final bool hasBody;
+  final int durationMs;
+
+  RedirectStep({
+    required this.statusCode,
+    required this.method,
+    required this.url,
+    required this.reqHeaders,
+    required this.resHeaders,
+    required this.hasBody,
+    this.durationMs = 0,
+  });
+
+  Map<String, dynamic> toMap() => {
+    'statusCode': statusCode,
+    'method': method,
+    'url': url,
+    'reqHeaders': reqHeaders,
+    'resHeaders': resHeaders,
+    'hasBody': hasBody,
+    'durationMs': durationMs,
+  };
+
+  factory RedirectStep.fromMap(Map<String, dynamic> map) {
+    return RedirectStep(
+      statusCode: map['statusCode'] ?? 0,
+      method: map['method'] ?? '',
+      url: map['url'] ?? '',
+      reqHeaders:
+          (map['reqHeaders'] as List?)?.map<List<String>>((e) {
+            final list = e as List;
+            return [list[0].toString(), list[1].toString()];
+          }).toList() ??
+          [],
+      resHeaders:
+          (map['resHeaders'] as List?)?.map<List<String>>((e) {
+            final list = e as List;
+            return [list[0].toString(), list[1].toString()];
+          }).toList() ??
+          [],
+      hasBody: map['hasBody'] ?? false,
+      durationMs: map['durationMs'] ?? 0,
+    );
+  }
+}
+
+/// A class to hold the parsed raw HTTP response details
 class ResponseHistory {
   final String id;
   final String requestId;
@@ -41,7 +95,7 @@ class ResponseHistory {
   final String body;
   final String? bodyType;
   final String? errorMessage;
-  final List<String> redirectUrls;
+  final List<RedirectStep> redirects;
   final String? finalUrl;
   final List<TestResult> testResults;
   final List<TestResult> assertionResults;
@@ -66,7 +120,7 @@ class ResponseHistory {
     required this.requestId,
 
     this.errorMessage,
-    this.redirectUrls = const [],
+    this.redirects = const [],
     this.finalUrl,
     this.testResults = const [],
     this.assertionResults = const [],
@@ -103,7 +157,7 @@ class ResponseHistory {
     DateTime? executeAt,
     int? durationMs,
     String? errorMessage,
-    List<String>? redirectUrls,
+    List<RedirectStep>? redirects,
     String? finalUrl,
     List<TestResult>? testResults,
     List<TestResult>? assertionResults,
@@ -123,7 +177,7 @@ class ResponseHistory {
       executeAt: executeAt ?? this.executeAt,
       durationMs: durationMs ?? this.durationMs,
       errorMessage: errorMessage ?? this.errorMessage,
-      redirectUrls: redirectUrls ?? this.redirectUrls,
+      redirects: redirects ?? this.redirects,
       finalUrl: finalUrl ?? this.finalUrl,
       testResults: testResults ?? this.testResults,
       assertionResults: assertionResults ?? this.assertionResults,
@@ -153,9 +207,11 @@ class ResponseHistory {
       bodyType: map['body_type'],
       body: map['body'],
       errorMessage: map['error_message'],
-      redirectUrls: (map['redirect_urls'] != null)
-          ? List<String>.from(map['redirect_urls'])
-          : [],
+      redirects:
+          (map['redirects'] as List?)
+              ?.map((e) => RedirectStep.fromMap(e))
+              .toList() ??
+          [],
       finalUrl: map['final_url'],
       testResults:
           (map['test_results'] as List?)
@@ -190,7 +246,7 @@ class ResponseHistory {
       'body_type': bodyType,
       'body_base64': base64.encode(bodyBytes),
       'error_message': errorMessage,
-      'redirect_urls': redirectUrls,
+      'redirects': redirects.map((e) => e.toMap()).toList(),
       'final_url': finalUrl,
       'test_results': testResults.map((e) => e.toMap()).toList(),
       'assertion_results': assertionResults.map((e) => e.toMap()).toList(),
@@ -212,7 +268,7 @@ class ResponseHistory {
       'body': body,
       'bodyType': bodyType,
       'errorMessage': errorMessage,
-      'redirectUrls': redirectUrls,
+      'redirects': redirects.map((e) => e.toMap()).toList(),
       'finalUrl': finalUrl,
       'testResults': testResults.map((e) => e.toMap()).toList(),
       'assertionResults': assertionResults.map((e) => e.toMap()).toList(),
@@ -237,7 +293,7 @@ class ResponseHistory {
       'body_type': 'dummy',
       'body_base64': base64.encode(Uint8List.fromList([])),
       'error_message': 'dummy',
-      'redirect_urls': [],
+      'redirects': [],
       'final_url': 'dummy',
       'test_results': [
         {'description': 'dummy', 'status': 'dummy', 'error': 'dummy'},
