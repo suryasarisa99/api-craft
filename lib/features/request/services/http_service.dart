@@ -110,17 +110,10 @@ class HttpService {
         }
 
         // 2. From Final Response
-        final finalUri = (response.finalUrl != null)
-            ? Uri.parse(response.finalUrl!)
-            : req.uri;
-        final newCookies = RawHeaderUtils.getSetCookies(
-          response.headers,
-          finalUri,
-        );
-        if (newCookies.isNotEmpty) {
+        if (response.resCookies.isNotEmpty) {
           ref
               .read(environmentProvider.notifier)
-              .saveCookiesToJar(cookieJarId, newCookies);
+              .saveCookiesToJar(cookieJarId, response.resCookies);
         }
       }
 

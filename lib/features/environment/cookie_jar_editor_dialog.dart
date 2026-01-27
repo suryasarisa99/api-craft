@@ -195,18 +195,24 @@ class CookieJarEditorDialog extends ConsumerWidget {
   ) {
     var newCookies = List<CookieDef>.from(jar.cookies);
     newCookies[index] = newCookie;
-    ref.read(environmentProvider.notifier).saveCookiesToJar(jar.id, newCookies);
+    ref
+        .read(environmentProvider.notifier)
+        .updateCookieJar(jar.copyWith(cookies: newCookies));
   }
 
   void _removeCookie(WidgetRef ref, CookieJarModel jar, int index) {
     var newCookies = List<CookieDef>.from(jar.cookies);
     newCookies.removeAt(index);
-    ref.read(environmentProvider.notifier).saveCookiesToJar(jar.id, newCookies);
+    ref
+        .read(environmentProvider.notifier)
+        .updateCookieJar(jar.copyWith(cookies: newCookies));
   }
 
   void _addCookie(WidgetRef ref, CookieJarModel jar) {
     var newCookies = List<CookieDef>.from(jar.cookies);
     newCookies.add(CookieDef(key: "", value: ""));
-    ref.read(environmentProvider.notifier).saveCookiesToJar(jar.id, newCookies);
+    ref
+        .read(environmentProvider.notifier)
+        .updateCookieJar(jar.copyWith(cookies: newCookies));
   }
 }

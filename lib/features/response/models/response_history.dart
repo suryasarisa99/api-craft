@@ -146,9 +146,10 @@ class ResponseHistory {
     } else {
       reqCookies = [];
     }
-
-    // Parse Set-Cookies from Response Headers
-    resCookies = RawHeaderUtils.getSetCookies(headers, null);
+    final url = finalUrl;
+    if (url != null) {
+      resCookies = RawHeaderUtils.getSetCookies(headers, Uri.parse(url));
+    }
   }
 
   ResponseHistory copyWith({

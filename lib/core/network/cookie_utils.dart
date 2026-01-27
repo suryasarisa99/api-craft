@@ -39,6 +39,9 @@ class CookieUtils {
       if (!domainMatches(uri, c)) return false;
       if (!pathMatches(uri, c)) return false;
       if (c.isSecure && uri.scheme != 'https') return false;
+      if (c.expires != null && c.expires!.isBefore(DateTime.now())) {
+        return false;
+      }
       return true;
     }).toList();
   }

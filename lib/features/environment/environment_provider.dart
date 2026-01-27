@@ -352,7 +352,16 @@ class EnvironmentNotifier extends Notifier<EnvironmentState> {
 
     // Merge logic: Update existing or add new
     final currentList = List<CookieDef>.from(jar.cookies);
-    for (final newC in newCookies) {
+    // remove prefix '.' from domain
+    final cookies = newCookies.map((c) {
+      if (c.domain.startsWith('.') == true) {
+        return c.copyWith(domain: c.domain.substring(1));
+      }
+      return c;
+    }).toList();
+
+    // final current
+    for (final newC in cookies) {
       currentList.removeWhere(
         (c) =>
             c.key == newC.key && c.domain == newC.domain && c.path == newC.path,
