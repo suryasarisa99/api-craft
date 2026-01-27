@@ -4,11 +4,8 @@ import 'dart:async';
 import 'dart:typed_data';
 import 'package:api_craft/core/network/raw/parse_raw_response.dart';
 import 'package:api_craft/core/models/models.dart';
-import 'package:api_craft/core/network/header_utils.dart';
-import 'package:api_craft/core/models/cookie_jar_model.dart';
 import 'package:api_craft/core/network/cookie_utils.dart';
 import 'package:api_craft/core/utils/parsers.dart';
-import 'package:api_craft/features/response/models/response_history.dart';
 import 'package:flutter/foundation.dart';
 
 Future<ResponseHistory> sendRawHttp({
@@ -283,11 +280,9 @@ Future<ResponseHistory> sendRawHttp({
       // Parse Response
       final response = parseRawResponse(
         allBytes,
-        requestSentTime:
-            requestSentTime, // We'll fix duration later logic if needed
-        durationMs: 0,
         requestId: requestId,
         redirects: [], // Deprecated in logic but required by parser?
+        isHeadRequest: currentMethod == 'HEAD',
       );
 
       // Handle Set-Cookie from response
@@ -389,6 +384,7 @@ Future<ResponseHistory> sendRawHttp({
       // Let's reuse `response` object but populate missing fields.
 
       return response.copyWith(
+        executeAt: requestSentTime,
         durationMs: durationMs,
         redirects: redirects,
         finalUrl: currentUrl.toString(),
