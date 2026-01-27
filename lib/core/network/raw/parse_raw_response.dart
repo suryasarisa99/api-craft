@@ -124,7 +124,6 @@ ResponseHistory parseRawResponse(
     // headers: headersMap,
     headers: headersList,
     bodyBytes: rawBodyBytes,
-    body: utf8.decode(rawBodyBytes, allowMalformed: true),
     bodyType: bodyType,
     redirects: redirects,
     finalUrl: finalUrl,

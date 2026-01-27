@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:api_craft/core/models/cookie_jar_model.dart';
 import 'package:api_craft/core/utils/parsers.dart';
+
 import 'package:flutter/foundation.dart';
 
 class TestResult {
@@ -92,13 +93,22 @@ class ResponseHistory {
   // final Map<String, String> headers;
   final List<List<String>> headers;
   final Uint8List bodyBytes;
-  final String body;
+
+  String get body {
+    try {
+      return utf8.decode(bodyBytes, allowMalformed: true);
+    } catch (_) {
+      return String.fromCharCodes(bodyBytes); // Fallback
+    }
+  }
+
   final String? bodyType;
   final String? errorMessage;
   final List<RedirectStep> redirects;
   final String? finalUrl;
   final List<TestResult> testResults;
   final List<TestResult> assertionResults;
+
   final List<List<String>>? reqHeaders;
   final String? reqBody;
 
@@ -113,7 +123,6 @@ class ResponseHistory {
     required this.protocolVersion,
     required this.headers,
     required this.bodyBytes,
-    required this.body,
     this.bodyType,
     required this.executeAt,
     required this.durationMs,
@@ -127,12 +136,10 @@ class ResponseHistory {
     this.reqHeaders,
     this.reqBody,
   }) {
-    // Parse Cookies from Request Headers
     if (reqHeaders != null) {
       final cookieHeaders = reqHeaders!
           .where((h) => h[0].toLowerCase() == 'cookie')
           .toList();
-      // Use expand to flatten multiple Cookie headers, then ParserUtils.parseCookies returns List<List<String>>
       reqCookies = cookieHeaders
           .expand((h) => ParserUtils.parseCookies(h[1]))
           .toList();
@@ -172,7 +179,6 @@ class ResponseHistory {
       protocolVersion: protocolVersion ?? this.protocolVersion,
       headers: headers ?? this.headers,
       bodyBytes: bodyBytes ?? this.bodyBytes,
-      body: body ?? this.body,
       bodyType: bodyType ?? this.bodyType,
       executeAt: executeAt ?? this.executeAt,
       durationMs: durationMs ?? this.durationMs,
@@ -205,7 +211,6 @@ class ResponseHistory {
       }).toList(),
       bodyBytes: base64.decode(map['body_base64']),
       bodyType: map['body_type'],
-      body: map['body'],
       errorMessage: map['error_message'],
       redirects:
           (map['redirects'] as List?)

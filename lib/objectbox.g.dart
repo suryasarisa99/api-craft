@@ -130,7 +130,7 @@ final _entities = <obx_int.ModelEntity>[
   obx_int.ModelEntity(
     id: const obx_int.IdUid(4, 1589747562368478009),
     name: 'HistoryEntity',
-    lastPropertyId: const obx_int.IdUid(22, 2329583920459602344),
+    lastPropertyId: const obx_int.IdUid(25, 3935584186412871761),
     flags: 0,
     properties: <obx_int.ModelProperty>[
       obx_int.ModelProperty(
@@ -196,12 +196,6 @@ final _entities = <obx_int.ModelEntity>[
         flags: 0,
       ),
       obx_int.ModelProperty(
-        id: const obx_int.IdUid(12, 3976138900755334436),
-        name: 'body',
-        type: 9,
-        flags: 0,
-      ),
-      obx_int.ModelProperty(
         id: const obx_int.IdUid(13, 6596622485786268593),
         name: 'bodyType',
         type: 9,
@@ -216,18 +210,6 @@ final _entities = <obx_int.ModelEntity>[
       obx_int.ModelProperty(
         id: const obx_int.IdUid(16, 4266804411084962393),
         name: 'finalUrl',
-        type: 9,
-        flags: 0,
-      ),
-      obx_int.ModelProperty(
-        id: const obx_int.IdUid(17, 1668853121119644400),
-        name: 'testResultsJson',
-        type: 9,
-        flags: 0,
-      ),
-      obx_int.ModelProperty(
-        id: const obx_int.IdUid(18, 437133856617834985),
-        name: 'assertionResultsJson',
         type: 9,
         flags: 0,
       ),
@@ -251,9 +233,21 @@ final _entities = <obx_int.ModelEntity>[
         flags: 0,
       ),
       obx_int.ModelProperty(
-        id: const obx_int.IdUid(22, 2329583920459602344),
-        name: 'redirectsJson',
-        type: 9,
+        id: const obx_int.IdUid(23, 8180681500425489055),
+        name: 'redirects',
+        type: 13,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(24, 9051145306942057578),
+        name: 'testResults',
+        type: 13,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(25, 3935584186412871761),
+        name: 'assertionResults',
+        type: 13,
         flags: 0,
       ),
     ],
@@ -667,6 +661,10 @@ obx_int.ModelDefinition getObjectBoxModel() {
       8033670793440821754,
       7087347246569023560,
       1102702881259066499,
+      3976138900755334436,
+      1668853121119644400,
+      437133856617834985,
+      2329583920459602344,
     ],
     retiredRelationUids: const [],
     modelVersion: 5,
@@ -831,7 +829,6 @@ obx_int.ModelDefinition getObjectBoxModel() {
             ? null
             : fbb.writeListInt8(obx_int.toFlexBuffer(object.headers!));
         final bodyBytesOffset = fbb.writeListInt8(object.bodyBytes);
-        final bodyOffset = fbb.writeString(object.body);
         final bodyTypeOffset = object.bodyType == null
             ? null
             : fbb.writeString(object.bodyType!);
@@ -841,12 +838,6 @@ obx_int.ModelDefinition getObjectBoxModel() {
         final finalUrlOffset = object.finalUrl == null
             ? null
             : fbb.writeString(object.finalUrl!);
-        final testResultsJsonOffset = object.testResultsJson == null
-            ? null
-            : fbb.writeString(object.testResultsJson!);
-        final assertionResultsJsonOffset = object.assertionResultsJson == null
-            ? null
-            : fbb.writeString(object.assertionResultsJson!);
         final workspaceIdOffset = fbb.writeString(object.workspaceId);
         final reqHeadersOffset = object.reqHeaders == null
             ? null
@@ -854,10 +845,16 @@ obx_int.ModelDefinition getObjectBoxModel() {
         final reqBodyOffset = object.reqBody == null
             ? null
             : fbb.writeString(object.reqBody!);
-        final redirectsJsonOffset = object.redirectsJson == null
+        final redirectsOffset = object.redirects == null
             ? null
-            : fbb.writeString(object.redirectsJson!);
-        fbb.startTable(23);
+            : fbb.writeListInt8(obx_int.toFlexBuffer(object.redirects!));
+        final testResultsOffset = object.testResults == null
+            ? null
+            : fbb.writeListInt8(obx_int.toFlexBuffer(object.testResults!));
+        final assertionResultsOffset = object.assertionResults == null
+            ? null
+            : fbb.writeListInt8(obx_int.toFlexBuffer(object.assertionResults!));
+        fbb.startTable(26);
         fbb.addInt64(0, object.id);
         fbb.addOffset(1, uidOffset);
         fbb.addOffset(2, requestIdOffset);
@@ -868,16 +865,15 @@ obx_int.ModelDefinition getObjectBoxModel() {
         fbb.addOffset(8, protocolVersionOffset);
         fbb.addOffset(9, headersOffset);
         fbb.addOffset(10, bodyBytesOffset);
-        fbb.addOffset(11, bodyOffset);
         fbb.addOffset(12, bodyTypeOffset);
         fbb.addOffset(13, errorMessageOffset);
         fbb.addOffset(15, finalUrlOffset);
-        fbb.addOffset(16, testResultsJsonOffset);
-        fbb.addOffset(17, assertionResultsJsonOffset);
         fbb.addOffset(18, workspaceIdOffset);
         fbb.addOffset(19, reqHeadersOffset);
         fbb.addOffset(20, reqBodyOffset);
-        fbb.addOffset(21, redirectsJsonOffset);
+        fbb.addOffset(22, redirectsOffset);
+        fbb.addOffset(23, testResultsOffset);
+        fbb.addOffset(24, assertionResultsOffset);
         fbb.finish(fbb.endTable());
         return object.id;
       },
@@ -926,27 +922,26 @@ obx_int.ModelDefinition getObjectBoxModel() {
                   lazy: false,
                 ).vTableGet(buffer, rootOffset, 24, Uint8List(0))
                 as Uint8List;
-        final bodyParam = const fb.StringReader(
-          asciiOptimization: true,
-        ).vTableGet(buffer, rootOffset, 26, '');
         final bodyTypeParam = const fb.StringReader(
           asciiOptimization: true,
         ).vTableGetNullable(buffer, rootOffset, 28);
         final errorMessageParam = const fb.StringReader(
           asciiOptimization: true,
         ).vTableGetNullable(buffer, rootOffset, 30);
-        final redirectsJsonParam = const fb.StringReader(
-          asciiOptimization: true,
-        ).vTableGetNullable(buffer, rootOffset, 46);
+        final redirectsParam = obx_int.flexBufferToList(buffer, rootOffset, 48);
         final finalUrlParam = const fb.StringReader(
           asciiOptimization: true,
         ).vTableGetNullable(buffer, rootOffset, 34);
-        final testResultsJsonParam = const fb.StringReader(
-          asciiOptimization: true,
-        ).vTableGetNullable(buffer, rootOffset, 36);
-        final assertionResultsJsonParam = const fb.StringReader(
-          asciiOptimization: true,
-        ).vTableGetNullable(buffer, rootOffset, 38);
+        final testResultsParam = obx_int.flexBufferToList(
+          buffer,
+          rootOffset,
+          50,
+        );
+        final assertionResultsParam = obx_int.flexBufferToList(
+          buffer,
+          rootOffset,
+          52,
+        );
         final reqHeadersParam = obx_int.flexBufferToList(
           buffer,
           rootOffset,
@@ -967,13 +962,12 @@ obx_int.ModelDefinition getObjectBoxModel() {
           protocolVersion: protocolVersionParam,
           headers: headersParam,
           bodyBytes: bodyBytesParam,
-          body: bodyParam,
           bodyType: bodyTypeParam,
           errorMessage: errorMessageParam,
-          redirectsJson: redirectsJsonParam,
+          redirects: redirectsParam,
           finalUrl: finalUrlParam,
-          testResultsJson: testResultsJsonParam,
-          assertionResultsJson: assertionResultsJsonParam,
+          testResults: testResultsParam,
+          assertionResults: assertionResultsParam,
           reqHeaders: reqHeadersParam,
           reqBody: reqBodyParam,
         );
@@ -1529,49 +1523,29 @@ class HistoryEntity_ {
     _entities[2].properties[9],
   );
 
-  /// See [HistoryEntity.body].
-  static final body = obx.QueryStringProperty<HistoryEntity>(
-    _entities[2].properties[10],
-  );
-
   /// See [HistoryEntity.bodyType].
   static final bodyType = obx.QueryStringProperty<HistoryEntity>(
-    _entities[2].properties[11],
+    _entities[2].properties[10],
   );
 
   /// See [HistoryEntity.errorMessage].
   static final errorMessage = obx.QueryStringProperty<HistoryEntity>(
-    _entities[2].properties[12],
+    _entities[2].properties[11],
   );
 
   /// See [HistoryEntity.finalUrl].
   static final finalUrl = obx.QueryStringProperty<HistoryEntity>(
-    _entities[2].properties[13],
-  );
-
-  /// See [HistoryEntity.testResultsJson].
-  static final testResultsJson = obx.QueryStringProperty<HistoryEntity>(
-    _entities[2].properties[14],
-  );
-
-  /// See [HistoryEntity.assertionResultsJson].
-  static final assertionResultsJson = obx.QueryStringProperty<HistoryEntity>(
-    _entities[2].properties[15],
+    _entities[2].properties[12],
   );
 
   /// See [HistoryEntity.workspaceId].
   static final workspaceId = obx.QueryStringProperty<HistoryEntity>(
-    _entities[2].properties[16],
+    _entities[2].properties[13],
   );
 
   /// See [HistoryEntity.reqBody].
   static final reqBody = obx.QueryStringProperty<HistoryEntity>(
-    _entities[2].properties[18],
-  );
-
-  /// See [HistoryEntity.redirectsJson].
-  static final redirectsJson = obx.QueryStringProperty<HistoryEntity>(
-    _entities[2].properties[19],
+    _entities[2].properties[15],
   );
 }
 

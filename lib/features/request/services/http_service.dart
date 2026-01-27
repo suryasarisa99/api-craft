@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'dart:typed_data';
 import 'dart:convert';
 import 'package:api_craft/core/utils/parsers.dart';
@@ -44,6 +43,8 @@ class HttpService {
               .executeScript(requestId, script, context: context);
         }
       }
+
+      if (!context.mounted) throw Exception('Context unmounted');
 
       // 2. Resolve Request (Now reflects changes from pre-scripts)
       final req = await resolver.resolveForExecution(
@@ -141,6 +142,7 @@ class HttpService {
                 context: context,
               );
           allTestResults.addAll(results);
+          if (!context.mounted) throw Exception('Context unmounted');
         }
       }
 
@@ -159,6 +161,7 @@ class HttpService {
                 context: context,
               );
           allTestResults.addAll(results);
+          if (!context.mounted) throw Exception('Context unmounted');
         }
       }
 
@@ -236,7 +239,6 @@ class HttpService {
         protocolVersion: '',
         headers: [],
         bodyBytes: Uint8List(0),
-        body: e.toString(),
         executeAt: DateTime.now(),
         durationMs: 0,
         errorMessage: e.toString(),

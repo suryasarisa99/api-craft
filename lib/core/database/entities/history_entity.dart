@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:typed_data';
 import 'package:objectbox/objectbox.dart';
 // import 'package:api_craft/features/response/models/http_response_model.dart';
@@ -29,25 +28,22 @@ class HistoryEntity {
   String protocolVersion;
 
   // Flex Props
-  // Headers is List<List<String>> in model.
-  // ObjectBox Flex supports List<dynamic>.
-  // We can store it as List<dynamic> where each item is List<String>.
   List<dynamic>? headers;
 
   @Property(type: PropertyType.byteVector)
   Uint8List bodyBytes;
 
-  String body;
   String? bodyType;
   String? errorMessage;
 
-  // Flex
-  String? redirectsJson;
+  // Stored as List<Map<String, dynamic>>
+  List<dynamic>? redirects;
 
   String? finalUrl;
 
-  String? testResultsJson;
-  String? assertionResultsJson;
+  // Stored as List<Map<String, dynamic>>
+  List<dynamic>? testResults;
+  List<dynamic>? assertionResults;
 
   // Request Details
   List<dynamic>? reqHeaders;
@@ -65,13 +61,12 @@ class HistoryEntity {
     required this.protocolVersion,
     this.headers,
     required this.bodyBytes,
-    required this.body,
     this.bodyType,
     this.errorMessage,
-    this.redirectsJson,
+    this.redirects,
     this.finalUrl,
-    this.testResultsJson,
-    this.assertionResultsJson,
+    this.testResults,
+    this.assertionResults,
     this.reqHeaders,
     this.reqBody,
   });
@@ -87,88 +82,57 @@ class HistoryEntity {
       executeAt: model.executeAt,
       durationMs: model.durationMs,
       protocolVersion: model.protocolVersion,
-      headers: model.headers, // stored as Isar/ObjectBox List<dynamic>
+      headers: model.headers,
       bodyBytes: model.bodyBytes,
-      body: model.body,
       bodyType: model.bodyType,
       errorMessage: model.errorMessage,
-      redirectsJson: jsonEncode(model.redirects.map((e) => e.toMap()).toList()),
+      redirects: model.redirects.map((e) => e.toMap()).toList(),
       finalUrl: model.finalUrl,
-      testResultsJson: jsonEncode(
-        model.testResults.map((e) => e.toMap()).toList(),
-      ),
-      assertionResultsJson: jsonEncode(
-        model.assertionResults.map((e) => e.toMap()).toList(),
-      ),
+      testResults: model.testResults.map((e) => e.toMap()).toList(),
+      assertionResults: model.assertionResults.map((e) => e.toMap()).toList(),
       reqHeaders: model.reqHeaders,
       reqBody: model.reqBody,
     );
   }
 
   ResponseHistory toModel() {
-    // Convert List<dynamic> -> List<List<String>>
-    final List<List<String>> explicitHeaders = (headers ?? []).map((e) {
-      if (e is List) {
-        return e.map((s) => s.toString()).toList();
-      }
-      return <String>[];
+    final explicitHeaders = (headers ?? []).map<List<String>>((e) {
+      return List<String>.from((e as List).map((s) => s.toString()));
     }).toList();
 
-    // Convert List<dynamic> -> List<List<String>> for reqHeaders
-    final List<List<String>>? explicitReqHeaders = reqHeaders?.map((e) {
-      if (e is List) {
-        return e.map((s) => s.toString()).toList();
-      }
-      return <String>[];
+    final explicitRedirects = (redirects ?? []).map<RedirectStep>((e) {
+      return RedirectStep.fromMap(Map<String, dynamic>.from(e));
     }).toList();
 
-    List<TestResult> tests = [];
-    if (testResultsJson != null) {
-      try {
-        final List<dynamic> list = jsonDecode(testResultsJson!);
-        tests = list.map((e) => TestResult.fromMap(e)).toList();
-      } catch (e) {
-        // failed to parse tests
-      }
-    }
+    final explicitTests = (testResults ?? []).map<TestResult>((e) {
+      return TestResult.fromMap(Map<String, dynamic>.from(e));
+    }).toList();
 
-    List<TestResult> assertions = [];
-    if (assertionResultsJson != null) {
-      try {
-        final List<dynamic> list = jsonDecode(assertionResultsJson!);
-        assertions = list.map((e) => TestResult.fromMap(e)).toList();
-      } catch (e) {
-        // failed to parse assertions
-      }
-    }
+    final explicitAssertions = (assertionResults ?? []).map<TestResult>((e) {
+      return TestResult.fromMap(Map<String, dynamic>.from(e));
+    }).toList();
 
-    List<RedirectStep> redirects = [];
-    if (redirectsJson != null) {
-      try {
-        final List<dynamic> list = jsonDecode(redirectsJson!);
-        redirects = list.map((e) => RedirectStep.fromMap(e)).toList();
-      } catch (e) {
-        // failed to parse redirects
-      }
-    }
+    final explicitReqHeaders = (reqHeaders ?? []).map<List<String>>((e) {
+      return List<String>.from((e as List).map((s) => s.toString()));
+    }).toList();
 
     return ResponseHistory(
       id: uid,
       requestId: requestId,
       statusCode: statusCode,
       statusMessage: statusMessage,
+      executeAt: executeAt,
+      durationMs: durationMs,
       protocolVersion: protocolVersion,
       headers: explicitHeaders,
       bodyBytes: bodyBytes,
-      body: body,
+      // body property is computed getter in model now
       bodyType: bodyType,
-      executeAt: executeAt,
-      durationMs: durationMs,
       errorMessage: errorMessage,
-      redirects: redirects,
+      redirects: explicitRedirects,
       finalUrl: finalUrl,
-      testResults: tests,
-      assertionResults: assertions,
+      testResults: explicitTests,
+      assertionResults: explicitAssertions,
       reqHeaders: explicitReqHeaders,
       reqBody: reqBody,
     );
