@@ -8,6 +8,8 @@ class KeyValueView extends StatelessWidget {
   final EdgeInsets padding;
   final TextStyle keyStyle;
   final TextStyle valueStyle;
+  final int keyFlex;
+  final int valueFlex;
   const KeyValueView({
     super.key,
     required this.items,
@@ -16,6 +18,8 @@ class KeyValueView extends StatelessWidget {
     this.padding = const EdgeInsets.all(8.0),
     required this.keyStyle,
     required this.valueStyle,
+    this.keyFlex = 7,
+    this.valueFlex = 13,
   });
 
   @override
@@ -42,12 +46,12 @@ class KeyValueView extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Expanded(
-                              flex: 7,
+                              flex: keyFlex,
                               child: Text(item[0], style: keyStyle),
                             ),
                             const SizedBox(width: 8),
                             Expanded(
-                              flex: 13,
+                              flex: valueFlex,
                               child: Text(item[1], style: valueStyle),
                             ),
                           ],

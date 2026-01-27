@@ -48,6 +48,8 @@ class ResponseCookiesTab extends ConsumerWidget {
               fontWeight: FontWeight.w500,
               color: Theme.of(context).colorScheme.primary,
             ),
+            keyFlex: 3,
+            valueFlex: 7,
             valueStyle: const TextStyle(
               fontFamily: 'monospace',
               fontSize: 14,
@@ -154,66 +156,168 @@ class SetCookiesView extends StatelessWidget {
 
               return ExtendedWidgetSpan(
                 actualText: sb.toString(),
-                child: SelectionContainer.disabled(
-                  child: Container(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      border: Border.all(
-                        color: Theme.of(context).dividerColor.withOpacity(0.5),
-                      ),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Name=Value
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              "${c.key}:",
-                              style: TextStyle(
-                                fontFamily: 'monospace',
-                                fontWeight: FontWeight.bold,
-                                color: Theme.of(context).colorScheme.primary,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                c.value,
-                                style: const TextStyle(fontFamily: 'monospace'),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        // Attributes in a Wrap
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 4,
-                          children: [
-                            if (c.domain.isNotEmpty)
-                              _CookieAttr("Domain", c.domain),
-                            if (c.path.isNotEmpty) _CookieAttr("Path", c.path),
-                            if (c.expires != null)
-                              _CookieAttr(
-                                "Expires",
-                                c.expires!.toLocal().toString(),
-                              ),
-                            if (c.isHttpOnly) const _CookieBadge("HttpOnly"),
-                            if (c.isSecure) const _CookieBadge("Secure"),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+                child: CookieItemExpandView(c: c),
               );
             }).toList(),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget buildItem(BuildContext context, CookieDef c) {
+    return SelectionContainer.disabled(
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: Theme.of(context).dividerColor.withOpacity(0.5),
+          ),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Name=Value
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  flex: 3,
+                  child: Text(
+                    "${c.key}:",
+                    style: TextStyle(
+                      fontFamily: 'monospace',
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  flex: 7,
+                  child: Text(
+                    c.value,
+                    style: const TextStyle(fontFamily: 'monospace'),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            // Attributes in a Wrap
+            Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              children: [
+                if (c.domain.isNotEmpty) _CookieAttr("Domain", c.domain),
+                if (c.path.isNotEmpty) _CookieAttr("Path", c.path),
+                if (c.expires != null)
+                  _CookieAttr("Expires", c.expires!.toLocal().toString()),
+                if (c.isHttpOnly) const _CookieBadge("HttpOnly"),
+                if (c.isSecure) const _CookieBadge("Secure"),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class CookieItemExpandView extends StatefulWidget {
+  final CookieDef c;
+  const CookieItemExpandView({super.key, required this.c});
+
+  @override
+  State<CookieItemExpandView> createState() => _CookieItemExpandViewState();
+}
+
+class _CookieItemExpandViewState extends State<CookieItemExpandView> {
+  bool _isExpanded = false;
+  @override
+  Widget build(BuildContext context) {
+    return SelectionContainer.disabled(
+      child: Column(
+        children: [
+          SizedBox(height: 4),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                flex: 3,
+                child: Text(
+                  "${widget.c.key}:",
+                  style: TextStyle(
+                    fontFamily: 'monospace',
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                flex: 7,
+                child: Text(
+                  widget.c.value,
+                  style: const TextStyle(fontFamily: 'monospace'),
+                ),
+              ),
+              IconButton(
+                icon: Icon(
+                  _isExpanded ? Icons.arrow_drop_up : Icons.arrow_drop_down,
+                ),
+                onPressed: () {
+                  setState(() {
+                    _isExpanded = !_isExpanded;
+                  });
+                },
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          if (_isExpanded)
+            Padding(
+              padding: const EdgeInsets.only(left: 30),
+              child: Column(
+                children: [
+                  KeyValueView(
+                    items: [
+                      ["Domain", widget.c.domain],
+                      ["Path", widget.c.path],
+                      if (widget.c.expires != null)
+                        ["Expires", widget.c.expires!.toLocal().toString()],
+                    ],
+                    pairSeparator: "=",
+                    itemSeparator: ";",
+                    padding: EdgeInsets.zero,
+                    keyStyle: TextStyle(
+                      fontFamily: 'monospace',
+                      fontWeight: .w300,
+                      fontSize: 12,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    valueStyle: const TextStyle(
+                      fontFamily: 'monospace',
+                      fontWeight: .w300,
+                      fontSize: 12,
+                    ),
+                  ),
+                  SizedBox(height: 6),
+                  Row(
+                    spacing: 12,
+                    mainAxisAlignment: .end,
+                    children: [
+                      if (widget.c.isHttpOnly) const _CookieBadge("HttpOnly"),
+                      if (widget.c.isSecure) const _CookieBadge("Secure"),
+                    ],
+                  ),
+                  SizedBox(height: 10),
+                ],
+              ),
+            ),
+          Divider(height: 1, thickness: 1),
+        ],
       ),
     );
   }

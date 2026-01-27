@@ -25,7 +25,7 @@ class ResPanelTitles extends AbstractPanelTitles {
     //   "Body",
     //   "Raw",
     // ];
-    return ["Headers", "Query", "Cookies", "Body", "Raw"];
+    return ["Headers", "Cookies", "Body", "Raw"];
   }
 }
 
@@ -38,7 +38,7 @@ class ResponsePanel extends PanelAbstract {
 
 class _RequestPanelState extends PanelAbstractState {
   @override
-  get tabsLen => 5;
+  get tabsLen => 4;
 
   @override
   get title => "response";
@@ -53,7 +53,6 @@ class _RequestPanelState extends PanelAbstractState {
   List<Widget> buildViews() {
     return [
       EditResHeadersView(),
-      Text("Query Params"),
       ReadOnlySetCookiesView(),
       Text("Query Params"),
       Text("Query Params"),

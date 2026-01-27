@@ -1,3 +1,4 @@
+import 'package:api_craft/core/widgets/ui/key_value_view.dart';
 import 'package:api_craft/features/response/models/response_history.dart';
 import 'package:flutter/material.dart';
 import 'package:api_craft/core/utils/formatters.dart';
@@ -40,6 +41,7 @@ class _RedirectItemState extends State<_RedirectItem> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -47,7 +49,7 @@ class _RedirectItemState extends State<_RedirectItem> {
           onTap: () => setState(() => _isExpanded = !_isExpanded),
           borderRadius: BorderRadius.circular(8),
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+            padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
             child: Row(
               children: [
                 Icon(
@@ -59,12 +61,9 @@ class _RedirectItemState extends State<_RedirectItem> {
                 ),
                 const SizedBox(width: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
                   decoration: BoxDecoration(
-                    color: Colors.blueGrey.withOpacity(0.1),
+                    color: Colors.blueGrey.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
@@ -79,8 +78,8 @@ class _RedirectItemState extends State<_RedirectItem> {
                 Text(
                   "${widget.step.method} ${widget.step.statusCode}",
                   style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: _getStatusColor(widget.step.statusCode),
+                    fontWeight: FontWeight.w500,
+                    color: theme.colorScheme.primary,
                   ),
                 ),
                 const Spacer(),
@@ -107,9 +106,17 @@ class _RedirectItemState extends State<_RedirectItem> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Divider(),
-                _buildHeaderSection("Request Headers", widget.step.reqHeaders),
+                _buildHeaderSection(
+                  "Request Headers",
+                  widget.step.reqHeaders,
+                  theme,
+                ),
                 const SizedBox(height: 16),
-                _buildHeaderSection("Response Headers", widget.step.resHeaders),
+                _buildHeaderSection(
+                  "Response Headers",
+                  widget.step.resHeaders,
+                  theme,
+                ),
               ],
             ),
           ),
@@ -117,7 +124,11 @@ class _RedirectItemState extends State<_RedirectItem> {
     );
   }
 
-  Widget _buildHeaderSection(String title, List<List<String>> headers) {
+  Widget _buildHeaderSection(
+    String title,
+    List<List<String>> headers,
+    ThemeData theme,
+  ) {
     if (headers.isEmpty) return const SizedBox.shrink();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -131,45 +142,18 @@ class _RedirectItemState extends State<_RedirectItem> {
           ),
         ),
         const SizedBox(height: 8),
-        ...headers.map(
-          (h) => Padding(
-            padding: const EdgeInsets.only(bottom: 4),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SizedBox(
-                  width: 100,
-                  child: SelectableText(
-                    "${h[0]}:",
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: Colors.blueGrey,
-                      fontFamily: 'monospace',
-                    ),
-                  ),
-                ),
-                Expanded(
-                  child: SelectableText(
-                    h.length > 1 ? h[1] : '',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontFamily: 'monospace',
-                    ),
-                  ),
-                ),
-              ],
-            ),
+        KeyValueView(
+          items: headers,
+          pairSeparator: ': ',
+          itemSeparator: '\n',
+          keyStyle: TextStyle(
+            fontSize: 12,
+            color: theme.colorScheme.primary,
+            fontFamily: 'monospace',
           ),
+          valueStyle: const TextStyle(fontSize: 12, fontFamily: 'monospace'),
         ),
       ],
     );
-  }
-
-  Color _getStatusColor(int status) {
-    if (status >= 200 && status < 300) return Colors.green;
-    if (status >= 300 && status < 400) return Colors.orange;
-    if (status >= 400 && status < 500) return Colors.red;
-    if (status >= 500) return Colors.red[800]!;
-    return Colors.grey;
   }
 }
