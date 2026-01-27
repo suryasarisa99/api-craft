@@ -7,7 +7,6 @@ import 'package:api_craft/features/response/response_provider.dart';
 import 'package:api_craft/features/response/widgets/response_body_tab.dart';
 import 'package:api_craft/features/response/widgets/response_info_tab.dart';
 import 'package:api_craft/features/response/widgets/response_cookies_tab.dart';
-import 'package:api_craft/features/response/widgets/response_info_tab.dart';
 import 'package:api_craft/features/response/widgets/response_status_bar.dart';
 import 'package:api_craft/features/response/widgets/tests_result_tab.dart';
 import 'package:api_craft/features/response/widgets/response_redirects_tab.dart'; // NEW
@@ -125,7 +124,7 @@ class _ResponseTabState extends ConsumerState<ResponseTab>
                       return CustomMenuIconItem.tick(
                         checked: isSelected,
                         title: Text(
-                          "${session.startTime.toString().split('.')[0]}",
+                          session.startTime.toString().split('.')[0],
                         ),
                         value: session.id,
                         onTap: (_) {

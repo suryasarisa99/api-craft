@@ -11,7 +11,6 @@ import 'package:flutter/material.dart';
 import 'package:suryaicons/bulk_rounded.dart';
 import 'package:api_craft/features/workspace/workspace_config_dialog.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:suryaicons/suryaicons.dart';
 
 class WorkspacePicker extends ConsumerStatefulWidget {
   const WorkspacePicker({super.key});

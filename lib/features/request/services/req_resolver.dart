@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:developer';
 import 'dart:io';
 
 import 'package:api_craft/core/network/header_utils.dart';
@@ -236,11 +235,13 @@ class RequestResolver {
     // Check current node first (RequestNode)
     if (ptr.config.settings != null) {
       final s = ptr.config.settings!;
-      if (maxRedirects == null && s.maxRedirects != null)
+      if (s.maxRedirects != null) {
         maxRedirects = s.maxRedirects;
-      if (followRedirects == null && s.followRedirects != null)
+      }
+      if (s.followRedirects != null) {
         followRedirects = s.followRedirects;
-      if (encodeUrl == null && s.encodeUrl != null) encodeUrl = s.encodeUrl;
+      }
+      if (s.encodeUrl != null) encodeUrl = s.encodeUrl;
     }
 
     // Traverse ancestors
@@ -248,10 +249,12 @@ class RequestResolver {
     while (parent != null) {
       if (parent.config.settings != null) {
         final s = parent.config.settings!;
-        if (maxRedirects == null && s.maxRedirects != null)
+        if (maxRedirects == null && s.maxRedirects != null) {
           maxRedirects = s.maxRedirects;
-        if (followRedirects == null && s.followRedirects != null)
+        }
+        if (followRedirects == null && s.followRedirects != null) {
           followRedirects = s.followRedirects;
+        }
         if (encodeUrl == null && s.encodeUrl != null) encodeUrl = s.encodeUrl;
       }
       parent = _parentOf(parent);

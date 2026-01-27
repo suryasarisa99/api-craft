@@ -125,6 +125,7 @@ class FilterCondition extends FilterNode {
     isNegated = json['isNegated'] as bool? ?? false;
   }
 
+  @override
   Map<String, dynamic> toJson() {
     return {
       'isNegated': isNegated,
@@ -176,6 +177,7 @@ class FilterGroup extends FilterNode {
             growable: true,
           );
 
+  @override
   Map<String, dynamic> toJson() {
     return {
       'type': 'group',

@@ -1,7 +1,5 @@
 import 'package:api_craft/flows/models/flow.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mockhttp/types.dart';
-import 'package:mockhttp/types/ongoing.dart';
 
 final flowsProvider = NotifierProvider<FlowsNotifier, Map<String, HttpFlow>>(
   FlowsNotifier.new,

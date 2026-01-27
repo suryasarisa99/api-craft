@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:api_craft/features/themes/models/theme_model.dart';
-import 'package:api_craft/main.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:flutter/material.dart';

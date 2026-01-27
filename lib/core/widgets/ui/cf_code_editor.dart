@@ -1,7 +1,6 @@
 import 'package:api_craft/core/utils/debouncer.dart';
 import 'package:api_craft/core/widgets/ui/finder.dart';
 import 'package:api_craft/core/widgets/ui/key_value_lang.dart';
-import 'package:api_craft/main.dart';
 import 'package:flutter/material.dart';
 import 'package:code_forge/code_forge.dart';
 import 'package:re_highlight/re_highlight.dart';

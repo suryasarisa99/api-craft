@@ -1,5 +1,4 @@
 import 'package:api_craft/core/utils/debouncer.dart';
-import 'package:api_craft/core/widgets/ui/variable_text_field_custom.dart';
 import 'package:api_craft/features/request/models/node_config_model.dart';
 import 'package:api_craft/features/request/models/node_model.dart';
 import 'package:api_craft/core/providers/providers.dart';

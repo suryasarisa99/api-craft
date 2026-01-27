@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'package:api_craft/core/widgets/ui/cf_code_editor.dart';
 import 'package:api_craft/features/console/models/console_log_entry.dart';
 import 'package:api_craft/features/console/providers/console_logs_provider.dart';
 import 'package:api_craft/features/console/providers/console_filter_provider.dart';
@@ -16,7 +15,7 @@ class ConsoleTab extends ConsumerStatefulWidget {
 
 class _ConsoleTabState extends ConsumerState<ConsoleTab> {
   final ScrollController _scrollController = ScrollController();
-  bool _autoScroll = true;
+  final bool _autoScroll = true;
 
   @override
   void dispose() {

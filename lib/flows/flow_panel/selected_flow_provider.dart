@@ -1,5 +1,4 @@
 import 'package:api_craft/core/utils/parsers.dart';
-import 'package:api_craft/flows/models/flow.dart';
 import 'package:api_craft/flows/providers/flows_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 

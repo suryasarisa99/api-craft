@@ -4,7 +4,6 @@ import 'package:api_craft/core/widgets/ui/key_value_view.dart';
 import 'package:api_craft/features/request/providers/req_compose_provider.dart';
 import 'package:extended_text/extended_text.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class ResponseCookiesTab extends ConsumerWidget {
@@ -146,8 +145,9 @@ class SetCookiesView extends StatelessWidget {
               sb.write("${c.key}=${c.value}");
               if (c.domain.isNotEmpty) sb.write("; Domain=${c.domain}");
               if (c.path.isNotEmpty) sb.write("; Path=${c.path}");
-              if (c.expires != null)
+              if (c.expires != null) {
                 sb.write("; Expires=${HttpDate.format(c.expires!)}");
+              }
               if (c.isHttpOnly) sb.write("; HttpOnly");
               if (c.isSecure) sb.write("; Secure");
               // if (c.isHostOnly)

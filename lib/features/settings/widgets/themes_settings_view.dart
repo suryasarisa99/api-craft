@@ -1,7 +1,6 @@
 import 'package:api_craft/core/services/theme_service.dart';
 import 'package:api_craft/core/widgets/ui/surya_theme_icon.dart';
 import 'package:api_craft/features/themes/app_themes.dart';
-import 'package:api_craft/features/themes/models/theme_info.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:suryaicons/bulk_rounded.dart';

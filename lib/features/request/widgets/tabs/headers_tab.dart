@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:api_craft/core/providers/providers.dart';
 import 'package:api_craft/core/widgets/ui/key_value_editor.dart';
 import 'package:flutter/material.dart';
-import 'package:path/path.dart';
 
 class HeadersTab extends StatelessWidget {
   final String id;

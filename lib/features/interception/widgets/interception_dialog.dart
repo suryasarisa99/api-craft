@@ -53,9 +53,9 @@ class _InterceptionDialogState extends State<InterceptionDialog> {
           // Re-parsing to FilterNode and back to JSON is a valid way to deep copy too!
           try {
             final tempNode = (uiFilterJson['type'] == 'group')
-                ? FilterGroup.fromJson(uiFilterJson as Map<String, dynamic>)
+                ? FilterGroup.fromJson(uiFilterJson)
                 : FilterCondition.fromJson(
-                    uiFilterJson as Map<String, dynamic>,
+                    uiFilterJson,
                   );
             newRule.metadata!['uiFilter'] = tempNode.copy().toJson();
           } catch (e) {

@@ -1,7 +1,6 @@
 import 'package:api_craft/core/screens/home_screen.dart';
 import 'package:api_craft/features/themes/models/theme_model.dart';
 import 'package:api_craft/features/settings/settings_dialog.dart';
-import 'package:api_craft/main.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 

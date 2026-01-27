@@ -7,7 +7,6 @@ import 'package:api_craft/core/constants/globals.dart'; // Added import
 import 'package:flutter/cupertino.dart';
 import 'package:nanoid/nanoid.dart';
 import 'package:api_craft/core/database/entities/environment_entity.dart';
-import 'package:api_craft/core/database/entities/workspace_entity.dart';
 
 class ObjectBoxStorageRepository implements StorageRepository {
   final Future<ObjectBox> _obxFuture;

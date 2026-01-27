@@ -2,14 +2,11 @@ import 'package:api_craft/core/models/models.dart';
 import 'package:api_craft/core/utils/parsers.dart';
 import 'package:api_craft/core/widgets/ui/key_value_editor.dart';
 import 'package:api_craft/core/widgets/ui/key_value_view.dart';
-import 'package:api_craft/features/response/response_headers.dart';
 import 'package:api_craft/features/response/widgets/response_cookies_tab.dart';
 import 'package:api_craft/flows/flow_panel/selected_flow_provider.dart';
-import 'package:api_craft/flows/models/flow.dart';
 import 'package:api_craft/flows/providers/flows_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:nanoid/nanoid.dart';
 
 class EditHeadersView extends ConsumerStatefulWidget {
   const EditHeadersView({super.key});

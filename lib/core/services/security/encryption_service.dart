@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:math';
-import 'dart:typed_data';
 import 'package:cryptography/cryptography.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/foundation.dart';
@@ -49,8 +48,9 @@ class EncryptionService {
 
       final macB64 = parts[1];
       final contentParts = parts[0].split('_');
-      if (contentParts.length != 2)
+      if (contentParts.length != 2) {
         throw Exception("Invalid content structure");
+      }
 
       final nonceB64 = contentParts[0];
       final ciphertextB64 = contentParts[1];

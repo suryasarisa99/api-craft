@@ -1,5 +1,4 @@
 import 'package:api_craft/core/models/models.dart';
-import 'package:api_craft/core/network/header_utils.dart';
 import 'package:api_craft/core/utils/parsers.dart';
 import 'package:api_craft/flows/filter/models/m.dart';
 import 'package:api_craft/flows/models/flow.dart';

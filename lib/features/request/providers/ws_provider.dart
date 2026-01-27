@@ -231,8 +231,9 @@ class WsRequestNotifier extends StateNotifier<WsRequestState> {
   }
 
   Future<void> selectSession(String sessionId) async {
-    if (state.isConnected)
+    if (state.isConnected) {
       return; // Don't switch while connected? Or allow but warn?
+    }
 
     final msgs = await _repo.getWebSocketMessages(sessionId);
     state = state.copyWith(

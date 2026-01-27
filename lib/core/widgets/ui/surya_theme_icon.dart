@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:suryaicons/bulk_rounded.dart';
 import 'package:suryaicons/suryaicons.dart';
 
 class SuryaThemeIcon extends StatelessWidget {

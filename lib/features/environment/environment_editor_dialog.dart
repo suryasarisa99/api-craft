@@ -89,7 +89,7 @@ class _EnvironmentEditorDialogState
       child: Row(
         children: [
           // Left Pane (List)
-          Container(
+          SizedBox(
             width: 250,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

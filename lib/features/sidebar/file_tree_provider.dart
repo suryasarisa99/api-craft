@@ -1036,7 +1036,9 @@ class FileTreeNotifier extends Notifier<TreeData> {
 
     final allNodes = [node, ...getChildrenNodes(node)];
     final idMap = <String, String>{};
-    for (final n in allNodes) idMap[n.id] = nanoid();
+    for (final n in allNodes) {
+      idMap[n.id] = nanoid();
+    }
 
     final duplicated = <Node>[];
     for (final n in allNodes) {
@@ -1087,7 +1089,9 @@ class FileTreeNotifier extends Notifier<TreeData> {
 
     // Update local state is tricky for bulk.
     // Easiest is to add them to map and update the parent of the root copy.
-    for (final n in duplicated) map[n.id] = n;
+    for (final n in duplicated) {
+      map[n.id] = n;
+    }
 
     // Update destination parent to include the new root copy
     _updateParent(

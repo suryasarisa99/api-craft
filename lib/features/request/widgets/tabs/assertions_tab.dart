@@ -2,7 +2,6 @@ import 'package:api_craft/core/providers/providers.dart';
 import 'package:api_craft/core/widgets/ui/custom_input.dart';
 import 'package:api_craft/core/widgets/ui/surya_theme_icon.dart';
 import 'package:api_craft/features/request/models/node_config_model.dart';
-import 'package:api_craft/features/request/models/node_model.dart';
 import 'package:api_craft/features/request/widgets/expression_input.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

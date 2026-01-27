@@ -3,7 +3,6 @@ import 'package:api_craft/core/services/js_engine.dart';
 import 'package:api_craft/core/widgets/ui/cf_code_editor.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:api_craft/core/models/models.dart';
 import 'package:lazy_load_indexed_stack/lazy_load_indexed_stack.dart';
 
 class ScriptTab extends ConsumerStatefulWidget {

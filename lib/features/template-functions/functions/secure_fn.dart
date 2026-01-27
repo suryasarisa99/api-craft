@@ -1,10 +1,7 @@
-import 'package:api_craft/core/services/security/encryption_service.dart';
 import 'package:api_craft/features/workspace/services/workspace_security_service.dart';
 import 'package:api_craft/features/dynamic-form/form_input.dart';
 import 'package:api_craft/features/template-functions/models/template_functions.dart';
-import 'package:api_craft/features/template-functions/models/template_placeholder_model.dart';
-import 'package:api_craft/features/sidebar/file_tree_provider.dart';
-import 'package:api_craft/core/providers/providers.dart'; // Likely here
+// Likely here
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
 

@@ -2,7 +2,6 @@
 
 import 'package:api_craft/core/utils/debouncer.dart';
 import 'package:api_craft/features/request/models/inherited_request_model.dart';
-import 'package:api_craft/features/request/models/node_config_model.dart';
 import 'package:api_craft/core/models/models.dart';
 import 'package:api_craft/features/request/providers/request_details_provider.dart';
 import 'package:api_craft/core/providers/providers.dart';

@@ -3,9 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:api_craft/features/request/services/req_resolver.dart';
 import 'package:api_craft/core/models/models.dart';
 import 'package:api_craft/features/sidebar/file_tree_provider.dart';
-import 'package:api_craft/features/request/models/node_config_model.dart';
-import 'package:api_craft/features/request/models/node_model.dart';
-import 'package:api_craft/features/workspace/workspace_model.dart';
 
 void main() {
   group('ReqResolver Inheritance Tests', () {

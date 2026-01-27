@@ -1,7 +1,6 @@
 import 'package:api_craft/core/widgets/ui/top_bar.dart';
 import 'package:api_craft/features/interception/providers/interception_provider.dart';
 import 'package:api_craft/features/interception/widgets/interception_dialog.dart';
-import 'package:api_craft/features/panel/bottom_panel.dart';
 import 'package:api_craft/features/panel/status_bar.dart';
 import 'package:api_craft/features/themes/models/theme_model.dart';
 import 'package:api_craft/flows/filter/condition_provider.dart';

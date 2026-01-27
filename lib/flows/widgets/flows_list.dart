@@ -27,7 +27,7 @@ class _FlowList extends ConsumerState<FlowList> {
 
   // We need to keep track of the filtered flows asynchronously
   List<HttpFlow> _currentFilteredFlows = [];
-  bool _isFiltering = false;
+  final bool _isFiltering = false;
 
   late final FlowDataSource _flowDataSource = FlowDataSource(
     initialFlows: _currentFilteredFlows,

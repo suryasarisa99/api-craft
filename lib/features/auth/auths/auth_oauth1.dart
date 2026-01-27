@@ -178,7 +178,9 @@ final oAuth1 = Authenticaion(
       ],
     ),
   ],
-  onApply: (ref, values) {},
+  onApply: (ref, values) {
+    return null;
+  },
 );
 // dynamic onApply(Ref ref, CallTemplateFunctionArgs args) {
 //   final values = args.values;

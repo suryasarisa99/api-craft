@@ -9,11 +9,9 @@ import 'package:api_craft/features/request/widgets/tabs/environment_tab.dart';
 import 'package:api_craft/features/request/widgets/tabs/headers_tab.dart';
 import 'package:flutter/material.dart';
 import 'package:api_craft/core/models/models.dart';
-import 'package:flutter_popup/flutter_popup.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lazy_load_indexed_stack/lazy_load_indexed_stack.dart';
 import 'package:api_craft/features/request/widgets/tabs/script_tab.dart';
-import 'package:api_craft/features/request/widgets/tabs/settings_tab.dart';
 import 'package:api_craft/features/request/widgets/tabs/settings_tab.dart';
 
 class FolderConfigDialog extends ConsumerStatefulWidget {

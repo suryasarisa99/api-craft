@@ -54,7 +54,7 @@ class UiRequestContext {
       inheritedHeaders: inheritedHeaders ?? this.inheritedHeaders,
       effectiveAuth: effectiveAuth ?? this.effectiveAuth,
       authSource: authSource ?? this.authSource,
-      inheritVariables: allVariables ?? this.inheritVariables,
+      inheritVariables: allVariables ?? inheritVariables,
       history: history ?? this.history,
       isLoading: isLoading ?? this.isLoading,
     );

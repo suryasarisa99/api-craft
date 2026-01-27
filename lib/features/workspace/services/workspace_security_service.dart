@@ -1,15 +1,8 @@
 import 'package:api_craft/core/services/security/encryption_service.dart';
 import 'package:api_craft/core/services/security/master_key_service.dart';
-import 'package:api_craft/core/repository/data_repository.dart';
 import 'package:api_craft/core/providers/providers.dart';
-import 'package:api_craft/features/workspace/workspace_model.dart';
-import 'package:api_craft/features/sidebar/file_tree_provider.dart';
-import 'package:api_craft/core/database/entities/workspace_entity.dart';
-import 'package:api_craft/objectbox.g.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'dart:convert';
-import 'package:api_craft/features/workspace/workspaces_provider.dart';
 
 final workspaceSecurityServiceProvider = Provider(
   (ref) => WorkspaceSecurityService(ref),

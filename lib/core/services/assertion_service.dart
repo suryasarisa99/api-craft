@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'package:api_craft/features/request/models/node_config_model.dart';
 import 'package:api_craft/features/response/models/response_history.dart';
-import 'package:flutter/widgets.dart';
 import 'package:json_path/json_path.dart';
 
 var fakeReq = {
@@ -369,9 +368,10 @@ class AssertionService {
             final delta = double.parse(parts[1].trim());
             final diff = (actual - target).abs();
             passed = diff <= delta;
-            if (!passed)
+            if (!passed) {
               error =
                   "Expected $actual to be close to $target +/- $delta (diff: $diff)";
+            }
           } else {
             error = "Invalid format for closeTo (expected 'target,delta')";
           }
@@ -415,9 +415,10 @@ class AssertionService {
             final valueStr = expected.substring(splitIndex + 1).trim();
             if (actual.containsKey(key)) {
               passed = actual[key].toString() == valueStr;
-              if (!passed)
+              if (!passed) {
                 error =
                     "Expected key '$key' to have value '$valueStr' but got '${actual[key]}'";
+              }
             } else {
               error = "Map does not contain key '$key'";
             }
