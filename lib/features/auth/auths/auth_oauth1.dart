@@ -182,20 +182,3 @@ final oAuth1 = Authenticaion(
     return null;
   },
 );
-// dynamic onApply(Ref ref, CallTemplateFunctionArgs args) {
-//   final values = args.values;
-//   final consumerKey = values['consumerKey'] ?? '';
-//   final consumerSecret = values['consumerSecret'] ?? '';
-//   final signatureMethod = values['signatureMethod'] ?? Signatures.hmacSha1;
-//   final version = values['version'] ?? '';
-//   final realm = values['realm'] ?? '';
-//   // final oauth = OAuth({
-//   //   consumer: { key: consumerKey, secret: consumerSecret },
-//   //   signature_method: signatureMethod,
-//   //   version,
-//   //   hash_function: hashFunction(signatureMethod),
-//   //   realm,
-//   // });
-//   oauth
-
-// }
