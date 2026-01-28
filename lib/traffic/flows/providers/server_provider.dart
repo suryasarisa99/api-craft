@@ -19,21 +19,18 @@ import 'package:path/path.dart' as p;
 // Import types for explicit casting if needed
 // import 'package:mockhttp/types.dart';
 
-final serverProvider = AsyncNotifierProvider<ServerNotifier, void>(
+final serverProvider = AsyncNotifierProvider<ServerNotifier, bool>(
   () => ServerNotifier(),
 );
 
-class ServerNotifier extends AsyncNotifier<void> {
+class ServerNotifier extends AsyncNotifier<bool> {
   Isolate? _isolate;
   SendPort? _sendPort;
   late final FlowsNotifier flowNotifier;
 
   @override
-  Future<void> build() async {
+  Future<bool> build() async {
     flowNotifier = ref.read(flowsProvider.notifier);
-
-    // Start server logic
-    await _startServer();
 
     // Listen for rule changes
     ref.listen(interceptionProvider, (previous, next) {
@@ -46,6 +43,17 @@ class ServerNotifier extends AsyncNotifier<void> {
     ref.onDispose(() {
       _stopServer();
     });
+
+    // Initial state is stopped (false)
+    return false;
+  }
+
+  Future<void> toggle() async {
+    if (state.value == true) {
+      _stopServer();
+    } else {
+      await _startServer();
+    }
   }
 
   Future<void> _startServer() async {
@@ -73,8 +81,11 @@ class ServerNotifier extends AsyncNotifier<void> {
       receivePort.listen((message) {
         _handleMessage(message);
       });
+
+      state = const AsyncValue.data(true);
     } catch (e, st) {
       debugPrint("Server Isolate Spawn Error: $e\n$st");
+      state = AsyncValue.error(e, st);
     }
   }
 
@@ -83,6 +94,7 @@ class ServerNotifier extends AsyncNotifier<void> {
     _isolate?.kill(priority: Isolate.immediate);
     _isolate = null;
     _sendPort = null;
+    state = const AsyncValue.data(false);
   }
 
   void resume(String id, String type) {
@@ -259,7 +271,14 @@ Future<void> _isolateEntry(_IsolateArgs args) async {
   });
 
   // 4. Start Server
-  await server.start();
+  runZonedGuarded(
+    () async {
+      await server.start();
+    },
+    (error, stack) {
+      sendPort.send({'type': 'log', 'msg': 'Error starting server: $error'});
+    },
+  );
 
   // Cert generation if needed
   if (server.certificateAuthority != null) {

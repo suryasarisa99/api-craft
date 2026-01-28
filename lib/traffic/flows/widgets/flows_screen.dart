@@ -1,3 +1,4 @@
+import 'package:api_craft/shared/ui/surya_theme_icon.dart';
 import 'package:api_craft/shared/ui/top_bar.dart';
 import 'package:api_craft/traffic/interception_rules/interception_provider.dart';
 import 'package:api_craft/traffic/interception_rules/widgets/interception_rules_dialog.dart';
@@ -15,6 +16,8 @@ import 'package:api_craft/shared/resize/resize.dart';
 import 'package:api_craft/traffic/interceptors/intercept_widgets/interceptor_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:suryaicons/bulk_rounded.dart';
+import 'package:suryaicons/duotone_rounded.dart';
 
 class FlowsScreen extends ConsumerStatefulWidget {
   const FlowsScreen({super.key});
@@ -24,14 +27,7 @@ class FlowsScreen extends ConsumerStatefulWidget {
 }
 
 class _FlowScreenState extends ConsumerState<FlowsScreen> {
-  // Single data source for all flows
-
-  // Controller for the data grid to track selection and highlighting
   final _dtController = DtController();
-
-  // final _multiSplitController = MultiSplitViewController(
-  //   areas: [Area(data: 'flow-list', flex: 1)],
-  // );
   final resizeController = ResizableController();
   late final flowsListWidget = FlowList(controller: _dtController);
   late final flowPanelWidget = FlowPanel();
@@ -88,8 +84,26 @@ class _FlowScreenState extends ConsumerState<FlowsScreen> {
         TopBar(
           left: [],
           right: [
+            Consumer(
+              builder: (context, ref, child) {
+                final serverState = ref.watch(serverProvider);
+                return IconButton(
+                  icon: SuryaThemeIcon(
+                    serverState.value == true
+                        ? BulkRounded.pause
+                        : DuotoneRounded.play,
+                  ),
+                  tooltip: serverState.value == true
+                      ? 'Stop Server'
+                      : 'Start Server',
+                  onPressed: () {
+                    ref.read(serverProvider.notifier).toggle();
+                  },
+                );
+              },
+            ),
             IconButton(
-              icon: const Icon(Icons.device_hub, size: 18),
+              icon: SuryaThemeIcon(BulkRounded.ThreedScale),
               tooltip: 'Interceptors',
               onPressed: () {
                 showDialog(
@@ -98,7 +112,9 @@ class _FlowScreenState extends ConsumerState<FlowsScreen> {
                 );
               },
             ),
-            TextButton(
+            IconButton(
+              icon: SuryaThemeIcon(BulkRounded.filterAdd),
+              tooltip: 'Filter',
               onPressed: () {
                 showDialog(
                   context: context,
@@ -110,10 +126,9 @@ class _FlowScreenState extends ConsumerState<FlowsScreen> {
                   },
                 );
               },
-              child: Text("filter"),
             ),
             IconButton(
-              icon: const Icon(Icons.security, size: 18),
+              icon: SuryaThemeIcon(BulkRounded.edit01),
               tooltip: 'Interception Rules',
               onPressed: () {
                 final currentRules = ref.read(interceptionProvider);
