@@ -22,3 +22,4 @@ const kDefaultCookieJar = CookieJarModel(
   name: 'Default',
 );
 OverlayEntry? androidOverlayEntry;
+const kAppName = 'apicraft';

@@ -1,4 +1,6 @@
 import 'dart:io';
+import 'package:api_craft/core/constants/globals.dart';
+import 'package:api_craft/traffic/interceptors/utils/cmd_utils.dart';
 import 'package:path/path.dart' as p;
 
 Future<String> getCertificatePem() async {
@@ -12,6 +14,11 @@ Future<String> getCertificatePem() async {
 }
 
 String getCertificatePath() {
-  final curr = Directory.current.path;
-  return p.join(curr, 'mockttp-ca-cert.pem');
+  final curr = getCertificationsDirPath();
+  return p.join(curr, '$kAppName-ca-cert.pem');
+}
+
+String getCertificationsDirPath() {
+  final home = getHomeDirectory();
+  return p.join(home, kAppName);
 }

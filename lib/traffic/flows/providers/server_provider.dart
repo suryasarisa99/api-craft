@@ -2,16 +2,19 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:isolate';
 
+import 'package:api_craft/core/constants/globals.dart';
 import 'package:api_craft/traffic/interception_rules/interception_provider.dart';
 import 'package:api_craft/traffic/interception_rules/interception_script_service.dart';
 import 'package:api_craft/traffic/flows/models/flow.dart';
 import 'package:api_craft/traffic/flows/providers/flows_provider.dart';
 import 'package:api_craft/traffic/flows/providers/paused_providers.dart';
+import 'package:api_craft/traffic/interceptors/utils/get_certificate.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mockhttp/mockttp.dart';
 import 'package:mockhttp/types.dart';
+import 'package:path/path.dart' as p;
 
 // Import types for explicit casting if needed
 // import 'package:mockhttp/types.dart';
@@ -196,8 +199,12 @@ Future<void> _isolateEntry(_IsolateArgs args) async {
   sendPort.send(receivePort.sendPort);
 
   // 2. Create Server
-  final caCertPath = '${args.projectPath}/mockttp-ca-cert.pem';
-  final caKeyPath = '${args.projectPath}/mockttp-ca-key.pem';
+  // final caCertPath = '${args.projectPath}/mockttp-ca-cert.pem';
+  // final caKeyPath = '${args.projectPath}/mockttp-ca-key.pem';
+  final certificationsDirPath = getCertificationsDirPath();
+  debugPrint("Certifications dir path: $certificationsDirPath");
+  final caCertPath = p.join(certificationsDirPath, '$kAppName-ca-cert.pem');
+  final caKeyPath = p.join(certificationsDirPath, '$kAppName-ca-key.pem');
 
   MockttpHttpsOptions httpsOptions;
   if (File(caCertPath).existsSync() && File(caKeyPath).existsSync()) {
@@ -257,6 +264,7 @@ Future<void> _isolateEntry(_IsolateArgs args) async {
   // Cert generation if needed
   if (server.certificateAuthority != null) {
     if (!File(caCertPath).existsSync() || !File(caKeyPath).existsSync()) {
+      Directory(certificationsDirPath).createSync(recursive: true);
       await server.certificateAuthority!.saveCaCertToFile(caCertPath);
       await server.certificateAuthority!.saveCaKeyToFile(caKeyPath);
       sendPort.send({'type': 'log', 'msg': 'Certificate generated'});
