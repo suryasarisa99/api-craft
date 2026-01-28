@@ -1,5 +1,5 @@
 import 'package:objectbox/objectbox.dart';
-import 'package:api_craft/features/request/models/websocket_message.dart';
+import 'package:api_craft/api_client/request/models/websocket_message.dart';
 
 @Entity()
 class WebSocketMessageEntity {

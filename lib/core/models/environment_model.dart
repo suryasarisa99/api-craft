@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:api_craft/features/request/models/node_model.dart';
-import 'package:api_craft/features/request/models/node_config_model.dart';
+import 'package:api_craft/api_client/request/models/node_model.dart';
+import 'package:api_craft/api_client/request/models/node_config_model.dart';
 
 class Environment {
   final String id;

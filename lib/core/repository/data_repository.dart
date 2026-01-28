@@ -7,8 +7,8 @@ import 'package:api_craft/core/database/entities/websocket_session_entity.dart';
 import 'package:api_craft/core/database/objectbox.dart';
 import 'package:api_craft/objectbox.g.dart';
 import 'package:api_craft/core/models/models.dart';
-import 'package:api_craft/features/request/models/websocket_message.dart';
-import 'package:api_craft/features/request/models/websocket_session.dart';
+import 'package:api_craft/api_client/request/models/websocket_message.dart';
+import 'package:api_craft/api_client/request/models/websocket_session.dart';
 
 class DataRepository {
   final Future<ObjectBox> _obxFuture;

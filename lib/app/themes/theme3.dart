@@ -1,0 +1,135 @@
+import 'package:api_craft/app/themes/models/theme_model.dart';
+import 'package:flutter/material.dart';
+
+ThemeData buildTheme3({required Brightness brightness, required Color color}) {
+  final cs = ColorScheme.fromSeed(seedColor: color, brightness: brightness);
+  final backgroundClr = const Color.fromARGB(255, 18, 18, 18);
+  return ThemeData(
+    visualDensity: VisualDensity.compact,
+    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+    colorScheme: cs,
+    useMaterial3: true,
+    scaffoldBackgroundColor: backgroundClr,
+    extensions: [
+      AppTheme(
+        statusBarBackground: Color.fromARGB(255, 15, 15, 15),
+        statusBarText: cs.onPrimaryContainer,
+        topBarBackground: Color.fromARGB(255, 15, 15, 15),
+        topBarText: cs.onPrimaryContainer,
+        menuTheme: const Color.fromARGB(255, 38, 38, 38),
+      ),
+      SidebarTheme(
+        background: backgroundClr,
+        itemActive: const Color.fromARGB(150, 70, 70, 70),
+        itemSelected: cs.secondary.withValues(alpha: 0.1),
+        itemHover: cs.primaryContainer.withValues(alpha: 0.6),
+        itemFocused: cs.primaryContainer.withValues(alpha: 0.6),
+        indentLine: const Color.fromARGB(255, 75, 75, 75),
+        text: cs.onPrimaryContainer,
+      ),
+      BottomPannelTheme(
+        background: backgroundClr,
+        headerBackground: Color.fromARGB(255, 32, 32, 32),
+        text: cs.onPrimaryContainer,
+        divider: cs.primaryContainer.withValues(alpha: 0.6),
+      ),
+      FlowTableTheme(
+        selectedRow: cs.primary,
+        focusedRow: cs.primaryContainer,
+        evenRow: const Color.fromARGB(255, 17, 17, 17),
+        oddRow: const Color.fromARGB(255, 20, 20, 20),
+        rowSeperator: const Color.fromARGB(255, 27, 27, 27),
+        header: const Color.fromARGB(255, 22, 22, 22),
+        headerBorder: const Color.fromARGB(255, 38, 38, 38),
+      ),
+      FlowPanelTheme(
+        urlBg: Color.fromARGB(255, 22, 22, 22),
+        headerBg: Color.fromARGB(255, 22, 22, 22),
+      ),
+    ],
+    dividerColor: const Color.fromARGB(255, 40, 40, 40),
+    dialogTheme: DialogThemeData(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
+      backgroundColor: const Color.fromARGB(255, 33, 33, 33),
+    ),
+    elevatedButtonTheme: ElevatedButtonThemeData(
+      style: ElevatedButton.styleFrom(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6.0)),
+        backgroundColor: cs.secondaryContainer.withValues(alpha: 0.6),
+        foregroundColor: cs.onPrimaryContainer,
+      ),
+    ),
+    textButtonTheme: TextButtonThemeData(
+      style: ButtonStyle(
+        shape: WidgetStatePropertyAll<RoundedRectangleBorder>(
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(6.0)),
+        ),
+      ),
+    ),
+    filledButtonTheme: FilledButtonThemeData(
+      style: FilledButton.styleFrom(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6.0)),
+      ),
+    ),
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: OutlinedButton.styleFrom(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6.0)),
+      ),
+    ),
+    // filledButtonTheme:
+    iconButtonTheme: IconButtonThemeData(
+      style: IconButton.styleFrom(
+        minimumSize: const Size(32, 28),
+        maximumSize: const Size(32, 28),
+        alignment: Alignment.center,
+        padding: .zero,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6.0)),
+      ),
+    ),
+    iconTheme: IconThemeData(color: Colors.grey),
+    inputDecorationTheme: InputDecorationThemeData(
+      isDense: true,
+      floatingLabelStyle: TextStyle(
+        height: 1,
+        fontSize: 14,
+        color: Colors.grey,
+      ),
+      contentPadding: EdgeInsets.symmetric(horizontal: 6, vertical: 7),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(6.0)),
+      enabledBorder: OutlineInputBorder(
+        borderSide: BorderSide(color: Color.fromARGB(255, 66, 66, 66)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderSide: BorderSide(color: cs.primary, width: 1.5),
+      ),
+      prefixIconConstraints: BoxConstraints.tight(Size(32, 28)),
+      suffixIconConstraints: BoxConstraints.tight(Size(32, 28)),
+    ),
+
+    /// Dropdown Button Style
+    dropdownMenuTheme: DropdownMenuThemeData(),
+    menuButtonTheme: MenuButtonThemeData(
+      style: ButtonStyle(
+        shape: WidgetStatePropertyAll<RoundedRectangleBorder>(
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(6.0)),
+        ),
+        foregroundColor: WidgetStatePropertyAll<Color>(cs.primaryContainer),
+      ),
+    ),
+    tabBarTheme: TabBarThemeData(
+      tabAlignment: TabAlignment.start,
+      dividerColor: Colors.transparent,
+      indicator: BoxDecoration(
+        color: Colors.transparent,
+        border: Border(bottom: BorderSide(color: cs.primary, width: 2)),
+      ),
+      labelPadding: .symmetric(horizontal: 10),
+      // indicatorSize: TabBarIndicatorSize.tab,
+      labelStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w400),
+      unselectedLabelStyle: const TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.w400,
+      ),
+    ),
+  );
+}

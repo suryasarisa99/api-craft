@@ -1,6 +1,6 @@
 import 'dart:convert';
-import 'package:api_craft/features/request/models/node_config_model.dart';
-import 'package:api_craft/features/response/models/response_history.dart';
+import 'package:api_craft/api_client/request/models/node_config_model.dart';
+import 'package:api_craft/api_client/response/models/response_history.dart';
 import 'package:json_path/json_path.dart';
 
 var fakeReq = {

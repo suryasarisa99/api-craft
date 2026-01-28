@@ -3,7 +3,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:api_craft/core/models/models.dart';
-import 'package:api_craft/features/response/models/response_history.dart';
+import 'package:api_craft/api_client/response/models/response_history.dart';
 import 'package:flutter/material.dart';
 import 'package:nanoid/nanoid.dart';
 

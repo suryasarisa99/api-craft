@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:api_craft/core/models/cookie_jar_model.dart';
-import 'package:api_craft/features/request/models/node_config_model.dart';
+import 'package:api_craft/api_client/request/models/node_config_model.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 

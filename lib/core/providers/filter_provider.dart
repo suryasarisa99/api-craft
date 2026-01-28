@@ -1,8 +1,8 @@
-import 'package:api_craft/features/request/models/node_model.dart';
-import 'package:api_craft/features/request/providers/req_compose_provider.dart';
-import 'package:api_craft/features/environment/environment_provider.dart';
-import 'package:api_craft/features/sidebar/file_tree_provider.dart';
-import 'package:api_craft/core/widgets/ui/filter.dart';
+import 'package:api_craft/api_client/request/models/node_model.dart';
+import 'package:api_craft/api_client/request/providers/req_compose_provider.dart';
+import 'package:api_craft/api_client/environment/environment_provider.dart';
+import 'package:api_craft/api_client/sidebar/file_tree_provider.dart';
+import 'package:api_craft/shared/ui/filter.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 

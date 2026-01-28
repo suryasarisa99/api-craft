@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:api_craft/features/request/services/req_resolver.dart';
+import 'package:api_craft/api_client/request/services/req_resolver.dart';
 import 'package:api_craft/core/models/models.dart';
-import 'package:api_craft/features/sidebar/file_tree_provider.dart';
+import 'package:api_craft/api_client/sidebar/file_tree_provider.dart';
 
 void main() {
   group('ReqResolver Inheritance Tests', () {

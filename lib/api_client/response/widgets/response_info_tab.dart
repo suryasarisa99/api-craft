@@ -1,0 +1,97 @@
+import 'package:api_craft/api_client/response/models/response_history.dart';
+import 'package:api_craft/core/utils/formatters.dart';
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+
+class ResponseInfoTab extends StatelessWidget {
+  final ResponseHistory response;
+  const ResponseInfoTab({super.key, required this.response});
+
+  @override
+  Widget build(BuildContext context) {
+    final dateFormat = DateFormat('yyyy-MM-dd HH:mm:ss');
+    final sizeInKb = (response.bodyBytes.length / 1024).toStringAsFixed(2);
+
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        _buildInfoRow(
+          "Status",
+          "${response.statusCode} ${response.statusMessage}",
+        ),
+        _buildInfoRow("Time", formatDuration(response.durationMs)),
+        _buildInfoRow("Size", "$sizeInKb KB"),
+        _buildInfoRow("Executed At", dateFormat.format(response.executeAt)),
+        if (response.finalUrl != null) _buildInfoRow("URL", response.finalUrl!),
+        _buildInfoRow("Protocol", response.protocolVersion),
+        _buildInfoRow("Body Type", response.bodyType ?? "Unknown"),
+        if (response.redirects.isNotEmpty) ...[
+          const Divider(),
+          ExpansionTile(
+            title: Text(
+              "Redirects (${response.redirects.length})",
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+            ),
+            dense: true,
+            tilePadding: const EdgeInsets.symmetric(horizontal: 8),
+            children: response.redirects.map((step) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16.0,
+                  vertical: 4.0,
+                ),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "${step.statusCode} ${step.method}",
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                          color: Colors.blueGrey,
+                        ),
+                      ),
+                      SelectableText(
+                        step.url,
+                        style: const TextStyle(
+                          fontFamily: 'monospace',
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildInfoRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Row(
+        crossAxisAlignment: .start,
+        children: [
+          SizedBox(
+            width: 120,
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.grey,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(value, style: const TextStyle(fontFamily: 'monospace')),
+          ),
+        ],
+      ),
+    );
+  }
+}

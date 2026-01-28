@@ -1,6 +1,6 @@
 import 'package:api_craft/core/constants/globals.dart';
-import 'package:api_craft/features/themes/app_themes.dart';
-import 'package:api_craft/features/themes/models/theme_info.dart';
+import 'package:api_craft/app/themes/app_themes.dart';
+import 'package:api_craft/app/themes/models/theme_info.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
