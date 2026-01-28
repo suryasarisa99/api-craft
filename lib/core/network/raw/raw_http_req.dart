@@ -399,6 +399,7 @@ Future<ResponseHistory> sendRawHttp({
       rethrow;
     }
   }
+  debugPrint("Max redirects exceeded or loop error");
 
   throw Exception("Max redirects exceeded or loop error");
 }

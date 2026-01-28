@@ -1,5 +1,4 @@
 import 'package:api_craft/shared/filter_conditions/models/filter_enums.dart';
-import 'package:api_craft/shared/filter_conditions/models/filter_models.dart';
 import 'package:flutter/material.dart';
 
 class ConditionConnector extends StatelessWidget {

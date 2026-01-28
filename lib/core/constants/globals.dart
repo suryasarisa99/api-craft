@@ -1,4 +1,5 @@
 import 'package:api_craft/core/models/models.dart';
+import 'package:flutter/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 late final SharedPreferences prefs;
@@ -20,3 +21,4 @@ const kDefaultCookieJar = CookieJarModel(
   workspaceId: 'default_workspace',
   name: 'Default',
 );
+OverlayEntry? androidOverlayEntry;

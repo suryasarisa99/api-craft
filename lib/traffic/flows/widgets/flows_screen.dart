@@ -1,6 +1,6 @@
 import 'package:api_craft/shared/ui/top_bar.dart';
 import 'package:api_craft/traffic/interception_rules/interception_provider.dart';
-import 'package:api_craft/traffic/interception_rules/widgets/interception_dialog.dart';
+import 'package:api_craft/traffic/interception_rules/widgets/interception_rules_dialog.dart';
 import 'package:api_craft/api_client/panel/status_bar.dart';
 import 'package:api_craft/app/themes/models/theme_model.dart';
 import 'package:api_craft/traffic/filter/condition_provider.dart';
@@ -12,6 +12,7 @@ import 'package:api_craft/traffic/flows/providers/server_provider.dart';
 import 'package:api_craft/shared/dt_table/dt_models.dart';
 import 'package:api_craft/shared/dt_table/dt_table.dart';
 import 'package:api_craft/shared/resize/resize.dart';
+import 'package:api_craft/traffic/interceptors/intercept_widgets/interceptor_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -87,6 +88,16 @@ class _FlowScreenState extends ConsumerState<FlowsScreen> {
         TopBar(
           left: [],
           right: [
+            IconButton(
+              icon: const Icon(Icons.device_hub, size: 18),
+              tooltip: 'Interceptors',
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (context) => InterceptorsDialog(),
+                );
+              },
+            ),
             TextButton(
               onPressed: () {
                 showDialog(
@@ -108,7 +119,7 @@ class _FlowScreenState extends ConsumerState<FlowsScreen> {
                 final currentRules = ref.read(interceptionProvider);
                 showDialog(
                   context: context,
-                  builder: (context) => InterceptionDialog(
+                  builder: (context) => InterceptionRulesDialog(
                     initialRules: currentRules,
                     onSave: (newRules) {
                       ref

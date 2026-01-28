@@ -5,21 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sonner_toast/sonner_toast.dart';
+import 'package:window_manager/window_manager.dart';
 
-import 'package:window_manager/window_manager.dart'; // Use for better logging
-
-const kTopBarClr = Color(0xFF1B1B1B);
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // doWhenWindowReady(() {
-  //   final win = appWindow;
-  //   // const initialSize = Size(600, 450);
-  //   // win.minSize = initialSize;
-  //   // win.size = initialSize;
-  //   // win.alignment = Alignment.center;
-  //   win.show();
-  // });
-  // final path = await getDatabaseFilePath();
   await windowManager.ensureInitialized();
   const WindowOptions windowOptions = WindowOptions(
     center: true,
@@ -34,11 +23,6 @@ void main() async {
   prefs = await SharedPreferences.getInstance();
   runApp(ProviderScope(child: const MainApp()));
 }
-
-final colorSchema = ColorScheme.fromSeed(
-  seedColor: const Color.fromARGB(255, 251, 13, 255),
-  brightness: Brightness.dark,
-);
 
 class MainApp extends ConsumerWidget {
   const MainApp({super.key});
@@ -63,8 +47,7 @@ class MainApp extends ConsumerWidget {
         ],
       ),
 
-      theme: themeState
-          .themeData, // Use theme based on selection (supports both light and dark effectively via the provider)
+      theme: themeState.themeData,
       debugShowCheckedModeBanner: false,
       home: Scaffold(body: HomeScreen()),
     );

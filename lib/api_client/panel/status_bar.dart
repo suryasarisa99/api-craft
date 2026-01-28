@@ -1,4 +1,3 @@
-import 'package:api_craft/app/screens/home_screen.dart';
 import 'package:api_craft/app/screens/screen_provider.dart';
 import 'package:api_craft/app/themes/models/theme_model.dart';
 import 'package:api_craft/api_client/settings/settings_dialog.dart';

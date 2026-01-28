@@ -1,8 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:isolate';
-import 'dart:typed_data';
-import 'dart:ui';
 
 import 'package:api_craft/traffic/interception_rules/interception_provider.dart';
 import 'package:api_craft/traffic/interception_rules/interception_script_service.dart';

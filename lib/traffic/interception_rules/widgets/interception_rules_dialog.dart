@@ -10,21 +10,22 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mockhttp/ui/rule_config.dart';
 import 'package:suryaicons/bulk_rounded.dart';
 
-class InterceptionDialog extends StatefulWidget {
+class InterceptionRulesDialog extends StatefulWidget {
   final List<ProxyRule> initialRules;
   final ValueChanged<List<ProxyRule>> onSave;
 
-  const InterceptionDialog({
+  const InterceptionRulesDialog({
     super.key,
     required this.initialRules,
     required this.onSave,
   });
 
   @override
-  State<InterceptionDialog> createState() => _InterceptionDialogState();
+  State<InterceptionRulesDialog> createState() =>
+      _InterceptionRulesDialogState();
 }
 
-class _InterceptionDialogState extends State<InterceptionDialog> {
+class _InterceptionRulesDialogState extends State<InterceptionRulesDialog> {
   late List<ProxyRule> _rules;
   static const _autoSave = true;
 
