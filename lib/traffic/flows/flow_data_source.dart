@@ -1,4 +1,5 @@
 import 'package:api_craft/app/themes/models/theme_model.dart';
+import 'package:intl/intl.dart';
 import 'package:api_craft/traffic/flows/models/flow.dart';
 import 'package:api_craft/traffic/flows/providers/paused_providers.dart';
 import 'package:api_craft/traffic/flows/providers/server_provider.dart';
@@ -8,6 +9,7 @@ import 'package:api_craft/shared/dt_table/dt_table.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mockhttp/types.dart';
 
 class FlowDataSource extends DtSource {
   List<DtRow> _flowRows = [];
@@ -74,7 +76,14 @@ class FlowDataSource extends DtSource {
           // ),
 
           // // 6: Duration Cell - time between request and response in ms
-          DtCell(value: flow.response?.timingEvents.startTime),
+          // // 6: Duration Cell - time between request and response in ms
+          DtCell(
+            value: flow.response?.timingEvents.responseSentTime != null
+                ? (flow.response!.timingEvents.responseSentTime! -
+                          flow.request!.timingEvents.startTime)
+                      .round()
+                : null,
+          ),
 
           // DtCell(
           //   value:
@@ -126,11 +135,18 @@ class FlowDataSource extends DtSource {
       } else {
         text = switch (cIndex) {
           // duration in ms
-          6 => '${cell.value} ms',
+          // 6 => '${cell.value} ms',
+          6 => duration(cell.value as int),
           // request and response lengths
           7 || 8 => formatBytes(cell.value as int? ?? 0),
           _ => cell.value.toString(),
         };
+
+        if (cIndex == 5 && cell.value != null && cell.value is int) {
+          text = DateFormat(
+            'HH:mm:ss',
+          ).format(DateTime.fromMillisecondsSinceEpoch(cell.value as int));
+        }
       }
 
       // Color cellColor = switch (cIndex) {
@@ -221,6 +237,14 @@ class FlowDataSource extends DtSource {
       return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
     } else {
       return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
+    }
+  }
+
+  String duration(int milli) {
+    if (milli <= 1000) {
+      return '$milli ms';
+    } else {
+      return '${milli / 1000} s';
     }
   }
 }
