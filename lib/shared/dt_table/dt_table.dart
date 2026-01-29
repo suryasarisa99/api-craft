@@ -161,6 +161,7 @@ class DtTable extends StatefulWidget {
     this.headerBorderClr = Colors.grey,
     required this.menuProvider,
     this.allowTableWidthShrinking = false,
+    this.onDoubleClick,
   });
 
   final bool allowTableWidthShrinking;
@@ -176,6 +177,7 @@ class DtTable extends StatefulWidget {
   final int frozenColumnsCount;
   final double? tableWidth;
   final bool Function(KeyEvent event)? onKeyEvent;
+  final void Function(DtRow row)? onDoubleClick;
   final FutureOr<Menu?> Function(MenuRequest) menuProvider;
   final FocusNode? focusNode;
 
@@ -504,6 +506,23 @@ class _DtTableState extends State<DtTable> {
     return KeyEventResult.ignored;
   }
 
+  int _lastTapTime = 0;
+  // 300ms is standard, but you can lower it to 200ms for a snappier feel
+  static const int _doubleClickWindowMs = 300;
+
+  void _handleClick(DtRow row) {
+    final now = DateTime.now().millisecondsSinceEpoch;
+
+    if (now - _lastTapTime < _doubleClickWindowMs) {
+      widget.onDoubleClick?.call(row);
+
+      _lastTapTime = 0;
+    } else {
+      _handleRowTap(row);
+      _lastTapTime = now;
+    }
+  }
+
   void _handleRowTap(DtRow row) {
     FocusScope.of(context).requestFocus(_focusNode);
     final isCtrlPressed =
@@ -783,7 +802,8 @@ class _DtTableState extends State<DtTable> {
         return widget.menuProvider(e);
       },
       child: InkWell(
-        onTap: () => _handleRowTap(row),
+        // onTap: () => _handleRowTap(row),
+        onTap: () => _handleClick(row),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8.0),
           alignment: Alignment.centerLeft,

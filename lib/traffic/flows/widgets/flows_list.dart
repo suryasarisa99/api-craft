@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:api_craft/app/themes/models/theme_model.dart';
+import 'package:api_craft/shared/resize/resize.dart';
 import 'package:api_craft/traffic/filter/condition_provider.dart';
 import 'package:api_craft/traffic/filter/logic/filter_js_service.dart';
 import 'package:api_craft/traffic/flows/models/flow.dart';
@@ -15,8 +16,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:super_context_menu/super_context_menu.dart';
 
 class FlowList extends ConsumerStatefulWidget {
-  final DtController controller;
-  const FlowList({super.key, required this.controller});
+  final DtController dtController;
+  final ResizableController resizeController;
+  const FlowList({
+    super.key,
+    required this.dtController,
+    required this.resizeController,
+  });
 
   @override
   ConsumerState<FlowList> createState() => _FlowList();
@@ -31,7 +37,7 @@ class _FlowList extends ConsumerState<FlowList> {
 
   late final FlowDataSource _flowDataSource = FlowDataSource(
     initialFlows: _currentFilteredFlows,
-    dtController: widget.controller,
+    dtController: widget.dtController,
     ref: ref,
   );
   late final FlowsNotifier flowsNotifier = ref.read(flowsProvider.notifier);
@@ -96,7 +102,7 @@ class _FlowList extends ConsumerState<FlowList> {
     return DtTable(
       focusNode: tableFocusNode,
       source: _flowDataSource,
-      controller: widget.controller,
+      controller: widget.dtController,
       tableWidth: double.infinity,
       headerHeight: 24,
       headerClr: flowTableTheme.header,
@@ -104,6 +110,7 @@ class _FlowList extends ConsumerState<FlowList> {
       rowHeight: 32,
       frozenColumnsCount: 1,
       menuProvider: buildContextMenu,
+      onDoubleClick: (row) => onDoubleClick(row),
       onKeyEvent: onKey,
       headerColumns: [
         for (final header in headerCells)
@@ -120,7 +127,12 @@ class _FlowList extends ConsumerState<FlowList> {
     );
   }
 
-  Iterable<String> get modifiedIds => widget.controller.selectedRowIds.where(
+  void onDoubleClick(DtRow row) {
+    debugPrint('Double clicked on row ${row.id}');
+    widget.resizeController.showSecondChild();
+  }
+
+  Iterable<String> get modifiedIds => widget.dtController.selectedRowIds.where(
     (id) =>
         ref.read(flowsProvider)[id]!.reqEdited ||
         ref.read(flowsProvider)[id]!.resEdited,
@@ -132,9 +144,9 @@ class _FlowList extends ConsumerState<FlowList> {
     final isCtrl = Platform.isMacOS ? hk.isMetaPressed : hk.isControlPressed;
     final isAlt = hk.isAltPressed;
     final k = event.logicalKey;
-    final flowId = widget.controller.focusedRowId;
+    final flowId = widget.dtController.focusedRowId;
     if (flowId == null) return false;
-    final selectedIds = widget.controller.selectedRowIds;
+    final selectedIds = widget.dtController.selectedRowIds;
     if (isCtrl && k == .keyC) {
       copyUrls(selectedIds);
       return true;
@@ -185,8 +197,8 @@ class _FlowList extends ConsumerState<FlowList> {
     flowsNotifier.deleteFlows(ids);
 
     if (_flowDataSource.effectiveRows.isEmpty) {
-      widget.controller.clearSelection();
-      widget.controller.updateFocusedRow(null);
+      widget.dtController.clearSelection();
+      widget.dtController.updateFocusedRow(null);
       return;
     }
     // set selected to same index after deletion, or last if index out of range(if not items after deletion)
@@ -197,8 +209,8 @@ class _FlowList extends ConsumerState<FlowList> {
               .effectiveRows[_flowDataSource.effectiveRows.length - 1]
               .id;
     debugPrint('newFirstFlowId: $newFirstFlowId');
-    widget.controller.updateFocusedRow(newFirstFlowId);
-    widget.controller.setSelectedRows({newFirstFlowId});
+    widget.dtController.updateFocusedRow(newFirstFlowId);
+    widget.dtController.setSelectedRows({newFirstFlowId});
   }
 
   void copyUrls(Set<String> selectedIds) {

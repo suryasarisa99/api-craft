@@ -29,7 +29,10 @@ class FlowsScreen extends ConsumerStatefulWidget {
 class _FlowScreenState extends ConsumerState<FlowsScreen> {
   final _dtController = DtController();
   final resizeController = ResizableController();
-  late final flowsListWidget = FlowList(controller: _dtController);
+  late final flowsListWidget = FlowList(
+    dtController: _dtController,
+    resizeController: resizeController,
+  );
   late final flowPanelWidget = FlowPanel();
 
   @override
@@ -49,17 +52,9 @@ class _FlowScreenState extends ConsumerState<FlowsScreen> {
   void _flowIdListener(DtControllerChange change) {
     if (change.type == ChangeType.focusedRow) {
       String? rowId = _dtController.focusedRowId;
-      debugPrint('rowId: $rowId');
+      ref.read(selectedFlowIdProvider.notifier).set(rowId);
       if (rowId == null) {
         resizeController.hideSecondChild();
-        ref.read(selectedFlowIdProvider.notifier).reset();
-        return;
-      }
-      final flowId = ref.read(selectedFlowIdProvider);
-      if (rowId != flowId) {
-        debugPrint('rowId != flowId');
-        resizeController.showSecondChild();
-        ref.read(selectedFlowIdProvider.notifier).set(rowId);
       }
     }
   }
