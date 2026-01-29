@@ -1,5 +1,6 @@
 import 'package:api_craft/shared/ui/surya_theme_icon.dart';
 import 'package:api_craft/shared/ui/top_bar.dart';
+import 'package:api_craft/traffic/flows/widgets/system_proxy/system_proxy.dart';
 import 'package:api_craft/traffic/interception_rules/interception_provider.dart';
 import 'package:api_craft/traffic/interception_rules/widgets/interception_rules_dialog.dart';
 import 'package:api_craft/api_client/panel/status_bar.dart';
@@ -97,6 +98,7 @@ class _FlowScreenState extends ConsumerState<FlowsScreen> {
                 );
               },
             ),
+            SystemProxyWidget(),
             IconButton(
               icon: SuryaThemeIcon(BulkRounded.ThreedScale),
               tooltip: 'Interceptors',
