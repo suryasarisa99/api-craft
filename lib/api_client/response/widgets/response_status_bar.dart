@@ -106,7 +106,7 @@ class ResponseStatusBar extends ConsumerWidget {
           CustomMenuIconItem(
             icon: const SuryaThemeIcon(BulkRounded.download01),
             onTap: (_) async {
-              String? outputFile = await FilePicker.platform.saveFile(
+              String? outputFile = await FilePicker.saveFile(
                 dialogTitle: 'Save Response Body',
                 fileName: 'response',
               );

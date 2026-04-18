@@ -25,7 +25,7 @@ class ReqPanelTitles extends AbstractPanelTitles {
     //   "Body",
     //   "Raw",
     // ];
-    return ["Headers", "Query", "Cookies", "Body", "Raw"];
+    return ["Headers", "Query", "Cookies", "Body", "Raw", "Client Info"];
   }
 }
 
@@ -38,7 +38,7 @@ class RequestPanel extends PanelAbstract {
 
 class _RequestPanelState extends PanelAbstractState {
   @override
-  get tabsLen => 5;
+  get tabsLen => 6;
 
   @override
   get title => "request";
@@ -57,6 +57,7 @@ class _RequestPanelState extends PanelAbstractState {
       ReadOnlyCookiesView(),
       Text("----"),
       Text("----"),
+      ClientInfoView(),
     ];
   }
 }

@@ -156,17 +156,17 @@ class ServerNotifier extends AsyncNotifier<bool> {
         case 'req':
           // Received new request
           // message['data'] should be MutableRequest or compatible
-          if (message['data'] is MutableRequest) {
-            final req = FlowRequest.fromMutableReq(
-              message['data'] as MutableRequest,
+          if (message['data'] is OngoingRequest) {
+            final req = FlowRequest.fromOngoingReq(
+              message['data'] as OngoingRequest,
             );
             flowNotifier.updateReq(req);
           }
           break;
         case 'res':
-          if (message['data'] is MutableResponse) {
-            final res = FlowResponse.fromMutableRes(
-              message['data'] as MutableResponse,
+          if (message['data'] is CompletedResponse) {
+            final res = FlowResponse.fromCompletedRes(
+              message['data'] as CompletedResponse,
             );
             flowNotifier.updateRes(res);
           }
@@ -232,6 +232,7 @@ Future<void> _isolateEntry(_IsolateArgs args) async {
     https: httpsOptions,
     debug: false,
     http2: false,
+    // clientInfoResolver: _resolveProcessInfo,
   );
 
   final server = RawMockttpServer(options);
@@ -240,8 +241,8 @@ Future<void> _isolateEntry(_IsolateArgs args) async {
   server.on.req((req) async {
     // Convert to MutableRequest to read body and make it serializable
     try {
-      final mutableReq = await MutableRequest.fromOngoingRequest(req);
-      sendPort.send({'type': 'req', 'data': mutableReq});
+      // final mutableReq = await MutableRequest.fromOngoingRequest(req);
+      sendPort.send({'type': 'req', 'data': req});
     } catch (e) {
       sendPort.send({'type': 'log', 'msg': 'Error processing req: $e'});
     }
@@ -249,8 +250,8 @@ Future<void> _isolateEntry(_IsolateArgs args) async {
 
   server.on.res((res) async {
     try {
-      final mutableRes = await MutableResponse.fromCompletedResponse(res);
-      sendPort.send({'type': 'res', 'data': mutableRes});
+      // final mutableRes = await MutableResponse.fromCompletedResponse(res);
+      sendPort.send({'type': 'res', 'data': res});
     } catch (e) {
       sendPort.send({'type': 'log', 'msg': 'Error processing res: $e'});
     }
@@ -361,4 +362,48 @@ Future<void> _isolateEntry(_IsolateArgs args) async {
       }
     }
   });
+}
+
+Future<({int? pid, String? processPath})?> _resolveProcessInfo(
+  int port,
+  String? ip,
+) async {
+  if (ip != '127.0.0.1' && ip != '::1') return null;
+  if (!Platform.isMacOS) return null;
+
+  try {
+    final result = await Process.run('lsof', ['-i', ':$port', '-F', 'p']);
+    final output = result.stdout as String;
+    if (output.isEmpty) return null;
+
+    final lines = output.split('\n');
+    int? clientPid;
+    final currentPid = pid; // Capture global pid
+
+    for (final line in lines) {
+      if (line.startsWith('p')) {
+        final parsedPid = int.tryParse(line.substring(1));
+        if (parsedPid != null && parsedPid != currentPid) {
+          clientPid = parsedPid;
+          break;
+        }
+      }
+    }
+
+    if (clientPid != null) {
+      final psResult = await Process.run('ps', [
+        '-p',
+        '$clientPid',
+        '-o',
+        'comm=',
+      ]);
+      final path = (psResult.stdout as String).trim();
+      if (path.isNotEmpty) {
+        return (pid: clientPid, processPath: path);
+      }
+    }
+  } catch (e) {
+    debugPrint("Error resolving process: $e");
+  }
+  return null;
 }

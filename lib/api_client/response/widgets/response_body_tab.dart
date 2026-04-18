@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:api_craft/api_client/response/models/response_history.dart';
 import 'package:api_craft/api_client/response/response_tab.dart';
 import 'package:api_craft/api_client/response/widgets/json_viewer.dart';
@@ -9,21 +10,75 @@ import 'package:api_craft/shared/ui/cf_code_editor.dart';
 import 'package:xml/xml.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
-class ResponseBodyTab extends StatelessWidget {
-  final ResponseHistory response;
+class ResponseBodyView extends StatelessWidget {
+  final Uint8List body;
+  final List<List<String>>? headers;
   final BodyViewMode mode;
+  final String? bodyType;
+  final String id;
 
-  const ResponseBodyTab({
+  //
+  String? contentType;
+  String? _text;
+  String? _prettyText;
+  String? _json;
+  String? _xml;
+
+  String get text {
+    if (_text != null) {
+      return _text!;
+    }
+    return utf8.decode(body, allowMalformed: true);
+  }
+
+  String get prettyText {
+    if (_prettyText != null) {
+      return _prettyText!;
+    }
+    return _prettyPrint();
+  }
+
+  dynamic get json {
+    if (_json != null) {
+      return _json!;
+    }
+    return jsonDecode(text);
+  }
+
+  String get xml {
+    if (_xml != null) {
+      return _xml!;
+    }
+    return text;
+  }
+
+  ResponseBodyView({
     super.key,
-    required this.response,
+    required this.body,
+    this.headers,
     required this.mode,
-  });
+    required this.id,
+    this.bodyType,
+    String? contentType,
+  }) {
+    if (contentType != null) {
+      this.contentType = contentType;
+    } else {
+      for (final header in headers ?? []) {
+        if (header[0].toLowerCase() == 'content-type') {
+          this.contentType = header[1].toLowerCase();
+          break;
+        }
+      }
+    }
+  }
 
-  String _prettyPrint(String text) {
+  String _prettyPrint() {
     try {
-      final dynamic jsonObj = jsonDecode(text);
-      return const JsonEncoder.withIndent('  ').convert(jsonObj);
-    } catch (_) {}
+      return const JsonEncoder.withIndent('  ').convert(json);
+    } catch (_) {
+      debugPrint("Failed to parse JSON");
+    }
 
     //xml
     try {
@@ -37,25 +92,15 @@ class ResponseBodyTab extends StatelessWidget {
     return text;
   }
 
-  String? get _contentType {
-    for (final header in response.headers) {
-      if (header[0].toLowerCase() == 'content-type') {
-        return header[1].toLowerCase();
-      }
-    }
-    return null;
-  }
-
   @override
   Widget build(BuildContext context) {
     debugPrint("rebuild:::response-body");
     if (mode == BodyViewMode.hex) {
-      return HexViewer(bytes: response.bodyBytes);
+      return HexViewer(bytes: body);
     }
     if (mode == BodyViewMode.json) {
       try {
-        final jsonObj = jsonDecode(response.body);
-        return Expanded(child: JsonPreviewer(code: jsonObj));
+        return Expanded(child: JsonPreviewer(code: json));
       } catch (e) {
         return Center(
           child: Text(
@@ -66,7 +111,7 @@ class ResponseBodyTab extends StatelessWidget {
       }
     }
 
-    final contentType = _contentType;
+    final contentType = this.contentType;
 
     if (contentType != null) {
       debugPrint("contentType: $contentType");
@@ -74,22 +119,27 @@ class ResponseBodyTab extends StatelessWidget {
         return InteractiveViewer(
           maxScale: 100,
           // alignment: Alignment.center,
-          child: Center(child: SvgPicture.memory(response.bodyBytes)),
+          child: Center(child: SvgPicture.memory(body)),
         );
       } else if (contentType.contains('image/')) {
-        return ImageViewer(imageBytes: response.bodyBytes);
+        return ImageViewer(imageBytes: body);
       }
     }
 
-    String text = response.body;
     if (mode == BodyViewMode.pretty) {
-      text = _prettyPrint(text);
+      return CFCodeEditor(
+        key: ValueKey(id),
+        text: prettyText,
+        language: bodyType,
+        readOnly: true,
+        fontSize: 14,
+      );
     }
 
     return CFCodeEditor(
-      key: ValueKey(response.id),
+      key: ValueKey(id),
       text: text,
-      language: response.bodyType,
+      language: bodyType,
       readOnly: true,
       fontSize: 14,
     );

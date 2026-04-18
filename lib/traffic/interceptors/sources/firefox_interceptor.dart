@@ -65,7 +65,7 @@ class FirefoxProxy {
   }
 
   static Future<void> launch({
-    String proxyPort = "8080",
+    String proxyPort = "8000",
     String proxyHost = "127.0.0.1",
     required String caCertPath,
     String name = "Firefox", // to work with other firefox based browsers

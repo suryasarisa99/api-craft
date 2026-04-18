@@ -97,8 +97,7 @@ class _BinaryBodyEditorState extends ConsumerState<BinaryBodyEditor> {
                             ],
                             ElevatedButton.icon(
                               onPressed: () async {
-                                final result = await FilePicker.platform
-                                    .pickFiles();
+                                final result = await FilePicker.pickFiles();
                                 if (result != null &&
                                     result.files.single.path != null) {
                                   ref

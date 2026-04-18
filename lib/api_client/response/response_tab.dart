@@ -273,7 +273,13 @@ class _ResponseTabState extends ConsumerState<ResponseTab>
                   child: LazyLoadIndexedStack(
                     index: _index,
                     children: [
-                      ResponseBodyTab(response: response, mode: _bodyViewMode),
+                      ResponseBodyView(
+                        body: response.bodyBytes,
+                        headers: response.headers,
+                        mode: _bodyViewMode,
+                        id: id,
+                        bodyType: response.bodyType,
+                      ),
                       ResponseHeaders(id: id),
                       ResponseCookiesTab(id: id),
                       ResponseRedirectsTab(response: response), // NEW

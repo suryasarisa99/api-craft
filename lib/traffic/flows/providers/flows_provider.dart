@@ -1,4 +1,5 @@
 import 'package:api_craft/traffic/flows/models/flow.dart';
+import 'package:api_craft/traffic/utils/app_icon_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final flowsProvider = NotifierProvider<FlowsNotifier, Map<String, HttpFlow>>(
@@ -16,11 +17,29 @@ class FlowsNotifier extends Notifier<Map<String, HttpFlow>> {
     state = {...state, flow.id: flow};
   }
 
-  void updateReq(FlowRequest req) {
+  Future<void> updateReq(FlowRequest req) async {
     final id = req.id;
     final prv = state[id];
     if (prv == null) {
-      addFlow(HttpFlow(id: id, request: req));
+      ClientExtraInfo? clientInfo;
+      if (req.clientInfo?.ipAddress != null && req.clientInfo?.port != null) {
+        clientInfo = ClientInfoService.getCachedInfo(
+          req.clientInfo!.ipAddress!,
+          req.clientInfo!.port!,
+        );
+        if (clientInfo != null) {
+          addFlow(HttpFlow(id: id, request: req, clientInfo: clientInfo));
+        } else {
+          ClientInfoService.resolveInfo(
+            req.clientInfo!.ipAddress!,
+            req.clientInfo!.port!,
+          ).then((value) {
+            addFlow(HttpFlow(id: id, request: req, clientInfo: value));
+          });
+        }
+      } else {
+        addFlow(HttpFlow(id: id, request: req));
+      }
     } else {
       state = {...state, id: prv.updateReq(req)};
     }

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:api_craft/core/models/models.dart';
+import 'package:api_craft/traffic/utils/app_icon_service.dart';
 import 'package:collection/collection.dart';
 import 'package:mockhttp/types.dart';
 // import 'package:mockhttp/types/ongoing.dart'; // No longer needed directly for body
@@ -16,6 +17,7 @@ class HttpFlow {
   final FlowRequest? requestBackup;
   final FlowResponse? response;
   final FlowResponse? responseBackup;
+  final ClientExtraInfo? clientInfo;
 
   HttpFlow({
     required this.id,
@@ -26,6 +28,7 @@ class HttpFlow {
     this.response,
     this.requestBackup,
     this.responseBackup,
+    this.clientInfo,
   });
 
   // copy with
@@ -133,10 +136,9 @@ class FlowRequest {
   // final OngoingBody body;
   final Uint8List body; // Changed to Uint8List
   final TimingEvents timingEvents;
-  final String? ipAddress;
   final int? contentLen;
-  final int? port;
   final String protocol;
+  final ClientInfo? clientInfo;
 
   FlowRequest({
     required this.id,
@@ -149,25 +151,23 @@ class FlowRequest {
     required this.timingEvents,
     required this.destination,
     this.contentLen,
+    this.clientInfo,
     required this.body,
-    this.ipAddress,
-    this.port,
   });
 
   // Keep for compatibility if possible, or make it async static
-  static Future<FlowRequest> createFromOngoingReq(OngoingRequest r) async {
+  static FlowRequest fromOngoingReq(OngoingRequest r) {
     return FlowRequest(
       id: r.id,
       url: r.url,
       method: r.method,
       path: r.path,
       contentLen: r.contentLength,
-      ipAddress: r.remoteIpAddress,
-      port: r.remotePort,
       httpVersion: r.httpVersion,
       destination: r.destination,
       headers: _fromList(r.headers),
-      body: await r.body.asBuffer(),
+      body: r.body.buffer,
+      clientInfo: r.clientInfo,
       protocol: r.protocol,
       timingEvents: r.timingEvents,
     );
@@ -180,13 +180,12 @@ class FlowRequest {
       method: r.method,
       path: r.path,
       contentLen: r.body?.length, // Approximate
-      ipAddress: r.remoteIpAddress,
-      port: r.remotePort,
       httpVersion: r.httpVersion,
       destination: r.destination,
       headers: _fromList(r.headers),
       body: r.body ?? Uint8List(0),
       protocol: r.protocol,
+      clientInfo: r.clientInfo,
       timingEvents: r.timingEvents,
     );
   }
@@ -197,13 +196,11 @@ class FlowRequest {
       url: url,
       method: method,
       path: path,
-      remoteIpAddress: ipAddress,
-      remotePort: port,
       httpVersion: httpVersion,
       destination: destination,
       headers: _toList(headers),
       tags: [],
-      //body: Uint8List
+      clientInfo: clientInfo,
       body: body,
       protocol: protocol,
       timingEvents: timingEvents,
@@ -225,6 +222,7 @@ class FlowRequest {
     int? port,
     String? protocol,
     Destination? destination,
+    ClientInfo? clientInfo,
   }) {
     return FlowRequest(
       id: id ?? this.id,
@@ -235,10 +233,9 @@ class FlowRequest {
       headers: headers ?? this.headers,
       destination: destination ?? this.destination,
       body: body ?? this.body,
+      clientInfo: clientInfo ?? this.clientInfo,
       timingEvents: timingEvents ?? this.timingEvents,
-      ipAddress: ipAddress ?? this.ipAddress,
       contentLen: contentLen ?? this.contentLen,
-      port: port ?? this.port,
       protocol: protocol ?? this.protocol,
     );
   }
@@ -291,9 +288,7 @@ class FlowResponse {
     this.body,
   });
 
-  static Future<FlowResponse> createFromCompletedRes(
-    CompletedResponse r,
-  ) async {
+  static FlowResponse fromCompletedRes(CompletedResponse r) {
     return FlowResponse(
       id: r.id,
       contentLen: r.contentLength,

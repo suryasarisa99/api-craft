@@ -154,7 +154,7 @@ class _CreateWorkspaceDialogState
   }
 
   Future<void> _pickFolder() async {
-    final String? result = await FilePicker.platform.getDirectoryPath();
+    final String? result = await FilePicker.getDirectoryPath();
     if (result != null) {
       setState(() {
         _selectedPath = result;

@@ -36,12 +36,12 @@ class _AndroidPhoneState extends State<AndroidPhone> {
   @override
   void initState() {
     super.initState();
-    adbDevice.hasProxyTo(8080).then((value) {
+    adbDevice.hasProxyTo(8000).then((value) {
       setState(() {
         hasProxy = value;
       });
     });
-    adbDevice.hasReverseProxyTo(8080).then((value) {
+    adbDevice.hasReverseProxyTo(8000).then((value) {
       setState(() {
         hasReverseProxy = value;
       });
@@ -203,9 +203,9 @@ class _AndroidPhoneState extends State<AndroidPhone> {
             title: Text("Reverse Proxy"),
             onChanged: (value) {
               if (value) {
-                adbDevice.reverseProxy(8080, 8080);
+                adbDevice.reverseProxy(8000, 8000);
               } else {
-                adbDevice.removeReverseProxy(8080);
+                adbDevice.removeReverseProxy(8000);
               }
               setState(() {
                 hasReverseProxy = value;
@@ -217,7 +217,7 @@ class _AndroidPhoneState extends State<AndroidPhone> {
             title: Text("Proxy"),
             onChanged: (value) {
               if (value) {
-                adbDevice.setProxy(8080);
+                adbDevice.setProxy(8000);
               } else {
                 adbDevice.clearProxy();
               }
@@ -312,7 +312,7 @@ class _AndroidPhoneState extends State<AndroidPhone> {
             value: hasProxy,
             onChanged: (value) {
               if (value) {
-                adbDevice.setProxy(8080);
+                adbDevice.setProxy(8000);
               } else {
                 adbDevice.clearProxy();
               }

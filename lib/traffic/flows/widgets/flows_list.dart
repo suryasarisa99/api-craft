@@ -90,6 +90,7 @@ class _FlowList extends ConsumerState<FlowList> {
       (title: "ID", key: 'id', min: 30, initial: 44),
       (title: "URL", key: 'url', min: 300, initial: 300),
       (title: "Method", key: 'method', min: 40, initial: 80),
+      (title: "Client", key: 'client', min: 40, initial: 120),
       (title: "Status", key: 'status', min: 30, initial: 60),
       (title: "Type", key: 'type', min: 40, initial: 150),
       (title: "Time", key: 'time', min: 40, initial: 100),

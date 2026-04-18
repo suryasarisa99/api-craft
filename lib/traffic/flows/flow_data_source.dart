@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:api_craft/app/themes/models/theme_model.dart';
 import 'package:intl/intl.dart';
 import 'package:api_craft/traffic/flows/models/flow.dart';
@@ -9,6 +11,7 @@ import 'package:api_craft/shared/dt_table/dt_table.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:api_craft/traffic/utils/app_icon_service.dart';
 import 'package:mockhttp/types.dart';
 
 class FlowDataSource extends DtSource {
@@ -56,7 +59,10 @@ class FlowDataSource extends DtSource {
           // 2: Method Cell
           DtCell(value: flow.request?.method),
 
-          // // 3: Status Cell
+          // 3: Client Cell
+          DtCell(value: flow.request?.clientInfo),
+
+          // // 4: Status Cell
           DtCell(value: flow.response?.statusCode),
 
           // // 4: Type Cell
@@ -75,7 +81,6 @@ class FlowDataSource extends DtSource {
           //   value: flow.createdDateTime.toLocal().toString().substring(11, 19),
           // ),
 
-          // // 6: Duration Cell - time between request and response in ms
           // // 6: Duration Cell - time between request and response in ms
           DtCell(
             value: flow.response?.timingEvents.responseSentTime != null
@@ -135,7 +140,6 @@ class FlowDataSource extends DtSource {
       } else {
         text = switch (cIndex) {
           // duration in ms
-          // 6 => '${cell.value} ms',
           6 => duration(cell.value as int),
           // request and response lengths
           7 || 8 => formatBytes(cell.value as int? ?? 0),
@@ -147,6 +151,10 @@ class FlowDataSource extends DtSource {
             'HH:mm:ss',
           ).format(DateTime.fromMillisecondsSinceEpoch(cell.value as int));
         }
+      }
+
+      if (cIndex == 3) {
+        return _buildClientCell(cell.value as ClientInfo?);
       }
 
       // Color cellColor = switch (cIndex) {
@@ -206,6 +214,41 @@ class FlowDataSource extends DtSource {
       color: rowColor,
       borderColor: flowTableTheme.rowSeperator,
       cells: cells,
+    );
+  }
+
+  Widget _buildClientCell(ClientInfo? info) {
+    if (info == null) {
+      return const Text('-', style: TextStyle(color: Colors.grey));
+    }
+
+    final name =
+        'p: ${info.processPath?.split('/').last}' ??
+        'n: ${info.appName}' ??
+        'p: ${info.platform}' ??
+        'i: ${info.ipAddress}' ??
+        'Unknown';
+
+    final path = info.processPath;
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (path != null)
+          FutureBuilder<Uint8List?>(
+            future: AppIconService.getAppIcon(path),
+            builder: (context, snapshot) {
+              if (snapshot.hasData) {
+                return Padding(
+                  padding: const EdgeInsets.only(right: 6.0),
+                  child: Image.memory(snapshot.data!, width: 24, height: 24),
+                );
+              }
+              return const SizedBox(width: 22); // spacing placeholder
+            },
+          ),
+        Flexible(child: Text(name, overflow: TextOverflow.ellipsis)),
+      ],
     );
   }
 

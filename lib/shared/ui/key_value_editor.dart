@@ -443,7 +443,7 @@ class _KeyValueRowState extends State<_KeyValueRow> {
         },
         child: InkWell(
           onTap: () async {
-            final res = await FilePicker.platform.pickFiles();
+            final res = await FilePicker.pickFiles();
             if (res != null && res.files.single.path != null) {
               widget.onUpdate(
                 widget.index,

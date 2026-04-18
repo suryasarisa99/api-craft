@@ -15,7 +15,7 @@ Future<ResponseHistory> sendRawHttp({
   dynamic body,
   bool useProxy = false,
   String proxyHost = '127.0.0.1',
-  int proxyPort = 8080,
+  int proxyPort = 8000,
   String? proxyUsername,
   String? proxyPassword,
   String proxyProtocol = 'http',

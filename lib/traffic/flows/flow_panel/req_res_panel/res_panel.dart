@@ -54,7 +54,7 @@ class _RequestPanelState extends PanelAbstractState {
     return [
       EditResHeadersView(),
       ReadOnlySetCookiesView(),
-      Text("Query Params"),
+      ReadOnlyBodyView(),
       Text("Query Params"),
       // ReqHeadersView(
       //   id: widget.id,
