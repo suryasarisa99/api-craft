@@ -25,11 +25,13 @@ class _AndroidPhoneState extends State<AndroidPhone> {
   List<AndroidAppInfo> filteredApps = [];
   final TextEditingController searchController = TextEditingController();
   bool isLoading = true;
+  String? errorMessage;
   late final adbDevice = AdbClient.getDevice(widget.id);
   late bool hasProxy = false;
   late bool hasReverseProxy = false;
   int? fridaServerPid;
   bool showSettings = false;
+  bool isAdbMode = false;
   // late final interceptor = widget.interceptor;
   late final fridaService = widget.interceptor.createFridaService(widget.id);
 
@@ -49,26 +51,64 @@ class _AndroidPhoneState extends State<AndroidPhone> {
     load();
   }
 
-  void load() async {
-    final pid = await fridaService.startFridaServer();
-    if (pid == null) {
-      debugPrint("Frida is not running on device ${widget.id}");
+  void load({bool useFrida = true}) async {
+    setState(() {
+      isLoading = true;
+      errorMessage = null;
+      isAdbMode = !useFrida;
+    });
+
+    try {
+      if (useFrida) {
+        final pid = await fridaService.startFridaServer();
+        if (pid == null) {
+          throw "Frida server failed to start. Check if the device is rooted and frida-server is present at /data/local/tmp/";
+        }
+        setState(() {
+          fridaServerPid = pid;
+        });
+
+        final value = await fridaService.getAppList();
+        setState(() {
+          apps = value;
+          filteredApps = apps;
+          isLoading = false;
+        });
+      } else {
+        await loadViaAdb();
+      }
+    } catch (e) {
+      debugPrint("Error loading apps: $e");
       setState(() {
+        errorMessage = e.toString();
         isLoading = false;
-      });
-      return;
-    } else {
-      setState(() {
-        fridaServerPid = pid;
       });
     }
-    fridaService.getAppList().then((value) {
+  }
+
+  Future<void> loadViaAdb() async {
+    try {
+      final adbApps = await adbDevice.listInstalledApps();
+      final mappedApps = adbApps.map((a) {
+        return AndroidAppInfo(
+          name: a.name,
+          packageName: a.packageName,
+          iconBase64: "", // ADB doesn't provide icons easily
+        );
+      }).toList();
+
       setState(() {
-        apps = value;
+        apps = mappedApps;
         filteredApps = apps;
         isLoading = false;
+        errorMessage = null;
       });
-    });
+    } catch (e) {
+      setState(() {
+        errorMessage = "ADB Fallback failed: $e";
+        isLoading = false;
+      });
+    }
   }
 
   void launchApp(AndroidAppInfo app) {
@@ -99,10 +139,61 @@ class _AndroidPhoneState extends State<AndroidPhone> {
           SizedBox(height: 12),
           _buildSearchBar(),
           if (isLoading)
-            Center(child: CircularProgressIndicator())
+            Expanded(child: Center(child: CircularProgressIndicator()))
+          else if (errorMessage != null)
+            Expanded(child: _buildErrorView())
+          else if (isAdbMode)
+            Expanded(child: buildAsList())
           else
             Expanded(child: buildAsGrid()),
         ],
+      ),
+    );
+  }
+
+  Widget _buildErrorView() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline, size: 48, color: Colors.red.shade300),
+            SizedBox(height: 16),
+            Text(
+              "Initialization Failed",
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 8),
+            Text(
+              errorMessage ?? "Unknown error occurred",
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey, fontSize: 13),
+              maxLines: 4,
+              overflow: TextOverflow.ellipsis,
+            ),
+            SizedBox(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                ElevatedButton.icon(
+                  onPressed: () => load(useFrida: true),
+                  icon: Icon(Icons.refresh, size: 18),
+                  label: Text("Reload"),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blueGrey.shade800,
+                  ),
+                ),
+                SizedBox(width: 12),
+                OutlinedButton.icon(
+                  onPressed: () => load(useFrida: false),
+                  icon: Icon(Icons.android, size: 18),
+                  label: Text("Use ADB"),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -249,19 +340,51 @@ class _AndroidPhoneState extends State<AndroidPhone> {
   }
 
   Widget buildAsList() {
-    return ListView.builder(
+    return ListView.separated(
+      padding: const EdgeInsets.symmetric(vertical: 8),
       itemCount: filteredApps.length,
+      separatorBuilder: (context, index) => Divider(
+        height: 1,
+        color: Colors.white10,
+        indent: 16,
+      ),
       itemBuilder: (context, index) {
         final app = filteredApps[index];
         return ListTile(
-          title: Text(app.name),
-          subtitle: Text(app.packageName),
-          leading: IconCache.imageFromBase64Cached(
-            app.iconBase64,
-            width: 60,
-            height: 60,
-            fit: BoxFit.contain,
+          dense: true,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          title: Text(
+            app.name,
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 14,
+            ),
           ),
+          subtitle: Text(
+            app.packageName,
+            style: TextStyle(
+              color: Colors.grey.shade500,
+              fontSize: 12,
+              fontFamily: 'monospace',
+            ),
+          ),
+          leading: isAdbMode
+              ? Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.withAlpha(20),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Icon(Icons.android, size: 18, color: Colors.grey),
+                )
+              : IconCache.imageFromBase64Cached(
+                  app.iconBase64,
+                  width: 32,
+                  height: 32,
+                  fit: BoxFit.contain,
+                ),
+          trailing: Icon(Icons.chevron_right, size: 16, color: Colors.grey),
           onTap: () {
             launchApp(app);
           },

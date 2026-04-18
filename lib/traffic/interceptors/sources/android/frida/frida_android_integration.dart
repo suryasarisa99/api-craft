@@ -106,9 +106,17 @@ class FridaService {
       //check frida is already running
       final isRunning = await isFridaRunning();
       if (isRunning) return getFridaServerPid();
+
+      // Ensure executable permissions
+      await adbDeviceClient.rootShell([
+        'chmod 755 /data/local/tmp/frida-server',
+      ]);
+
       final result = await adbDeviceClient.rootShell([
         'nohup /data/local/tmp/frida-server >/dev/null 2>&1 &',
+        // '/data/local/tmp/frida-server >/dev/null 2>&1 &',
       ]);
+
       debugPrint("Started frida server, result: $result");
       // wait 2 sec
       await Future.delayed(const Duration(seconds: 2));
