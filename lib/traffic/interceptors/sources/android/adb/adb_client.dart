@@ -29,7 +29,8 @@ class AdbClient {
     try {
       final result = await Process.run('adb', ['devices']);
       if (result.exitCode != 0) {
-        throw AdbException('Failed to get devices: ${result.stderr}');
+        debugPrint('adb devices failed with code ${result.exitCode}: ${result.stderr}');
+        return <AdbDevice>[];
       }
       debugPrint("adb devices output: ${result.stdout}");
       final lines = result.stdout.toString().split('\n');
@@ -50,7 +51,8 @@ class AdbClient {
 
       return devices;
     } catch (e) {
-      throw AdbException('Failed to get devices: $e');
+      debugPrint('Error getting adb devices: $e');
+      return <AdbDevice>[];
     }
   }
 

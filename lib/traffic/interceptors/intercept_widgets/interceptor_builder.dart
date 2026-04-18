@@ -25,11 +25,15 @@ class _InterceptorBuilderState extends State<InterceptorBuilder> {
   void initState() {
     super.initState();
     options?.then((value) {
-      setState(() {
-        if (value.isNotEmpty) {
-          selectedOption = getValue(value[0]);
-        }
-      });
+      if (mounted) {
+        setState(() {
+          if (value.isNotEmpty) {
+            selectedOption = getValue(value[0]);
+          }
+        });
+      }
+    }).catchError((e) {
+      debugPrint("Error initializing options for ${widget.interceptor.name}: $e");
     });
   }
 
@@ -82,7 +86,23 @@ class _InterceptorBuilderState extends State<InterceptorBuilder> {
                       FutureBuilder(
                         future: options,
                         builder: (context, snapshot) {
-                          final options = snapshot.data ?? [];
+                          final optionsList = snapshot.data ?? [];
+                          if (optionsList.isEmpty) {
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12.0,
+                                vertical: 8,
+                              ),
+                              child: Text(
+                                "No items available",
+                                style: TextStyle(
+                                  color: Colors.orange.withAlpha(200),
+                                  fontSize: 12,
+                                  fontStyle: FontStyle.italic,
+                                ),
+                              ),
+                            );
+                          }
                           return DecoratedBox(
                             decoration: BoxDecoration(
                               border: Border.all(
@@ -96,7 +116,6 @@ class _InterceptorBuilderState extends State<InterceptorBuilder> {
                               value: selectedOption,
                               enableFeedback: false,
                               borderRadius: .circular(8),
-
                               dropdownColor: const Color.fromARGB(
                                 255,
                                 49,
@@ -104,8 +123,7 @@ class _InterceptorBuilderState extends State<InterceptorBuilder> {
                                 49,
                               ),
                               padding: .symmetric(horizontal: 12, vertical: 3),
-
-                              items: options.map<DropdownMenuItem<String>>((
+                              items: optionsList.map<DropdownMenuItem<String>>((
                                 option,
                               ) {
                                 return DropdownMenuItem<String>(
@@ -164,22 +182,25 @@ class _InterceptorBuilderState extends State<InterceptorBuilder> {
         foregroundColor: .all(const Color.fromARGB(255, 212, 212, 212)),
         padding: .all(.symmetric(horizontal: 16, vertical: 6)),
       ),
-      onPressed: () async {
-        if (widget.interceptor is FridaAndroidInterceptor) {
-          androidOverlayEntry = showDraggableWindowOverlay(
-            context: context,
-            child: AndroidPhone(
-              width: 350,
-              id: selectedOption ?? '',
-              interceptor: widget.interceptor as FridaAndroidInterceptor,
-            ),
-          );
-        } else {
-          final config = LaunchConfig(option: selectedOption);
-          widget.interceptor.launch(config);
-        }
-        Navigator.of(context).pop();
-      },
+      onPressed:
+          selectedOption == null
+              ? null
+              : () async {
+                if (widget.interceptor is FridaAndroidInterceptor) {
+                  androidOverlayEntry = showDraggableWindowOverlay(
+                    context: context,
+                    child: AndroidPhone(
+                      width: 350,
+                      id: selectedOption ?? '',
+                      interceptor: widget.interceptor as FridaAndroidInterceptor,
+                    ),
+                  );
+                } else {
+                  final config = LaunchConfig(option: selectedOption);
+                  widget.interceptor.launch(config);
+                }
+                Navigator.of(context).pop();
+              },
       label: Text("Launch", style: TextStyle(fontSize: 12)),
       icon: Icon(Icons.launch, size: 16),
     );

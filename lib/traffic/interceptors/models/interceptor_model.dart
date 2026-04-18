@@ -12,8 +12,14 @@ class LaunchConfig {
   });
 }
 
-typedef OptionType = ({String label, dynamic value});
-typedef PreOptionsType = List<({String label, dynamic value})>;
+class PreOption {
+  final String label;
+  final dynamic value;
+
+  const PreOption({required this.label, required this.value});
+}
+
+typedef PreOptionsType = List<PreOption>;
 
 abstract class Interceptor {
   String get name;

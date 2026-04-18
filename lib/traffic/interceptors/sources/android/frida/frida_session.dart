@@ -303,6 +303,7 @@ class FridaSession {
     final text = await rootBundle.loadString(
       '$fridaScriptsRoot/frida_adapter.py',
     );
+    await file.parent.create(recursive: true);
     await file.writeAsString(text);
     return file.path;
   }

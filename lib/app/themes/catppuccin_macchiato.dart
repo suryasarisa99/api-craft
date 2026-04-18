@@ -99,7 +99,7 @@ final catppuccinMacchiato = ThemeData(
     contentPadding: EdgeInsets.symmetric(horizontal: 6, vertical: 7),
     border: OutlineInputBorder(borderRadius: BorderRadius.circular(6.0)),
     enabledBorder: OutlineInputBorder(
-      borderSide: BorderSide(color: Color.fromARGB(255, 66, 66, 66)),
+      borderSide: BorderSide(color: Color.fromARGB(255, 55, 55, 75)),
     ),
     focusedBorder: OutlineInputBorder(
       borderSide: BorderSide(color: _cs.primary, width: 1.5),

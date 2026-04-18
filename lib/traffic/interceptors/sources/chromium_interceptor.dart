@@ -15,12 +15,12 @@ class ChromiumInterceptor extends Interceptor {
   get tags => ["chromium", "browser"];
 
   @override
-  getPreOptions() {
+  PreOptionsType getPreOptions() {
     return [
-      (label: 'New Window', value: {'newWindow': true}),
-      // (label: 'Incognito Mode', value: {'incognito': true, 'newWindow': true}),
-      (label: 'Guest Mode', value: {'guest': true, 'newWindow': true}),
-      (label: 'Global', value: {}),
+      const PreOption(label: 'New Window', value: {'newWindow': true}),
+      // const PreOption(label: 'Incognito Mode', value: {'incognito': true, 'newWindow': true}),
+      const PreOption(label: 'Guest Mode', value: {'guest': true, 'newWindow': true}),
+      const PreOption(label: 'Global', value: {}),
     ];
   }
 

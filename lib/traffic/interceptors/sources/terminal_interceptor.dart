@@ -49,6 +49,8 @@ class TerminalProxy {
   static const Map<String, String> commonTerminals = {
     'Terminal': '/System/Applications/Utilities/Terminal.app',
     'iTerm': '/Applications/iTerm.app',
+    'Warp': '/Applications/Warp.app',
+    'Ghostty': '/Applications/Ghostty.app',
   };
 
   static Future<void> launchProxiedTerminal({

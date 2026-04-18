@@ -76,3 +76,7 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+      - assets/scripts/
+      - assets/scripts/frida/
+      - assets/scripts/frida/android/
